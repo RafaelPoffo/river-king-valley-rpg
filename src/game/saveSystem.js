@@ -34,7 +34,7 @@ import {
 } from "./stores.js";
 import { updateCamera } from "./movement.js";
 import { generateDailyQuest } from "./quests.js";
-import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES } from "./constants.js";
+import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constants.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
 
@@ -173,7 +173,7 @@ export function startGameSession() {
     phase.set("playing");
     isFading.set(false);
     currentMap.set("village");
-    player.set({ x: 7, y: 10, dir: "down" });
+    player.set({ ...PLAYER_START });
     eveningWarned.set(false);
     updateCamera();
     saveGame();

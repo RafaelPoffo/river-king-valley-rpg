@@ -1,31 +1,51 @@
 import { draw, SPRITES } from "./sprites.js";
+import {
+  AQUARIUM_FOOTPRINT,
+  BOAT_BOUNDS,
+  DOCK_BOUNDS,
+  inBounds,
+} from "./constants.js";
 
 function imgTile(src, alt = "Tile") {
   return `<img src="${src}" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="${alt}" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-full h-full bg-[#578839]\\'></div>'" />`;
 }
 
 export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
-  if (x >= 14 && x <= 16 && y >= 17 && y <= 18) {
-    if (constructions?.docks?.status === "built") return imgTile("/assets/crystal_pier.png", "Doca");
-    if (constructions?.docks?.status === "building")
-      return imgTile("/assets/crystal_sign.png", "Obras");
+  const dockBuilt =
+    constructions?.docks?.status === "built" ||
+    constructions?.pier?.status === "built";
+  const dockBuilding =
+    constructions?.docks?.status === "building" ||
+    constructions?.pier?.status === "building";
+
+  if (inBounds(x, y, DOCK_BOUNDS)) {
+    if (
+      dockBuilt &&
+      constructions?.boat?.status === "built" &&
+      !deepSeaFishingActive &&
+      inBounds(x, y, BOAT_BOUNDS)
+    ) {
+      return imgTile(
+        x === BOAT_BOUNDS.x1
+          ? "/assets/crystal_boat_front.png"
+          : "/assets/crystal_boat_back.png",
+        "Barco"
+      );
+    }
+    if (dockBuilt) return imgTile("/assets/crystal_pier.png", "Doca");
+    if (dockBuilding) return imgTile("/assets/crystal_sign.png", "Obras");
   }
-  if (
-    x >= 15 &&
-    x <= 16 &&
-    y >= 17 &&
-    y <= 18 &&
-    constructions?.boat?.status === "built" &&
-    !deepSeaFishingActive
-  ) {
-    return imgTile(x === 15 ? "/assets/crystal_boat_front.png" : "/assets/crystal_boat_back.png", "S.S. Aqua");
-  }
+
   if (
     constructions?.aquarium_building?.status === "built" &&
-    x === 8 &&
-    y === 7
+    inBounds(x, y, AQUARIUM_FOOTPRINT)
   ) {
-    return imgTile("/assets/crystal_roof_mid.png", "Centro Pokémon");
+    return imgTile(
+      y === AQUARIUM_FOOTPRINT.y1
+        ? "/assets/crystal_roof_mid.png"
+        : "/assets/crystal_door.png",
+      "Aquário"
+    );
   }
 
   switch (char) {
@@ -45,19 +65,21 @@ export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
       return imgTile("/assets/Agua.png", "Água Johto");
     case "H":
       return imgTile("/assets/crystal_roof_mid.png", "Telhado Johto");
+    case "W":
+      return imgTile("/assets/crystal_wall_left.png", "Parede");
     case "P":
-      return imgTile("/assets/crystal_wall_left.png", "Casa Johto");
-    case "0":
+    case "E":
     case "B":
+    case "K":
+    case "D":
+    case "R":
+      return imgTile("/assets/crystal_door.png", "Porta");
+    case "Z":
+      return imgTile("/assets/crystal_sign.png", "Terreno do aquário");
+    case "0":
       return draw(SPRITES.void);
     case ".":
       return imgTile("/assets/crystal_path_pure.png", "Caminho Johto");
-    case "K":
-      return imgTile("/assets/crystal_npc_carpenter.png", "Mestre Gema");
-    case "D":
-    case "R":
-    case "I":
-      return imgTile("/assets/crystal_door.png", "Porta");
     case "C":
       return imgTile("/assets/crystal_counter.png", "Balcão");
     case "M":

@@ -38,8 +38,21 @@ import {
   eqNetId,
   eqBaitId,
 } from "./stores.js";
-import { SEASONS, WEATHER_NAMES, FESTIVAL_STALL, getNpcLocation } from "./constants.js";
-import { updateCamera, getTileInFront, isWalking, afterCurrentStep } from "./movement.js";
+import {
+  SEASONS,
+  WEATHER_NAMES,
+  FESTIVAL_STALL,
+  BOAT_BOUNDS,
+  inBounds,
+  getNpcLocation,
+} from "./constants.js";
+import {
+  updateCamera,
+  getTileInFront,
+  isWalking,
+  afterCurrentStep,
+  interiorSpawn,
+} from "./movement.js";
 import { saveGame } from "./saveSystem.js";
 import { generateDailyQuest, checkDailyQuestProgress } from "./quests.js";
 import {
@@ -82,7 +95,7 @@ export function sleep() {
     });
 
     currentMap.set("player_house");
-    player.set({ x: 8, y: 6, dir: "down" });
+    player.set(interiorSpawn("player_house", "up"));
     phase.set("playing");
     isFading.set(false);
 
@@ -114,7 +127,7 @@ export function startBoatVoyage() {
       setTimeout(() => {
         deepSeaFishingActive.set(true);
         phase.set("playing");
-        player.set({ x: 19, y: 22, dir: "down" });
+        player.set({ x: 19, y: 20, dir: "down" });
         updateCamera();
         showRPGMessage(
           "Você chegou ao Alto-Mar! Águas profundas e perigosas."
@@ -133,7 +146,7 @@ export function returnFromDeepSea() {
   setTimeout(() => {
     deepSeaFishingActive.set(false);
     phase.set("playing");
-    player.set({ x: 15, y: 16, dir: "up" });
+    player.set({ x: 19, y: 16, dir: "up" });
     updateCamera();
     showRPGMessage("Retornou em segurança às Docas.");
   }, 1500);
@@ -345,22 +358,17 @@ export function interact() {
   }
 
   const constr = get(constructions);
-  if (
-    constr.boat.status === "built" &&
-    (target.y === 17 || target.y === 18) &&
-    target.x >= 15 &&
-    target.x <= 16
-  ) {
+  if (constr.boat.status === "built" && inBounds(target.x, target.y, BOAT_BOUNDS)) {
     startBoatVoyage();
     return;
   }
 
-  if (
-    constr.aquarium_building.status === "built" &&
-    target.x === 8 &&
-    target.y === 7
-  ) {
-    showAquariumModal.set(true);
+  if (target.tile === "Z") {
+    if (constr.aquarium_building.status === "built") {
+      showAquariumModal.set(true);
+    } else {
+      showRPGMessage("O terreno do aquário municipal ainda está vazio.");
+    }
     return;
   }
 

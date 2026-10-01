@@ -8,6 +8,7 @@ import {
   SEASONS,
   FESTIVALS,
   FISH_DB,
+  PLAYER_START,
 } from "./constants.js";
 import { POKEMON_DB } from "./pokemonConstants.js";
 
@@ -28,7 +29,7 @@ export const phase = writable("menu");
 
 // Player state
 export const playerName = writable("");
-export const player = writable({ x: 7, y: 10, dir: "down" });
+export const player = writable({ ...PLAYER_START });
 export const money = writable(500);
 
 // Time & Weather

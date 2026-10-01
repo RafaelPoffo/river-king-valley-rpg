@@ -3,6 +3,9 @@ import {
   MAPS_DATA,
   TILE_SIZE,
   FESTIVAL_STALL,
+  PLAYER_START,
+  DOCK_BOUNDS,
+  inBounds,
   getNpcLocation,
 } from "./constants.js";
 import {
@@ -67,10 +70,29 @@ export function updateCamera() {
   cameraY.set(Math.max(0, Math.min(cy, mapArr.length * TILE_SIZE - viewH)));
 }
 
-export function enterHouse(houseMapName, doorX, doorY) {
-  lastEnteringHouse.set({ map: "village", x: doorX, y: doorY + 1, dir: "down" });
+export function interiorSpawn(mapName, dir = "up") {
+  const rows = MAPS_DATA[mapName];
+  if (!rows) return { x: 7, y: 6, dir };
+  for (let y = 0; y < rows.length; y++) {
+    const x = rows[y].indexOf("-");
+    if (x >= 0) return { x, y: y - 1, dir };
+  }
+  return { x: 7, y: 6, dir };
+}
+
+const HOUSE_DOORS = {
+  P: "player_house",
+  E: "shop_gear",
+  B: "shop_bait",
+  K: "carpenter_shop",
+  D: "hut_old",
+  R: "tavern",
+};
+
+export function enterHouse(houseMapName, fromX, fromY) {
+  lastEnteringHouse.set({ map: "village", x: fromX, y: fromY, dir: "down" });
   currentMap.set(houseMapName);
-  player.set({ x: 8, y: 6, dir: "up" });
+  player.set(interiorSpawn(houseMapName, "up"));
   updateCamera();
 }
 
@@ -81,7 +103,7 @@ export function exitHouse() {
     player.set({ x: last.x, y: last.y, dir: last.dir });
   } else {
     currentMap.set("village");
-    player.set({ x: 7, y: 10, dir: "down" });
+    player.set({ ...PLAYER_START });
   }
   updateCamera();
 }
@@ -157,27 +179,17 @@ function beginStep(dx, dy, dirStr) {
   }
 
   let afterMove = null;
-  if (["P", "S", "B", "K", "D", "R", "I"].includes(tile)) {
-    const houseMaps = {
-      P: "player_house",
-      S: "shop_gear",
-      B: "shop_bait",
-      K: "carpenter_shop",
-      D: "hut_old",
-      R: "tavern",
-      I: "tavern",
-    };
-    afterMove = () => enterHouse(houseMaps[tile], nx, ny);
-  } else if (tile === "-" || (cMap !== "village" && tile === "0" && originY >= 6)) {
+  if (HOUSE_DOORS[tile]) {
+    afterMove = () => enterHouse(HOUSE_DOORS[tile], originX, originY);
+  } else if (tile === "-") {
     afterMove = () => exitHouse();
   } else {
     const walkableTiles = ["G", ".", "=", "F", "S"];
     let canWalk = walkableTiles.includes(tile);
-    if (tile === "X") {
-      const isDockArea = nx >= 14 && nx <= 16 && ny >= 17 && ny <= 18;
+    if (tile === "X" && inBounds(nx, ny, DOCK_BOUNDS)) {
       const hasDocks =
         constr.docks.status === "built" || constr.pier.status === "built";
-      if (isDockArea && hasDocks) canWalk = true;
+      if (hasDocks) canWalk = true;
     }
     if (!canWalk) {
       player.set({ x: originX, y: originY, dir: dirStr });
