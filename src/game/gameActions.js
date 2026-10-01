@@ -29,6 +29,8 @@ import {
   showAquariumModal,
   showTavernQuestModal,
   showCalendarModal,
+  currentFestival,
+  lastFestivalClaim,
   ownedRods,
   ownedNets,
   ownedBaits,
@@ -36,8 +38,8 @@ import {
   eqNetId,
   eqBaitId,
 } from "./stores.js";
-import { SEASONS, WEATHER_NAMES, getNpcLocation } from "./constants.js";
-import { updateCamera, getTileInFront } from "./movement.js";
+import { SEASONS, WEATHER_NAMES, FESTIVAL_STALL, getNpcLocation } from "./constants.js";
+import { updateCamera, getTileInFront, isWalking, afterCurrentStep } from "./movement.js";
 import { saveGame } from "./saveSystem.js";
 import { generateDailyQuest, checkDailyQuestProgress } from "./quests.js";
 import {
@@ -310,6 +312,10 @@ export function toggleTool() {
 
 export function interact() {
   if (get(phase) !== "playing") return;
+  if (isWalking()) {
+    afterCurrentStep(() => interact());
+    return;
+  }
 
   const target = getTileInFront();
   const mins = get(inGameMinutes);
@@ -355,6 +361,32 @@ export function interact() {
     target.y === 7
   ) {
     showAquariumModal.set(true);
+    return;
+  }
+
+  const festival = get(currentFestival);
+  if (
+    cMap === "village" &&
+    festival &&
+    target.x === FESTIVAL_STALL.x &&
+    target.y === FESTIVAL_STALL.y
+  ) {
+    const claimKey = get(seasonIndex) * 100 + curDay;
+    phase.set("dialog");
+    if (get(lastFestivalClaim) !== claimKey) {
+      lastFestivalClaim.set(claimKey);
+      money.update((m) => m + 200);
+      saveGame();
+      currentMessage.set(`${festival}! A barraca entrega ¥200 de brinde.`);
+    } else {
+      currentMessage.set(`${festival}. A praça já te presenteou hoje.`);
+    }
+    dialogActions.set({
+      " ": () => {
+        phase.set("playing");
+        showRPGMessage("Setas para andar. [ENTER] para o Menu.");
+      },
+    });
     return;
   }
 

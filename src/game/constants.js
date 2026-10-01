@@ -10,6 +10,8 @@ export const WEATHER_NAMES = {
   storm: "⛈️ Tempestade",
 };
 
+export const FESTIVAL_STALL = { x: 18, y: 14 };
+
 export const FESTIVALS = {
   0: {
     5: "Festival das Flores",

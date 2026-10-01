@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 import { FISH_DB } from "./constants.js";
 import { POKEMON_DB } from "./pokemonConstants.js";
+import { SPRITES } from "./sprites.js";
 import {
   gameMode,
   phase,
@@ -61,7 +62,8 @@ function updateAim(time) {
   lastTime = time;
   const speed = 5.0;
   let power = get(aimPower) + aimDir * delta * speed;
-  const upperLimit = 3.99;
+  const rodReach = get(currentToolData)?.maxDist || 1;
+  const upperLimit = Math.min(3.99, rodReach + 0.99);
   if (power > upperLimit) {
     power = upperLimit;
     aimDir = -1;
@@ -117,11 +119,12 @@ export function throwLine() {
     const currentBait = get(eqBaitId);
     if (currentBait !== "sem_isca") {
       baitStock.update((stock) => {
-        if (stock[currentBait] > 0) {
-          stock[currentBait]--;
-          if (stock[currentBait] <= 0) eqBaitId.set("sem_isca");
+        const next = { ...stock };
+        if ((next[currentBait] || 0) > 0) {
+          next[currentBait] -= 1;
+          if (next[currentBait] <= 0) eqBaitId.set("sem_isca");
         }
-        return stock;
+        return next;
       });
     }
 
@@ -175,6 +178,71 @@ function updateApproach(time) {
   }
 }
 
+function isTrashSprite(fish) {
+  return fish.sprite === SPRITES.trash;
+}
+
+function matchesTime(fish, night) {
+  const when = fish.times || "all";
+  if (when === "night") return night;
+  if (when === "day") return !night;
+  return true;
+}
+
+function matchesDist(fish, zone) {
+  if (!Array.isArray(fish.dist) || fish.dist.length === 0) return true;
+  return fish.dist.includes(zone);
+}
+
+function matchesSeason(fish, season) {
+  if (!Array.isArray(fish.seasons) || fish.seasons.length === 0) return true;
+  return fish.seasons.includes(season);
+}
+
+function matchesBiome(fish, biome) {
+  return fish.biome === biome || fish.biome === "all";
+}
+
+function isRodFish(fish) {
+  return (
+    fish.type === "fish" &&
+    !isTrashSprite(fish) &&
+    !fish.id.startsWith("poke_") &&
+    !fish.id.includes("bola")
+  );
+}
+
+function firstPool(list, predicates) {
+  for (const pred of predicates) {
+    const found = list.filter(pred);
+    if (found.length > 0) return found;
+  }
+  return [];
+}
+
+function decorateCatch(fishBase) {
+  let stars =
+    fishBase.stage === 3 || fishBase.rarity >= 5
+      ? 5
+      : fishBase.stage === 2 || fishBase.rarity >= 3
+        ? 3
+        : 1;
+  const lucky = !!get(upgrades).shinyLuck?.bought;
+  const rare = stars >= 5 || !!fishBase.preferDeep;
+  const junk = isTrashSprite(fishBase) || fishBase.type === "treasure";
+  let chance = 0;
+  if (!junk && rare) chance = lucky ? 0.22 : 0.08;
+  else if (!junk && lucky) chance = 0.06;
+  const isShiny = chance > 0 && Math.random() < chance;
+  if (isShiny) stars = 6;
+  return {
+    ...fishBase,
+    stars,
+    isShiny,
+    priceFinal: (fishBase.price || 0) * stars * (isShiny ? 3 : 1),
+  };
+}
+
 export function rollFishByZone(zone) {
   const isPokeMode = get(gameMode) === "pokemon";
   const database = isPokeMode ? POKEMON_DB : FISH_DB;
@@ -187,16 +255,22 @@ export function rollFishByZone(zone) {
 
   const trashChance = bait === "sem_isca" ? 0.35 : 0.05;
   if (Math.random() < trashChance) {
-    const trashes = database.filter((f) => f.rarity === 1 && f.type === "fish" && f.desc.includes("descart") || f.id.includes("bota") || f.id.includes("lata") || f.id.includes("bola"));
-    const fallbackTrashes = trashes.length > 0 ? trashes : database.filter((f) => f.rarity === 1);
-    const trashBase = fallbackTrashes[Math.floor(Math.random() * fallbackTrashes.length)];
-    return {
-      ...trashBase,
-      stars: 1,
-      isShiny: false,
-      priceFinal: trashBase.price,
-      weight: trashBase.weight || trashBase.minW,
-    };
+    const trashes = database.filter(
+      (f) =>
+        isTrashSprite(f) &&
+        matchesBiome(f, biomeTarget) &&
+        matchesDist(f, zone)
+    );
+    if (trashes.length > 0) {
+      const trashBase = trashes[Math.floor(Math.random() * trashes.length)];
+      return {
+        ...trashBase,
+        stars: 1,
+        isShiny: false,
+        priceFinal: trashBase.price,
+        weight: trashBase.weight || trashBase.minW,
+      };
+    }
   }
 
   if (
@@ -204,7 +278,14 @@ export function rollFishByZone(zone) {
     Math.random() < 0.05 &&
     (biomeTarget === "sea" || biomeTarget === "deep_sea" || isPokeMode)
   ) {
-    const treasures = database.filter((f) => f.type === "treasure");
+    const treasures = database.filter(
+      (f) =>
+        f.type === "treasure" &&
+        matchesBiome(f, biomeTarget) &&
+        matchesDist(f, zone) &&
+        matchesTime(f, night) &&
+        matchesSeason(f, curSeason)
+    );
     if (treasures.length > 0) {
       const treasureBase =
         treasures[Math.floor(Math.random() * treasures.length)];
@@ -213,6 +294,7 @@ export function rollFishByZone(zone) {
         isShiny: false,
         priceFinal: treasureBase.price,
         weight: treasureBase.weight || treasureBase.minW,
+        stars: treasureBase.rarity || 1,
       };
     }
   }
@@ -262,52 +344,41 @@ export function rollFishByZone(zone) {
       targetStage = stageRoll < 5 ? 1 : stageRoll < 40 ? 2 : 3;
     }
 
-    pool = database.filter((f) => {
-      if (f.type !== "fish" || f.id.startsWith("poke_") || f.id.includes("bola")) return false;
-      const biomeMatch = f.biome === biomeTarget || f.biome === "all";
-      if (!biomeMatch) return false;
-
-      // Se estamos no fundo (zona 3), pokémon com preferDeep (como Gyarados, Lapras, Mantine)
-      // têm alta afinidade e são incluídos diretamente
+    const rods = database.filter(isRodFish);
+    pool = rods.filter((f) => {
+      if (!matchesBiome(f, biomeTarget) || !matchesDist(f, zone)) return false;
+      if (!matchesTime(f, night) || !matchesSeason(f, curSeason)) return false;
       if (zone === 3 && f.preferDeep) return true;
-
-      // Preferência de estágio por zona
       return f.stage === targetStage;
     });
 
     if (pool.length === 0) {
-      pool = database.filter((f) => f.type === "fish" && !f.id.startsWith("poke_") && (f.biome === biomeTarget || f.biome === "all"));
-    }
-  } else {
-    pool = database.filter(
-      (f) =>
-        f.type === "fish" &&
-        f.rarity === rarityTarget &&
-        (f.biome === biomeTarget || f.biome === "all") &&
-        f.seasons.includes(curSeason)
-    );
-
-    if (pool.length === 0) {
-      pool = database.filter(
+      pool = rods.filter(
         (f) =>
-          f.type === "fish" && (f.biome === biomeTarget || f.biome === "all")
+          matchesBiome(f, biomeTarget) &&
+          matchesDist(f, zone) &&
+          matchesTime(f, night)
       );
     }
+  } else {
+    const rods = database.filter(isRodFish);
+    const inReach = (f) => matchesBiome(f, biomeTarget) && matchesDist(f, zone);
+    pool = firstPool(rods, [
+      (f) =>
+        inReach(f) &&
+        f.rarity === rarityTarget &&
+        matchesSeason(f, curSeason) &&
+        matchesTime(f, night),
+      (f) => inReach(f) && matchesSeason(f, curSeason) && matchesTime(f, night),
+      (f) => inReach(f) && matchesTime(f, night),
+      (f) => inReach(f),
+    ]);
   }
 
-  if (pool.length === 0) pool = database.filter((f) => f.type === "fish");
+  if (pool.length === 0) return null;
 
   const fishBase = pool[Math.floor(Math.random() * pool.length)];
-  let stars = (fishBase.stage === 3 || fishBase.rarity >= 5) ? 5 : (fishBase.stage === 2 || fishBase.rarity >= 3) ? 3 : 1;
-  let isShiny = (stars >= 5 || fishBase.preferDeep) && Math.random() < 0.08;
-  if (isShiny) stars = 6;
-
-  return {
-    ...fishBase,
-    stars,
-    isShiny,
-    priceFinal: fishBase.price * stars * (isShiny ? 3 : 1),
-  };
+  return decorateCatch(fishBase);
 }
 
 export function processCaughtFish(fishBase) {
@@ -446,18 +517,34 @@ export function finishCatchSequence(finalFish) {
 
 export function useNetAtShore(biome) {
   if (!get(eqNetId)) return;
-  phase.set("caught");
   const isPokeMode = get(gameMode) === "pokemon";
   const database = isPokeMode ? POKEMON_DB : FISH_DB;
   const curSeason = get(seasonIndex);
+  const night = get(isNight);
   let pool = database.filter(
     (f) =>
       (f.type === "net" || f.rarity <= 2 || f.stage === 1) &&
-      (f.biome === biome || f.biome === "all") &&
-      (isPokeMode || f.seasons.includes(curSeason))
+      matchesBiome(f, biome) &&
+      matchesDist(f, 1) &&
+      matchesTime(f, night) &&
+      (isPokeMode || matchesSeason(f, curSeason))
   );
-  if (pool.length === 0) pool = database.filter((f) => f.type === "fish");
-  const caughtBase = pool[Math.floor(Math.random() * pool.length)];
+  if (pool.length === 0) {
+    pool = database.filter(
+      (f) =>
+        (f.type === "net" || f.type === "fish") &&
+        matchesBiome(f, biome) &&
+        matchesDist(f, 1)
+    );
+  }
+  if (pool.length === 0) {
+    resetAction("A rede voltou vazia.");
+    return;
+  }
+  phase.set("caught");
+  const caughtBase = decorateCatch(
+    pool[Math.floor(Math.random() * pool.length)]
+  );
   const fishObj = processCaughtFish(caughtBase);
   addFishToInventory(fishObj);
 }

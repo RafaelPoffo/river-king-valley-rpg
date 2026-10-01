@@ -16,6 +16,7 @@ import {
   ownedBaits,
   baitStock,
   lastWormHarvestDay,
+  lastFestivalClaim,
   constructions,
   inventory,
   currentWeather,
@@ -72,6 +73,7 @@ export function saveGame() {
       ownedBaits: get(ownedBaits),
       baitStock: get(baitStock),
       lastWormDay: get(lastWormHarvestDay),
+      lastFestivalClaim: get(lastFestivalClaim),
       constructions: get(constructions),
       inv: get(inventory),
       weather: get(currentWeather),
@@ -109,6 +111,7 @@ export function loadGame() {
       ownedBaits.set(data.ownedBaits || ["sem_isca"]);
       baitStock.set(data.baitStock || { minhoca: 5 });
       lastWormHarvestDay.set(data.lastWormDay || 0);
+      lastFestivalClaim.set(data.lastFestivalClaim || 0);
       constructions.set(data.constructions || JSON.parse(JSON.stringify(INITIAL_CONSTRUCTIONS)));
       inventory.set(data.inv || []);
       currentWeather.set(data.weather || "sunny");
@@ -148,6 +151,7 @@ export function newGame(selectedMode = "normal") {
   ownedNets.set([]);
   ownedBaits.set(["sem_isca"]);
   baitStock.set({ minhoca: 5 });
+  lastFestivalClaim.set(0);
   inventory.set([]);
   aquarium.set({});
   museum.set({});

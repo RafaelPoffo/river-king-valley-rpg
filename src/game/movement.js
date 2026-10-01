@@ -1,5 +1,10 @@
 import { get } from "svelte/store";
-import { MAPS_DATA, TILE_SIZE, getNpcLocation } from "./constants.js";
+import {
+  MAPS_DATA,
+  TILE_SIZE,
+  FESTIVAL_STALL,
+  getNpcLocation,
+} from "./constants.js";
 import {
   player,
   currentMap,
@@ -12,14 +17,40 @@ import {
   inGameMinutes,
   day,
   constructions,
+  currentFestival,
 } from "./stores.js";
+
+const STEP_MS = 120;
+const VECTORS = {
+  up: [0, -1],
+  down: [0, 1],
+  left: [-1, 0],
+  right: [1, 0],
+};
+
+const held = { up: false, down: false, left: false, right: false };
+let lastDir = null;
+let walking = false;
+let walkFrame = 0;
+let onStepDone = null;
+
+export function isWalking() {
+  return walking;
+}
+
+export function afterCurrentStep(fn) {
+  if (!walking) fn();
+  else onStepDone = fn;
+}
 
 export function getTile(m, x, y) {
   const mapArr = MAPS_DATA[m];
-  if (!mapArr || y < 0 || y >= mapArr.length || x < 0 || x >= mapArr[0].length) {
+  const ix = Math.round(x);
+  const iy = Math.round(y);
+  if (!mapArr || iy < 0 || iy >= mapArr.length || ix < 0 || ix >= mapArr[iy].length) {
     return "0";
   }
-  return mapArr[y][x];
+  return mapArr[iy][ix];
 }
 
 export function updateCamera() {
@@ -55,29 +86,77 @@ export function exitHouse() {
   updateCamera();
 }
 
-export function movePlayer(dx, dy, dirStr) {
-  if (get(phase) !== "playing" || get(deepSeaFishingActive)) return;
+function activeDirection() {
+  if (lastDir && held[lastDir]) return lastDir;
+  return ["up", "down", "left", "right"].find((dir) => held[dir]) || null;
+}
+
+export function releaseMovement() {
+  held.up = false;
+  held.down = false;
+  held.left = false;
+  held.right = false;
+  lastDir = null;
+  onStepDone = null;
+  if (walkFrame) cancelAnimationFrame(walkFrame);
+  walkFrame = 0;
+  if (!walking) return;
+  walking = false;
   const p = get(player);
+  player.set({ x: Math.round(p.x), y: Math.round(p.y), dir: p.dir });
+  updateCamera();
+}
+
+export function setDirectionHeld(dir, isDown) {
+  if (!VECTORS[dir]) return;
+  held[dir] = isDown;
+  if (isDown) {
+    lastDir = dir;
+    tryStep();
+  }
+}
+
+function tryStep() {
+  if (walking) return;
+  if (get(phase) !== "playing" || get(deepSeaFishingActive)) return;
+  const dir = activeDirection();
+  if (!dir) return;
+  const [dx, dy] = VECTORS[dir];
+  beginStep(dx, dy, dir);
+}
+
+function stallBlocks(mapName, x, y) {
+  return (
+    !!get(currentFestival) &&
+    mapName === "village" &&
+    x === FESTIVAL_STALL.x &&
+    y === FESTIVAL_STALL.y
+  );
+}
+
+function beginStep(dx, dy, dirStr) {
+  const p = get(player);
+  const originX = Math.round(p.x);
+  const originY = Math.round(p.y);
   const cMap = get(currentMap);
+  const nx = originX + dx;
+  const ny = originY + dy;
+  const tile = getTile(cMap, nx, ny);
   const mins = get(inGameMinutes);
   const curDay = get(day);
   const constr = get(constructions);
 
-  const nx = p.x + dx;
-  const ny = p.y + dy;
-  const tile = getTile(cMap, nx, ny);
-
-  // Check NPC collision
   const npcOccupying = get(villagers).find((n) => {
     const loc = getNpcLocation(n, mins, curDay);
     return loc.map === cMap && loc.x === nx && loc.y === ny;
   });
-  if (npcOccupying) {
-    player.update((pl) => ({ ...pl, dir: dirStr }));
+
+  if (npcOccupying || stallBlocks(cMap, nx, ny)) {
+    player.set({ x: originX, y: originY, dir: dirStr });
     return;
   }
 
-  // Door triggers
+  let afterMove = null;
   if (["P", "S", "B", "K", "D", "R", "I"].includes(tile)) {
     const houseMaps = {
       P: "player_house",
@@ -88,44 +167,87 @@ export function movePlayer(dx, dy, dirStr) {
       R: "tavern",
       I: "tavern",
     };
-    enterHouse(houseMaps[tile], nx, ny);
-    return;
+    afterMove = () => enterHouse(houseMaps[tile], nx, ny);
+  } else if (tile === "-" || (cMap !== "village" && tile === "0" && originY >= 6)) {
+    afterMove = () => exitHouse();
+  } else {
+    const walkableTiles = ["G", ".", "=", "F", "S"];
+    let canWalk = walkableTiles.includes(tile);
+    if (tile === "X") {
+      const isDockArea = nx >= 14 && nx <= 16 && ny >= 17 && ny <= 18;
+      const hasDocks =
+        constr.docks.status === "built" || constr.pier.status === "built";
+      if (isDockArea && hasDocks) canWalk = true;
+    }
+    if (!canWalk) {
+      player.set({ x: originX, y: originY, dir: dirStr });
+      return;
+    }
   }
 
-  // Exit door trigger
-  if (tile === "-" || (cMap !== "village" && tile === "0" && p.y >= 6)) {
-    exitHouse();
-    return;
-  }
+  walking = true;
+  const started = performance.now();
 
-  const walkableTiles = ["G", ".", "=", "F", "S"]; // S = Shallow water
-  let canWalk = false;
+  const tick = (now) => {
+    if (get(phase) !== "playing") {
+      walking = false;
+      walkFrame = 0;
+      player.set({ x: originX, y: originY, dir: dirStr });
+      updateCamera();
+      return;
+    }
 
-  if (walkableTiles.includes(tile)) {
-    canWalk = true;
-  } else if (tile === "X") {
-    const isDockArea = nx >= 14 && nx <= 16 && ny >= 17 && ny <= 18;
-    const hasDocks =
-      constr.docks.status === "built" || constr.pier.status === "built";
-    if (isDockArea && hasDocks) canWalk = true;
-  }
-
-  player.set({
-    x: canWalk ? nx : p.x,
-    y: canWalk ? ny : p.y,
-    dir: dirStr,
-  });
-
-  if (canWalk) {
+    const t = Math.min(1, (now - started) / STEP_MS);
+    player.set({
+      x: originX + dx * t,
+      y: originY + dy * t,
+      dir: dirStr,
+    });
     updateCamera();
-  }
+
+    if (t < 1) {
+      walkFrame = requestAnimationFrame(tick);
+      return;
+    }
+
+    walking = false;
+    walkFrame = 0;
+    player.set({ x: nx, y: ny, dir: dirStr });
+    updateCamera();
+
+    if (afterMove) {
+      onStepDone = null;
+      afterMove();
+      tryStep();
+      return;
+    }
+
+    if (onStepDone) {
+      const fn = onStepDone;
+      onStepDone = null;
+      fn();
+      return;
+    }
+
+    tryStep();
+  };
+
+  walkFrame = requestAnimationFrame(tick);
+}
+
+export function movePlayer(dx, dy, dirStr) {
+  const dir = Object.keys(VECTORS).find(
+    (name) => VECTORS[name][0] === dx && VECTORS[name][1] === dy
+  );
+  if (!dir) return;
+  setDirectionHeld(dirStr || dir, true);
 }
 
 export function getTileInFront() {
   const p = get(player);
   const cMap = get(currentMap);
-  let tx = p.x;
-  let ty = p.y;
+  let tx = Math.round(p.x);
+  let ty = Math.round(p.y);
   if (p.dir === "up") ty--;
   if (p.dir === "down") ty++;
   if (p.dir === "left") tx--;

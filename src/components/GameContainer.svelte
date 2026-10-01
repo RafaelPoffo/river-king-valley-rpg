@@ -14,7 +14,7 @@
     showCalendarModal,
   } from "../game/stores.js";
   import { checkSaveExists } from "../game/saveSystem.js";
-  import { movePlayer } from "../game/movement.js";
+  import { setDirectionHeld, releaseMovement } from "../game/movement.js";
   import {
     throwLine,
     startMinigame,
@@ -42,6 +42,7 @@
   import TavernQuestModal from "./TavernQuestModal.svelte";
   import CalendarModal from "./CalendarModal.svelte";
   import InventoryFullModal from "./InventoryFullModal.svelte";
+  import MuseumModal from "./MuseumModal.svelte";
 
   export let open = true;
 
@@ -56,6 +57,8 @@
 
   onMount(() => {
     window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("keyup", handleKeyup);
+    window.addEventListener("blur", releaseMovement);
     checkSaveExists();
     startClock();
     startAmbientLoop();
@@ -63,10 +66,26 @@
 
   onDestroy(() => {
     window.removeEventListener("keydown", handleKeydown);
+    window.removeEventListener("keyup", handleKeyup);
+    window.removeEventListener("blur", releaseMovement);
+    releaseMovement();
     if (clockInterval) clearInterval(clockInterval);
     if (ambientTimeout) clearTimeout(ambientTimeout);
     cleanupFishing();
   });
+
+  function directionFromKey(key) {
+    if (key === "ArrowUp" || key === "w" || key === "W") return "up";
+    if (key === "ArrowDown" || key === "s" || key === "S") return "down";
+    if (key === "ArrowLeft" || key === "a" || key === "A") return "left";
+    if (key === "ArrowRight" || key === "d" || key === "D") return "right";
+    return null;
+  }
+
+  function handleKeyup(e) {
+    const dir = directionFromKey(e.key);
+    if (dir) setDirectionHeld(dir, false);
+  }
 
   function startClock() {
     clockInterval = setInterval(() => {
@@ -159,14 +178,16 @@
     }
 
     if ($phase === "playing") {
+      const dir = directionFromKey(k);
+      if (dir) {
+        setDirectionHeld(dir, true);
+        return;
+      }
       if (k === "Enter") {
+        releaseMovement();
         phase.set("pause_menu");
         return;
       }
-      if (k === "ArrowUp" || k === "w") movePlayer(0, -1, "up");
-      if (k === "ArrowDown" || k === "s") movePlayer(0, 1, "down");
-      if (k === "ArrowLeft" || k === "a") movePlayer(-1, 0, "left");
-      if (k === "ArrowRight" || k === "d") movePlayer(1, 0, "right");
       if (k === " " || k === "Spacebar") interact();
     } else if ($phase === "fishing_aim" && (k === " " || k === "Spacebar")) {
       throwLine();
@@ -177,7 +198,7 @@
     } else if ($phase === "caught" && (k === " " || k === "Spacebar")) {
       resetAction("Use as setas para se mover.");
     } else if (
-      ["shop", "fish_log", "equipment", "carpenter", "pause_menu"].includes(
+      ["shop", "fish_log", "equipment", "carpenter", "pause_menu", "museum"].includes(
         $phase
       ) &&
       ["Escape", "x", "X"].includes(k)
@@ -223,6 +244,8 @@
         <BackpackModal />
       {:else if $phase === "shop"}
         <ShopModal />
+      {:else if $phase === "museum"}
+        <MuseumModal />
       {:else}
         <!-- Active Playing Canvas -->
         <GameCanvas {seaShadows} />

@@ -3,6 +3,7 @@
   import {
     phase,
     aimPower,
+    currentToolData,
     minigameBar,
     catchTargetCenter,
     catchTargetWidth,
@@ -23,7 +24,7 @@
     >
       <div
         class="absolute top-0 bottom-0 bg-[#4a9090]"
-        style={`width: ${($aimPower / 3.0) * 100}%;`}
+        style={`width: ${Math.min(100, ($aimPower / (($currentToolData?.maxDist || 1) + 0.99)) * 100)}%;`}
       />
     </div>
   </div>

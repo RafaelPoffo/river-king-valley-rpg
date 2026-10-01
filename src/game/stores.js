@@ -91,6 +91,7 @@ export const currentMap = writable("village");
 export const lastEnteringHouse = writable(null);
 export const deepSeaFishingActive = writable(false);
 export const lastWormHarvestDay = writable(0);
+export const lastFestivalClaim = writable(0);
 export const cameraX = writable(0);
 export const cameraY = writable(0);
 export const villagers = writable([...INITIAL_VILLAGERS]);
