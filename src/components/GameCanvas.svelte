@@ -91,28 +91,38 @@
 
     <!-- Player -->
     <div
-      class={`tile z-25 ${
-        $player.dir === "left"
-          ? "dir-left"
-          : $player.dir === "right"
-            ? "dir-right"
-            : ""
-      }`}
+      class="tile z-25"
       style="left: {$player.x * TILE_SIZE}px; top: {$player.y * TILE_SIZE}px;"
     >
-      {@html draw(SPRITES.player)}
-      <!-- Vara curta e linha saindo da ponta -->
       {#if $phase.startsWith("fishing_")}
-        <div
-          class={`absolute w-4 h-1 bg-black z-30 ${
+        <img
+          src={
             $player.dir === "up"
-              ? "-top-2 left-4"
-              : $player.dir === "down"
-                ? "top-5 left-4"
-                : $player.dir === "left"
-                  ? "-left-2 top-4"
-                  : "left-6 top-4"
-          }`}
+              ? "/assets/crystal_player_fish_up.png"
+              : $player.dir === "left"
+                ? "/assets/crystal_player_fish_left.png"
+                : $player.dir === "right"
+                  ? "/assets/crystal_player_fish_right.png"
+                  : "/assets/crystal_player_fish_down.png"
+          }
+          alt="Gold Fishing"
+          class="w-full h-full object-contain pointer-events-none select-none"
+          style="image-rendering: pixelated;"
+        />
+      {:else}
+        <img
+          src={
+            $player.dir === "up"
+              ? "/assets/crystal_player_up.png"
+              : $player.dir === "left"
+                ? "/assets/crystal_player_left.png"
+                : $player.dir === "right"
+                  ? "/assets/crystal_player_right.png"
+                  : "/assets/crystal_player_down.png"
+          }
+          alt="Gold"
+          class="w-full h-full object-contain pointer-events-none select-none"
+          style="image-rendering: pixelated;"
         />
       {/if}
     </div>

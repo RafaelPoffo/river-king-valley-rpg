@@ -412,15 +412,21 @@ export const SPRITES = {
   ],
 };
 
-export function draw(arr) {
+export function draw(arr, alt = "") {
   if (!arr) return "";
-  let svg =
-    '<svg viewBox="0 0 8 8" width="100%" height="100%" shape-rendering="crispEdges" class="drop-shadow-md">';
-  arr.forEach((row, y) =>
-    [...row].forEach((c, x) => {
-      if (c !== ".")
-        svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="${PALS[c]}"/>`;
-    })
-  );
-  return svg + "</svg>";
+  if (typeof arr === "string") {
+    return `<img src="${arr}" alt="${alt || 'sprite'}" loading="lazy" class="w-full h-full object-contain pixelated" style="image-rendering: pixelated; display: block;" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-full h-full bg-blue-300 border border-black\\'></div>'" />`;
+  }
+  if (Array.isArray(arr)) {
+    let svg =
+      '<svg viewBox="0 0 8 8" width="100%" height="100%" shape-rendering="crispEdges" class="drop-shadow-md">';
+    arr.forEach((row, y) =>
+      [...row].forEach((c, x) => {
+        if (c !== ".")
+          svg += `<rect x="${x}" y="${y}" width="1" height="1" fill="${PALS[c]}"/>`;
+      })
+    );
+    return svg + "</svg>";
+  }
+  return "";
 }

@@ -38,7 +38,7 @@
           class="flex items-center justify-between border border-black p-2 bg-blue-50 retro-font text-[8px]"
         >
           <div class="flex items-center gap-2">
-            <div class="w-8 h-8">{@html draw(item.sprite)}</div>
+            <div class="w-8 h-8 flex items-center justify-center">{@html draw(item.sprite, item.name)}</div>
             <span>{item.name} ({item.weight}kg)</span>
           </div>
           <span>⭐ {item.stars}</span>
@@ -47,7 +47,7 @@
     </div>
     <div class="border-t-2 border-black pt-2">
       <h4 class="retro-font text-[9px] mb-2">
-        DOAR PEIXE DA MOCHILA:
+        DOAR DA MOCHILA:
       </h4>
       <div class="grid grid-cols-5 gap-2 max-h-28 overflow-y-auto">
         {#each $inventory as fish, idx}
@@ -55,7 +55,7 @@
             class="border-2 border-black p-1 flex flex-col items-center bg-[#9ce6e6] hover:bg-emerald-200"
             on:click={() => donateFishToAquarium(idx)}
           >
-            <div class="w-6 h-6">{@html draw(fish.sprite)}</div>
+            <div class="w-6 h-6 flex items-center justify-center">{@html draw(fish.sprite, fish.name)}</div>
             <span class="retro-font text-[6px] truncate w-full">
               {fish.name}
             </span>

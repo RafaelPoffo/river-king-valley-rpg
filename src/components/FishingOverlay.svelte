@@ -69,23 +69,39 @@
     class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center"
   >
     <div
-      class="bg-white border-8 border-black p-6 text-center w-72 flex flex-col items-center pixel-shadow"
+      class="bg-white border-8 border-black p-6 text-center w-80 flex flex-col items-center pixel-shadow"
     >
-      <div class="text-black retro-font text-[9px] mb-4">
+      <div class="text-black retro-font text-[9px] mb-3">
         {$activeFish.type === "treasure"
           ? "ARTEFATO DESCOBERTO!"
-          : "CAPTURADO!"}
+          : $activeFish.stage
+            ? "POKÉMON CAPTURADO!"
+            : "CAPTURADO!"}
       </div>
       <div
-        class="w-24 h-24 border-4 border-black mb-4 flex items-center justify-center bg-[#9ce6e6] {$activeFish.isShiny
+        class="w-24 h-24 border-4 border-black mb-3 flex items-center justify-center bg-[#9ce6e6] p-2 {$activeFish.isShiny
           ? 'shiny-effect'
           : ''}"
       >
-        {@html draw($activeFish.sprite)}
+        {@html draw($activeFish.sprite, $activeFish.name)}
       </div>
-      <h4 class="retro-font text-black text-[10px] mb-1">
+      <h4 class="retro-font text-black text-[11px] mb-1">
         {$activeFish.isShiny ? "✨ " : ""}{$activeFish.name}
       </h4>
+      {#if $activeFish.types}
+        <div class="flex gap-1 mb-2">
+          {#each $activeFish.types as t}
+            <span class="retro-font text-[7px] px-1.5 py-0.5 bg-blue-600 text-white rounded">
+              {t}
+            </span>
+          {/each}
+          {#if $activeFish.stage}
+            <span class="retro-font text-[7px] px-1.5 py-0.5 bg-gray-700 text-white rounded">
+              Nível {$activeFish.stage}
+            </span>
+          {/if}
+        </div>
+      {/if}
       <div class="retro-font text-[8px] text-gray-600 mb-4">
         {$activeFish.type === "treasure"
           ? $activeFish.desc

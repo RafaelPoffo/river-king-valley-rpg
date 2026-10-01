@@ -115,8 +115,8 @@
             class="border-2 border-black p-2 flex justify-between items-center bg-[#9ce6e6]"
           >
             <div class="flex items-center gap-2">
-              <div class="w-8 h-8 {fish.isShiny ? 'shiny-effect' : ''}">
-                {@html draw(fish.sprite)}
+              <div class="w-8 h-8 flex items-center justify-center {fish.isShiny ? 'shiny-effect' : ''}">
+                {@html draw(fish.sprite, fish.name)}
               </div>
               <div class="retro-font text-[8px]">
                 {fish.name} ({fish.weight}kg)

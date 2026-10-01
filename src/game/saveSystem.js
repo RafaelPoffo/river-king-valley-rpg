@@ -1,5 +1,7 @@
 import { get } from "svelte/store";
 import {
+  gameMode,
+  savedGameMode,
   fishLog,
   money,
   playerName,
@@ -33,10 +35,21 @@ import { updateCamera } from "./movement.js";
 import { generateDailyQuest } from "./quests.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES } from "./constants.js";
 
-const SAVE_KEY = "pkr_fishing_rpg_v17";
+const SAVE_KEY = "pkr_fishing_rpg_v18";
 
 export function checkSaveExists() {
-  const exists = !!localStorage.getItem(SAVE_KEY);
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed.gameMode) {
+        savedGameMode.set(parsed.gameMode);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+  const exists = !!raw;
   hasSaveGame.set(exists);
   return exists;
 }
@@ -44,6 +57,7 @@ export function checkSaveExists() {
 export function saveGame() {
   try {
     const data = {
+      gameMode: get(gameMode),
       log: get(fishLog),
       money: get(money),
       name: get(playerName),
@@ -68,6 +82,7 @@ export function saveGame() {
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(data));
     hasSaveGame.set(true);
+    savedGameMode.set(get(gameMode));
   } catch (e) {
     console.error("Erro ao salvar jogo", e);
   }
@@ -78,6 +93,8 @@ export function loadGame() {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
       const data = JSON.parse(saved);
+      gameMode.set(data.gameMode || "normal");
+      savedGameMode.set(data.gameMode || "normal");
       fishLog.set(data.log || {});
       money.set(data.money ?? 500);
       playerName.set(data.name || "");
@@ -116,7 +133,9 @@ export function deleteSave() {
   }
 }
 
-export function newGame() {
+export function newGame(selectedMode = "normal") {
+  gameMode.set(selectedMode);
+  savedGameMode.set(selectedMode);
   fishLog.set({});
   money.set(500);
   day.set(1);

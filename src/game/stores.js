@@ -1,4 +1,4 @@
-import { writable, derived } from "svelte/store";
+import { writable, derived, get } from "svelte/store";
 import {
   INITIAL_CONSTRUCTIONS,
   INITIAL_UPGRADES,
@@ -7,7 +7,21 @@ import {
   BAITS,
   SEASONS,
   FESTIVALS,
+  FISH_DB,
 } from "./constants.js";
+import { POKEMON_DB } from "./pokemonConstants.js";
+
+// Game Mode: 'normal' | 'pokemon'
+export const gameMode = writable("normal");
+export const savedGameMode = writable("normal");
+
+export const currentDatabase = derived(gameMode, ($mode) => {
+  return $mode === "pokemon" ? POKEMON_DB : FISH_DB;
+});
+
+export function getActiveDatabase() {
+  return get(gameMode) === "pokemon" ? POKEMON_DB : FISH_DB;
+}
 
 // Game phase: 'menu' | 'playing' | 'pause_menu' | 'shop' | 'carpenter' | 'fish_log' | 'equipment' | 'dialog' | 'sailing' | 'fishing_aim' | 'fishing_wait' | 'fishing_approach' | 'fishing_bite' | 'fishing_minigame' | 'caught' | 'fade'
 export const phase = writable("menu");

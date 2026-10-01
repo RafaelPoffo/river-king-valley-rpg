@@ -1,10 +1,14 @@
 import { draw, SPRITES } from "./sprites.js";
 
+function imgTile(src, alt = "Tile") {
+  return `<img src="${src}" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="${alt}" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-full h-full bg-[#578839]\\'></div>'" />`;
+}
+
 export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
   if (x >= 14 && x <= 16 && y >= 17 && y <= 18) {
-    if (constructions?.docks?.status === "built") return draw(SPRITES.pier);
+    if (constructions?.docks?.status === "built") return imgTile("/assets/crystal_pier.png", "Doca");
     if (constructions?.docks?.status === "building")
-      return draw(SPRITES.wood_pile);
+      return imgTile("/assets/crystal_sign.png", "Obras");
   }
   if (
     x >= 15 &&
@@ -14,65 +18,65 @@ export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
     constructions?.boat?.status === "built" &&
     !deepSeaFishingActive
   ) {
-    return draw(x === 15 ? SPRITES.boat_front : SPRITES.boat_back);
+    return imgTile(x === 15 ? "/assets/crystal_boat_front.png" : "/assets/crystal_boat_back.png", "S.S. Aqua");
   }
   if (
     constructions?.aquarium_building?.status === "built" &&
     x === 8 &&
     y === 7
   ) {
-    return draw(SPRITES.house_top);
+    return imgTile("/assets/crystal_roof_mid.png", "Centro Pokémon");
   }
 
   switch (char) {
     case "T":
-      return `<img src="/assets/Arvore.png" onerror="this.onerror=null; this.outerHTML='${draw(SPRITES.tree).replace(/'/g, "\\'")}'" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="Árvore" />`;
+      return imgTile("/assets/Arvore.png", "Árvore Johto");
     case "G":
-      return `<img src="/assets/Gramado.png" onerror="this.onerror=null; this.outerHTML='${draw(SPRITES.grass).replace(/'/g, "\\'")}'" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="Grama" />`;
+      return imgTile("/assets/Gramado.png", "Grama Johto");
     case "F":
-      return `<img src="/assets/Flor1.png" onerror="this.onerror=null; this.outerHTML='${draw(SPRITES.flower).replace(/'/g, "\\'")}'" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="Flor" />`;
+      return imgTile("/assets/Flor1.png", "Flores Johto");
     case "~":
-      return `<img src="/assets/Agua.png" onerror="this.onerror=null; this.outerHTML='${draw(SPRITES.water).replace(/'/g, "\\'")}'" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="Água" />`;
+      return imgTile("/assets/Agua.png", "Água Johto");
     case "S":
-      return draw(SPRITES.shallow);
+      return imgTile("/assets/crystal_shallow.png", "Água Rasa / Margem");
     case "X":
-      return `<img src="/assets/Agua.png" onerror="this.onerror=null; this.outerHTML='${draw(SPRITES.deep_water).replace(/'/g, "\\'")}'" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="Água Profunda" />`;
+      return imgTile("/assets/crystal_deep_water.png", "Água Profunda");
     case "O":
-      return `<img src="/assets/Agua.png" onerror="this.onerror=null; this.outerHTML='${draw(SPRITES.water).replace(/'/g, "\\'")}'" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="Água" />`;
+      return imgTile("/assets/Agua.png", "Água Johto");
     case "H":
-      return draw(SPRITES.house_top);
+      return imgTile("/assets/crystal_roof_mid.png", "Telhado Johto");
     case "P":
-      return draw(SPRITES.house_bot);
+      return imgTile("/assets/crystal_wall_left.png", "Casa Johto");
     case "0":
     case "B":
       return draw(SPRITES.void);
     case ".":
-      return draw(SPRITES.floor);
+      return imgTile("/assets/crystal_path_pure.png", "Caminho Johto");
     case "K":
-      return draw(SPRITES.carpenter);
+      return imgTile("/assets/crystal_npc_carpenter.png", "Mestre Gema");
     case "D":
     case "R":
     case "I":
-      return draw(SPRITES.door);
+      return imgTile("/assets/crystal_door.png", "Porta");
     case "C":
-      return draw(SPRITES.counter);
+      return imgTile("/assets/crystal_counter.png", "Balcão");
     case "M":
-      return draw(SPRITES.counter);
+      return imgTile("/assets/crystal_counter.png", "Balcão");
     case "#":
-      return draw(SPRITES.wall_int);
+      return imgTile("/assets/crystal_wall_int.png", "Parede Interna");
     case "=":
-      return draw(SPRITES.floor_wood);
+      return imgTile("/assets/crystal_floor_wood.png", "Piso Madeira");
     case "_":
-      return draw(SPRITES.bed);
+      return imgTile("/assets/crystal_bed.png", "Cama do Jogador");
     case "+":
-      return draw(SPRITES.table);
+      return imgTile("/assets/crystal_table.png", "Mesa");
     case "h":
-      return draw(SPRITES.chair);
+      return imgTile("/assets/crystal_chair.png", "Cadeira");
     case "Q":
     case "A":
-      return draw(SPRITES.quest_board);
+      return imgTile("/assets/crystal_sign.png", "Placa de Avisos");
     case "U":
-      return draw(SPRITES.wood_pile);
+      return imgTile("/assets/crystal_sign.png", "Madeiras");
     default:
       return "";
   }

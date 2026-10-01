@@ -1,16 +1,21 @@
 import { get } from "svelte/store";
 import { FISH_DB } from "./constants.js";
-import { dailyQuest, money, currentMessage } from "./stores.js";
+import { POKEMON_DB } from "./pokemonConstants.js";
+import { gameMode, dailyQuest, money, currentMessage } from "./stores.js";
 
 export function generateDailyQuest() {
-  const fishPool = FISH_DB.filter((f) => f.type === "fish" && f.rarity > 0);
-  const randFish = fishPool[Math.floor(Math.random() * fishPool.length)];
+  const isPokeMode = get(gameMode) === "pokemon";
+  const database = isPokeMode ? POKEMON_DB : FISH_DB;
+  const pool = database.filter(
+    (f) => f.type === "fish" && f.rarity > 0 && !f.id.startsWith("poke_") && !f.id.includes("bota") && !f.id.includes("lata")
+  );
+  const randFish = pool[Math.floor(Math.random() * pool.length)] || pool[0];
   dailyQuest.set({
     fishId: randFish.id,
     fishName: randFish.name,
     targetCount: Math.floor(Math.random() * 2) + 1,
     current: 0,
-    reward: randFish.price * 6,
+    reward: Math.max(100, Math.floor(randFish.price * 2.5)),
     completed: false,
   });
 }

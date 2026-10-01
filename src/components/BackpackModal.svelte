@@ -67,8 +67,8 @@
                 class="w-full flex flex-col items-center cursor-pointer mt-2 bg-transparent border-0 p-0"
                 on:click={() => selectBackpackItem(i)}
               >
-                <div class="w-8 h-8 pointer-events-none">
-                  {@html draw(fish.sprite)}
+                <div class="w-8 h-8 pointer-events-none flex items-center justify-center">
+                  {@html draw(fish.sprite, fish.name)}
                 </div>
                 <div class="retro-font text-[7px] text-center truncate w-full mt-1">
                   {fish.name}

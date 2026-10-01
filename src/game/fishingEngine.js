@@ -1,6 +1,8 @@
 import { get } from "svelte/store";
 import { FISH_DB } from "./constants.js";
+import { POKEMON_DB } from "./pokemonConstants.js";
 import {
+  gameMode,
   phase,
   player,
   aimPower,
@@ -174,6 +176,8 @@ function updateApproach(time) {
 }
 
 export function rollFishByZone(zone) {
+  const isPokeMode = get(gameMode) === "pokemon";
+  const database = isPokeMode ? POKEMON_DB : FISH_DB;
   const night = get(isNight);
   const deepSea = get(deepSeaFishingActive);
   const biomeTarget = deepSea ? "deep_sea" : get(fishingBiome);
@@ -183,31 +187,34 @@ export function rollFishByZone(zone) {
 
   const trashChance = bait === "sem_isca" ? 0.35 : 0.05;
   if (Math.random() < trashChance) {
-    const trashes = FISH_DB.filter((f) => f.rarity === 1 && f.type === "fish");
-    const trashBase = trashes[Math.floor(Math.random() * trashes.length)];
+    const trashes = database.filter((f) => f.rarity === 1 && f.type === "fish" && f.desc.includes("descart") || f.id.includes("bota") || f.id.includes("lata") || f.id.includes("bola"));
+    const fallbackTrashes = trashes.length > 0 ? trashes : database.filter((f) => f.rarity === 1);
+    const trashBase = fallbackTrashes[Math.floor(Math.random() * fallbackTrashes.length)];
     return {
       ...trashBase,
       stars: 1,
       isShiny: false,
       priceFinal: trashBase.price,
-      weight: trashBase.minW,
+      weight: trashBase.weight || trashBase.minW,
     };
   }
 
   if (
     zone >= 2 &&
     Math.random() < 0.05 &&
-    (biomeTarget === "sea" || biomeTarget === "deep_sea")
+    (biomeTarget === "sea" || biomeTarget === "deep_sea" || isPokeMode)
   ) {
-    const treasures = FISH_DB.filter((f) => f.type === "treasure");
-    const treasureBase =
-      treasures[Math.floor(Math.random() * treasures.length)];
-    return {
-      ...treasureBase,
-      isShiny: false,
-      priceFinal: 0,
-      weight: treasureBase.minW,
-    };
+    const treasures = database.filter((f) => f.type === "treasure");
+    if (treasures.length > 0) {
+      const treasureBase =
+        treasures[Math.floor(Math.random() * treasures.length)];
+      return {
+        ...treasureBase,
+        isShiny: false,
+        priceFinal: treasureBase.price,
+        weight: treasureBase.weight || treasureBase.minW,
+      };
+    }
   }
 
   let rarityTarget = 1;
@@ -235,25 +242,64 @@ export function rollFishByZone(zone) {
                 : 6;
   }
 
-  let pool = FISH_DB.filter(
-    (f) =>
-      f.type === "fish" &&
-      f.rarity === rarityTarget &&
-      (f.biome === biomeTarget || f.biome === "all") &&
-      f.seasons.includes(curSeason)
-  );
+  let pool = [];
 
-  if (pool.length === 0) {
-    pool = FISH_DB.filter(
+  if (isPokeMode) {
+    // No modo Pokémon:
+    // Zona 1 (Água Rasa): mais fácil pegar nível 1
+    // Zona 2 (Água Média): mais fácil pegar nível 2
+    // Zona 3 (Água Funda): mais fácil pegar nível 3 e Pokémon com preferDeep (ex: Gyarados, Lapras, Mantine)
+    let targetStage = 1;
+    const stageRoll = Math.random() * 100;
+    if (zone === 1) {
+      // 75% stage 1, 22% stage 2, 3% stage 3
+      targetStage = stageRoll < 75 ? 1 : stageRoll < 97 ? 2 : 3;
+    } else if (zone === 2) {
+      // 25% stage 1, 65% stage 2, 10% stage 3
+      targetStage = stageRoll < 25 ? 1 : stageRoll < 90 ? 2 : 3;
+    } else {
+      // Zona 3 (Água Funda): 5% stage 1, 35% stage 2, 60% stage 3
+      targetStage = stageRoll < 5 ? 1 : stageRoll < 40 ? 2 : 3;
+    }
+
+    pool = database.filter((f) => {
+      if (f.type !== "fish" || f.id.startsWith("poke_") || f.id.includes("bola")) return false;
+      const biomeMatch = f.biome === biomeTarget || f.biome === "all";
+      if (!biomeMatch) return false;
+
+      // Se estamos no fundo (zona 3), pokémon com preferDeep (como Gyarados, Lapras, Mantine)
+      // têm alta afinidade e são incluídos diretamente
+      if (zone === 3 && f.preferDeep) return true;
+
+      // Preferência de estágio por zona
+      return f.stage === targetStage;
+    });
+
+    if (pool.length === 0) {
+      pool = database.filter((f) => f.type === "fish" && !f.id.startsWith("poke_") && (f.biome === biomeTarget || f.biome === "all"));
+    }
+  } else {
+    pool = database.filter(
       (f) =>
-        f.type === "fish" && (f.biome === biomeTarget || f.biome === "all")
+        f.type === "fish" &&
+        f.rarity === rarityTarget &&
+        (f.biome === biomeTarget || f.biome === "all") &&
+        f.seasons.includes(curSeason)
     );
+
+    if (pool.length === 0) {
+      pool = database.filter(
+        (f) =>
+          f.type === "fish" && (f.biome === biomeTarget || f.biome === "all")
+      );
+    }
   }
-  if (pool.length === 0) pool = FISH_DB.filter((f) => f.type === "fish");
+
+  if (pool.length === 0) pool = database.filter((f) => f.type === "fish");
 
   const fishBase = pool[Math.floor(Math.random() * pool.length)];
-  let stars = rarityTarget >= 5 ? 5 : rarityTarget >= 3 ? 3 : 1;
-  let isShiny = stars === 5 && Math.random() < 0.05;
+  let stars = (fishBase.stage === 3 || fishBase.rarity >= 5) ? 5 : (fishBase.stage === 2 || fishBase.rarity >= 3) ? 3 : 1;
+  let isShiny = (stars >= 5 || fishBase.preferDeep) && Math.random() < 0.08;
   if (isShiny) stars = 6;
 
   return {
@@ -401,14 +447,16 @@ export function finishCatchSequence(finalFish) {
 export function useNetAtShore(biome) {
   if (!get(eqNetId)) return;
   phase.set("caught");
+  const isPokeMode = get(gameMode) === "pokemon";
+  const database = isPokeMode ? POKEMON_DB : FISH_DB;
   const curSeason = get(seasonIndex);
-  let pool = FISH_DB.filter(
+  let pool = database.filter(
     (f) =>
-      (f.type === "net" || f.rarity <= 2) &&
+      (f.type === "net" || f.rarity <= 2 || f.stage === 1) &&
       (f.biome === biome || f.biome === "all") &&
-      f.seasons.includes(curSeason)
+      (isPokeMode || f.seasons.includes(curSeason))
   );
-  if (pool.length === 0) pool = FISH_DB.filter((f) => f.type === "net");
+  if (pool.length === 0) pool = database.filter((f) => f.type === "fish");
   const caughtBase = pool[Math.floor(Math.random() * pool.length)];
   const fishObj = processCaughtFish(caughtBase);
   addFishToInventory(fishObj);
