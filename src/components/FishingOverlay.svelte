@@ -26,7 +26,7 @@
       <div
         class="absolute top-0 bottom-0 bg-[#4a9090]"
         style={`width: ${Math.min(100, ($aimPower / (($currentToolData?.maxDist || 1) + 0.99)) * 100)}%;`}
-      />
+      ></div>
     </div>
   </div>
 {/if}
@@ -56,11 +56,11 @@
         style={`left: ${
           $catchTargetCenter - $catchTargetWidth / 2
         }%; width: ${$catchTargetWidth}%;`}
-      />
+      ></div>
       <div
         class="absolute top-0 bottom-0 w-2 bg-black z-10"
         style={`left: calc(${$minigameBar}% - 4px);`}
-      />
+      ></div>
     </div>
   </div>
 {/if}

@@ -2,6 +2,7 @@
   import { PHASES } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
   import { phase, museum, currentDatabase } from "../game/stores.js";
+  import CollectionMilestones from "./CollectionMilestones.svelte";
 
   $: relics = $currentDatabase.filter((entry) => entry.type === "treasure");
   $: found = relics.filter((entry) => $museum[entry.id]).length;
@@ -21,6 +22,7 @@
     <p class="retro-font text-[7px] text-gray-600 leading-relaxed">
       Tesouros fisgados no mar vão direto para o acervo.
     </p>
+    <CollectionMilestones kind="museum" />
     <div class="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
       {#each relics as relic}
         {@const owned = $museum[relic.id]}

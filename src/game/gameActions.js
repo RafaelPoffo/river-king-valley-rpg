@@ -30,6 +30,7 @@ import {
   showAquariumModal,
   showTavernQuestModal,
   showCalendarModal,
+  showKitchenModal,
   currentFestival,
   lastFestivalClaim,
   ownedRods,
@@ -49,6 +50,20 @@ import {
   TOURNAMENT_CLOSE_MINUTES,
 } from "./constants.js";
 import { todaysTournament, submitTournament, formatScore, dayKey } from "./tournament.js";
+import { claimCollectionRewards, rewardMessage } from "./collections.js";
+import {
+  talkTo,
+  friendLine,
+  heartsText,
+  hasPerk,
+  captainTip,
+  pickGift,
+  canGiftToday,
+  giveGift,
+  tasteLabel,
+  friendPrice,
+} from "./friendship.js";
+import { openJoeQuest } from "./joeQuest.js";
 import {
   updateCamera,
   getTileInFront,
@@ -179,8 +194,9 @@ export function orderConstruction(key) {
     return;
   }
   const curMoney = get(money);
-  if (curMoney >= c.cost) {
-    money.set(curMoney - c.cost);
+  const cost = friendPrice(c.cost);
+  if (curMoney >= cost) {
+    money.set(curMoney - cost);
     constr[key].status = "ordered";
     constructions.set({ ...constr });
     saveGame();
@@ -196,8 +212,9 @@ export function buyUpgrade(key) {
   const upObj = get(upgrades);
   const up = upObj[key];
   const curMoney = get(money);
-  if (!up.bought && curMoney >= up.cost) {
-    money.set(curMoney - up.cost);
+  const cost = friendPrice(up.cost);
+  if (!up.bought && curMoney >= cost) {
+    money.set(curMoney - cost);
     upObj[key].bought = true;
     upgrades.set({ ...upObj });
     saveGame();
@@ -224,10 +241,10 @@ export function donateFishToAquarium(index) {
       stars: fish.stars,
     },
   }));
-  inv.splice(index, 1);
-  inventory.set([...inv]);
+  inventory.set(inv.filter((_, i) => i !== index));
+  const earned = claimCollectionRewards("aquarium");
   saveGame();
-  showRPGMessage(`Você doou ${fish.name} ao Aquário!`);
+  showRPGMessage(`Você doou ${fish.name} ao Aquário!${rewardMessage("aquarium", earned)}`);
 }
 
 export function confirmReplaceInventory() {
@@ -327,6 +344,64 @@ function closeDialog() {
   showRPGMessage("Setas para andar. [ENTER] para o Menu.");
 }
 
+function openKitchen() {
+  phase.set(PHASES.DIALOG);
+  currentMessage.set("Ana: \"O que vai ser hoje?\"");
+  dialogActions.set({ X: closeKitchen, ESCAPE: closeKitchen });
+  showKitchenModal.set(true);
+}
+
+export function closeKitchen() {
+  showKitchenModal.set(false);
+  saveGame();
+  closeDialog();
+}
+
+function openNpcDialog(npc, atTavern) {
+  talkTo(npc.id);
+  saveGame();
+  phase.set(PHASES.DIALOG);
+
+  let line = atTavern ? npc.dialogTavern : friendLine(npc);
+  if (npc.id === "veteran" && hasPerk("veteran")) {
+    const tip = captainTip();
+    if (tip) line = `${line} ${tip}`;
+  }
+
+  const actions = { " ": closeDialog };
+  const options = ["[SPACE] Tchau"];
+
+  const giftIndex = pickGift(npc);
+  if (giftIndex >= 0 && canGiftToday(npc.id)) {
+    options.push(`[G] Dar ${get(inventory)[giftIndex].name}`);
+    actions.G = () => {
+      const result = giveGift(npc, giftIndex);
+      saveGame();
+      const reaction = result.loved
+        ? `${npc.name}: "Uau, ${result.fish.name}! Eu adoro ${tasteLabel(npc)}!"`
+        : `${npc.name}: "Obrigado pelo ${result.fish.name}!"`;
+      const perk = result.unlockedPerk ? ` ${PERK_MESSAGES[npc.id]}` : "";
+      currentMessage.set(`${reaction} ${heartsText(npc.id)}${perk}`);
+      dialogActions.set({ " ": closeDialog });
+    };
+  }
+
+  if (npc.id === "old_joe" && hasPerk("old_joe")) {
+    options.push("[J] A lenda");
+    actions.J = openJoeQuest;
+  }
+
+  currentMessage.set(`${npc.name} ${heartsText(npc.id)}: "${line}" ${options.join(" / ")}`);
+  dialogActions.set(actions);
+}
+
+const PERK_MESSAGES = {
+  veteran: "🎉 Thomas agora te dá dicas de peixes raros do mar!",
+  carpenter: "🎉 Gema agora dá 10% de desconto na oficina!",
+  anna: "🎉 Ana agora cozinha seus pratos pela metade do preço!",
+  old_joe: "🎉 Joe quer te contar a lenda do Rei do Rio! Fale com ele de novo.",
+};
+
 function openTournamentStall() {
   const { name, rule, entry, rivals } = todaysTournament();
   phase.set(PHASES.DIALOG);
@@ -390,18 +465,7 @@ export function interact() {
 
   if (clickedNpc) {
     const loc = getNpcLocation(clickedNpc, mins, curDay);
-    const msg =
-      loc.map === "tavern"
-        ? clickedNpc.dialogTavern
-        : clickedNpc.dialogNormal;
-    phase.set(PHASES.DIALOG);
-    currentMessage.set(`${clickedNpc.name}: "${msg}"`);
-    dialogActions.set({
-      " ": () => {
-        phase.set(PHASES.PLAYING);
-        showRPGMessage("Setas para andar. [ENTER] para o Menu.");
-      },
-    });
+    openNpcDialog(clickedNpc, loc.map === "tavern");
     return;
   }
 
@@ -487,7 +551,7 @@ export function interact() {
     } else if (cMap === "carpenter_shop") {
       phase.set(PHASES.CARPENTER);
     } else if (cMap === "tavern") {
-      showRPGMessage("Ana: Bem-vindo! Veja o quadro de missões.");
+      openKitchen();
     }
   } else if (target.tile === "Q") {
     showTavernQuestModal.set(true);

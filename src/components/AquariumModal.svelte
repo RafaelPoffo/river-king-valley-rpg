@@ -2,6 +2,7 @@
   import { draw } from "../game/sprites.js";
   import { showAquariumModal, aquarium, inventory } from "../game/stores.js";
   import { donateFishToAquarium } from "../game/gameActions.js";
+  import CollectionMilestones from "./CollectionMilestones.svelte";
 </script>
 
 <div
@@ -23,6 +24,7 @@
         X
       </button>
     </div>
+    <CollectionMilestones kind="aquarium" />
     <div
       class="max-h-48 overflow-y-auto space-y-2 border-2 border-black p-2"
     >

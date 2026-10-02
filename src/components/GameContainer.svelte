@@ -1,35 +1,22 @@
 <script>
-  import { PHASES, CLOSABLE_SCREENS, CANCELABLE_FISHING } from "../game/phases.js";
+  import { PHASES } from "../game/phases.js";
   import { onMount, onDestroy } from "svelte";
   import {
     phase,
     seasonIndex,
     currentWeather,
-    inGameMinutes,
     currentMap,
-    eveningWarned,
-    deepSeaFishingActive,
-    dialogActions,
     showAquariumModal,
     showTavernQuestModal,
     showCalendarModal,
+    showKitchenModal,
   } from "../game/stores.js";
   import { checkSaveExists } from "../game/saveSystem.js";
-  import { todaysTournament } from "../game/tournament.js";
-  import { setDirectionHeld, releaseMovement, isInterior } from "../game/movement.js";
-  import {
-    throwLine,
-    startMinigame,
-    attemptCatch,
-    resetAction,
-    cleanupFishing,
-  } from "../game/fishingEngine.js";
-  import {
-    interact,
-    returnFromDeepSea,
-    forceSleep,
-    showRPGMessage,
-  } from "../game/gameActions.js";
+  import { cleanupFishing } from "../game/fishingEngine.js";
+  import { attachKeyboard } from "../game/input.js";
+  import { startClock } from "../game/clock.js";
+  import { startAudio } from "../game/audio.js";
+  import { attachGamepad } from "../game/gamepad.js";
 
   import MainMenu from "./MainMenu.svelte";
   import GameCanvas from "./GameCanvas.svelte";
@@ -45,6 +32,8 @@
   import CalendarModal from "./CalendarModal.svelte";
   import InventoryFullModal from "./InventoryFullModal.svelte";
   import MuseumModal from "./MuseumModal.svelte";
+  import KitchenModal from "./KitchenModal.svelte";
+  import TouchControls from "./TouchControls.svelte";
 
   export let open = true;
 
@@ -54,73 +43,38 @@
     { x: 15, y: 22, vx: 0.02, vy: -0.01, active: true },
   ];
 
-  let clockInterval = null;
   let ambientTimeout = null;
+  let stopClock = null;
+  let detachKeyboard = null;
+  let stopAudio = null;
+  let detachGamepad = null;
+  let scale = 1;
+  const isTouch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+
+  function fitToScreen() {
+    scale = Math.min(1, window.innerWidth / 824, window.innerHeight / 624);
+  }
 
   onMount(() => {
-    window.addEventListener("keydown", handleKeydown);
-    window.addEventListener("keyup", handleKeyup);
-    window.addEventListener("blur", releaseMovement);
+    detachKeyboard = attachKeyboard(() => open);
+    stopClock = startClock();
+    stopAudio = startAudio();
+    detachGamepad = attachGamepad(() => open);
+    fitToScreen();
+    window.addEventListener("resize", fitToScreen);
     checkSaveExists();
-    startClock();
     startAmbientLoop();
   });
 
   onDestroy(() => {
-    window.removeEventListener("keydown", handleKeydown);
-    window.removeEventListener("keyup", handleKeyup);
-    window.removeEventListener("blur", releaseMovement);
-    releaseMovement();
-    if (clockInterval) clearInterval(clockInterval);
+    detachKeyboard?.();
+    stopClock?.();
+    stopAudio?.();
+    detachGamepad?.();
+    window.removeEventListener("resize", fitToScreen);
     if (ambientTimeout) clearTimeout(ambientTimeout);
     cleanupFishing();
   });
-
-  function directionFromKey(key) {
-    if (key === "ArrowUp" || key === "w" || key === "W") return "up";
-    if (key === "ArrowDown" || key === "s" || key === "S") return "down";
-    if (key === "ArrowLeft" || key === "a" || key === "A") return "left";
-    if (key === "ArrowRight" || key === "d" || key === "D") return "right";
-    return null;
-  }
-
-  function handleKeyup(e) {
-    const dir = directionFromKey(e.key);
-    if (dir) setDirectionHeld(dir, false);
-  }
-
-  function startClock() {
-    clockInterval = setInterval(() => {
-      const isInside = isInterior($currentMap);
-
-      if ($phase === PHASES.PLAYING && !isInside) {
-        inGameMinutes.update((m) => m + 10);
-        const curHours = Math.floor($inGameMinutes / 60);
-
-        if (curHours === 17 && !$eveningWarned) {
-          eveningWarned.set(true);
-          if ($deepSeaFishingActive) {
-            returnFromDeepSea();
-          } else {
-            const today = todaysTournament();
-            showRPGMessage(
-              today && today.entry.best && !today.entry.submitted
-                ? `O ${today.name} encerrou as capturas! Entregue seu peixe na barraca da praça.`
-                : "O sol está se pondo... Os moradores começam a ir para a taverna!"
-            );
-          }
-        }
-
-        if ($inGameMinutes >= 22 * 60) {
-          if ($deepSeaFishingActive) {
-            returnFromDeepSea();
-          } else {
-            forceSleep();
-          }
-        }
-      }
-    }, 1500);
-  }
 
   function startAmbientLoop() {
     const triggerAmbient = () => {
@@ -140,62 +94,6 @@
     };
     ambientTimeout = setTimeout(triggerAmbient, 4000);
   }
-
-  function handleKeydown(e) {
-    if (!open) return;
-    if (document.activeElement && document.activeElement.tagName === "INPUT") {
-      return;
-    }
-
-    const k = e.key;
-    if (
-      [
-        "ArrowUp",
-        "ArrowDown",
-        "ArrowLeft",
-        "ArrowRight",
-        " ",
-        "Enter",
-      ].includes(k)
-    ) {
-      e.preventDefault();
-    }
-
-    if ($phase === PHASES.DIALOG && $dialogActions) {
-      const action = $dialogActions[k.toUpperCase()] || $dialogActions[k];
-      if (action) action();
-      return;
-    }
-
-    if (CANCELABLE_FISHING.has($phase) && (k === " " || k === "Spacebar")) {
-      resetAction("Você recolheu a linha.");
-      return;
-    }
-
-    if ($phase === PHASES.PLAYING) {
-      const dir = directionFromKey(k);
-      if (dir) {
-        setDirectionHeld(dir, true);
-        return;
-      }
-      if (k === "Enter") {
-        releaseMovement();
-        phase.set(PHASES.PAUSE_MENU);
-        return;
-      }
-      if (k === " " || k === "Spacebar") interact();
-    } else if ($phase === PHASES.FISHING_AIM && (k === " " || k === "Spacebar")) {
-      throwLine();
-    } else if ($phase === PHASES.FISHING_BITE && (k === " " || k === "Spacebar")) {
-      startMinigame();
-    } else if ($phase === PHASES.FISHING_MINIGAME && (k === " " || k === "Spacebar")) {
-      attemptCatch();
-    } else if ($phase === PHASES.CAUGHT && (k === " " || k === "Spacebar")) {
-      resetAction("Use as setas para se mover.");
-    } else if (CLOSABLE_SCREENS.has($phase) && ["Escape", "x", "X"].includes(k)) {
-      phase.set(PHASES.PLAYING);
-    }
-  }
 </script>
 
 {#if open}
@@ -205,6 +103,7 @@
   >
     <div
       class="relative w-[800px] h-[600px] bg-white rounded flex flex-col select-none border-[12px] border-[#9ce6e6] overflow-hidden shadow-2xl"
+      style="transform: scale({scale}); transform-origin: center;"
     >
       <!-- Atmospheric & Weather Filter Overlay -->
       <div
@@ -221,7 +120,7 @@
             : $currentWeather === 'storm'
               ? 'bg-indigo-950/40'
               : ''}"
-      />
+      ></div>
 
       <!-- Content Views -->
       {#if $phase === PHASES.MENU}
@@ -243,6 +142,10 @@
         <!-- Fishing Mechanics UI Layer -->
         <FishingOverlay />
 
+        {#if isTouch}
+          <TouchControls />
+        {/if}
+
         <!-- Modal Windows -->
         {#if $phase === PHASES.PAUSE_MENU}
           <PauseMenuModal />
@@ -258,6 +161,10 @@
 
         {#if $showCalendarModal}
           <CalendarModal />
+        {/if}
+
+        {#if $showKitchenModal}
+          <KitchenModal />
         {/if}
 
         <InventoryFullModal />

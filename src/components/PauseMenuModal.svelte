@@ -2,6 +2,7 @@
   import { PHASES } from "../game/phases.js";
   import { phase, currentToolType, gameMode } from "../game/stores.js";
   import { toggleTool } from "../game/gameActions.js";
+  import { audioSettings, toggleAudio } from "../game/audio.js";
 </script>
 
 <div
@@ -39,6 +40,20 @@
     >
       🔄 USANDO: {$currentToolType === "rod" ? "VARA" : "REDE"}
     </button>
+    <div class="flex gap-2">
+      <button
+        class="flex-1 retro-font text-[8px] hover:bg-[#9ce6e6] p-2 border-2 border-black"
+        on:click={() => toggleAudio("music")}
+      >
+        🎵 MÚSICA {$audioSettings.music ? "ON" : "OFF"}
+      </button>
+      <button
+        class="flex-1 retro-font text-[8px] hover:bg-[#9ce6e6] p-2 border-2 border-black"
+        on:click={() => toggleAudio("sfx")}
+      >
+        🔊 SONS {$audioSettings.sfx ? "ON" : "OFF"}
+      </button>
+    </div>
     <button
       class="text-center retro-font text-[9px] hover:bg-gray-200 p-2 text-red-600 mt-4 border-2 border-black"
       on:click={() => phase.set(PHASES.PLAYING)}

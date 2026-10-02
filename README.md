@@ -1,29 +1,40 @@
 # River King Valley RPG 🎣
 
-Jogo de RPG e pesca em estilo retrô (Game Boy), feito com **Svelte 4**, **Vite 5** e **Tailwind CSS 3**. Roda inteiro no navegador, sem backend; o progresso fica salvo no `localStorage`.
+Jogo de RPG e pesca em estilo retrô (Game Boy), feito com **Svelte 5**, **Vite 8** e **Tailwind CSS 3**. Roda inteiro no navegador, sem backend; o progresso fica salvo no `localStorage`.
+
+Jogue em [river-king-valley-rpg.vercel.app](https://river-king-valley-rpg.vercel.app).
 
 ## ✨ Recursos
 
 - **Dois modos de jogo**: Normal (peixes de rio, mar e alto-mar) e Pokémon (Pokémon de água das gerações 1 e 2).
 - **Tempo, estações e clima**: dias de 6h às 22h, quatro estações de 15 dias, sol, chuva e tempestade. O relógio para dentro das casas.
 - **Vila com NPCs**: Capitão Thomas, Mestre Gema, Ana e Velho Joe, cada um com seu canto na vila e visitas à taverna à noite.
+- **Amizade**: converse e dê peixes de presente para ganhar corações. Cada morador libera uma vantagem.
 - **Pesca**: mira de distância limitada pelo alcance da vara, sombra se aproximando, fisgada e minigame de tensão na linha. Também dá para pescar com rede na margem.
-- **Catálogo grande**: no modo Normal, 65 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
+- **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
+- **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
 - **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨).
-- **Museu**: as relíquias encontradas vão direto para a coleção.
+- **Museu e aquário**, com prêmios a cada marco da coleção.
+- **Cozinha da Ana**: pratos feitos com seus peixes que dão bônus de pesca até o fim do dia.
 - **Construções e melhorias**: píer, docas, barco para o alto-mar, aquário municipal, mochila maior, barra de captura maior e sorte para brilhantes.
 - **Missão diária** no quadro da taverna.
 - **Festivais**: brinde de ¥200 na barraca da praça e torneios de pesca no dia 10 de cada estação (veja abaixo).
+- **Som e música** gerados no navegador (Web Audio), com música de dia e de noite.
+- **Teclado, gamepad e toque**: botões na tela aparecem em celulares e tablets, e a tela se ajusta ao tamanho da janela.
 - **Save automático**, com versão e migração de saves antigos.
 
 ## 🎮 Controles
 
-| Tecla | Ação |
-|---|---|
-| Setas ou WASD | Andar (segurar para andar contínuo) |
-| Espaço | Interagir, lançar, fisgar, puxar, recolher a linha |
-| Enter | Menu de pausa |
-| Esc ou X | Fechar telas e menus |
+| Teclado | Gamepad | Toque | Ação |
+|---|---|---|---|
+| Setas ou WASD | D-pad ou analógico | Direcional | Andar (segurar para andar contínuo) |
+| Espaço | A | A | Interagir, lançar, fisgar, puxar, recolher a linha |
+| Enter | Start | MENU | Menu de pausa |
+| Esc ou X | B | B | Fechar telas e menus |
+| G / J | X / Y | botões G / J | Opções extras dos diálogos (dar presente, ouvir a lenda) |
+| M | — | — | Ligar ou desligar a música |
+
+A música e os efeitos também podem ser ligados e desligados no menu de pausa. Essa escolha fica no navegador, não no save.
 
 ## 📖 Guia do jogo
 
@@ -40,7 +51,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Loja de Iscas | Iscas e a venda de peixes. |
 | Oficina do Marceneiro | Construções e melhorias com a Mestre Gema. |
 | Cabana do Velho Joe | Caixa de minhocas: de 1 a 3 minhocas grátis por dia. |
-| Taverna | Quadro de missões e calendário de festivais. À noite, os moradores se reúnem aqui. |
+| Taverna | Quadro de missões, calendário de festivais e a cozinha da Ana (no balcão). À noite, os moradores se reúnem aqui. |
 | Terreno do aquário | Vazio até o Aquário Municipal ser construído. |
 | Praça | A barraca do festival aparece em dia de festa. |
 | Rio, margem e mar | Onde se pesca. O mar fica no sul da vila. |
@@ -52,6 +63,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 - Às 22h você desmaia de cansaço e acorda em casa às 6h do dia seguinte. Também dá para dormir antes, na cama.
 - Cada estação dura 15 dias. São quatro: Primavera, Verão, Outono e Inverno.
 - O clima do dia é sorteado ao dormir: 50% sol, 25% chuva, 25% tempestade. Com chuva, a espera pela fisgada cai 20%; com tempestade, cai 40%.
+- Alguns peixes só saem na tempestade (⛈️ no catálogo): a Enguia-Elétrica no rio, o Tubarão-da-Tempestade no mar e o Leviatã das Tormentas no alto-mar. Em dia de tempestade, 20% das fisgadas tentam primeiro um desses peixes.
 
 ### Como pescar
 
@@ -59,7 +71,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 2. **Mira:** a barra de força oscila. Aperte Espaço para lançar. A força define a zona: 1 (rasa), 2 (média) ou 3 (funda). A vara limita até onde você alcança.
 3. **Espera:** de 6 a 20 segundos. Aperte Espaço se quiser recolher a linha.
 4. **Aproximação:** a sombra do peixe nada até a boia.
-5. **Fisgada:** a boia afunda e você tem pouco tempo para apertar Espaço. Quanto mais raro o peixe, menor a janela (de 1,05 s até 0,4 s).
+5. **Fisgada:** a boia afunda e você tem pouco tempo para apertar Espaço. Quanto mais raro o peixe, menor a janela (de 1,05 s até 0,4 s, mais o bônus do Ensopado do Mar).
 6. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é menor para peixes difíceis e maior com varas melhores e com o upgrade Braço Forte.
 
 **Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
@@ -132,13 +144,36 @@ A obra começa no dia seguinte à encomenda e fica pronta depois de mais uma noi
 
 ### Alto-mar
 
-Com o barco pronto, fale com o barco no cais para zarpar. No alto-mar ficam os peixes mais pesados e raros, como a Lula Gigante e o Espadarte Negro, que só aparecem à noite. De dia, a zona funda usa os peixes de mar aberto. O barco volta sozinho às 17h; se você zarpar depois disso, fica até as 22h.
+Com o barco pronto, fale com o barco no cais para zarpar. No alto-mar ficam os peixes mais pesados e raros. De dia aparecem o Dourado do Alto-Mar, o Atum-Azul e, na primavera e no verão, o Marlim-Azul. À noite saem a Lula Gigante e o Espadarte Negro. O barco volta sozinho às 17h; se você zarpar depois disso, fica até as 22h.
 
 ### Coleções
 
 - **Catálogo / Pokédex:** registra cada espécie capturada, o recorde de peso, as estrelas máximas e os brilhantes.
 - **Museu:** guarda os tesouros encontrados. Acesso pelo menu.
 - **Aquário:** depois de construído, recebe doações de peixes da mochila.
+
+O museu e o aquário pagam prêmios ao atingir marcos da coleção. O prêmio sai na hora, e a tela de cada coleção mostra o progresso:
+
+| Coleção | Marco | Prêmio |
+|---|---|---|
+| Museu | 25% | ¥1.000 |
+| Museu | 50% | ¥3.000 + 10 Iscas Metálicas |
+| Museu | 100% | ¥10.000 + 5 Iscas Lendárias |
+| Aquário | 10% | ¥800 |
+| Aquário | 30% | ¥3.000 + 10 Camarões Vivos |
+| Aquário | 60% | ¥8.000 + 3 Iscas Lendárias |
+| Aquário | 100% | ¥30.000 + 10 Iscas Lendárias |
+
+### 🍲 Cozinha da Ana
+
+No balcão da taverna, a Ana cozinha um prato por dia com peixes da sua mochila. Ela sempre usa os peixes mais baratos que servem. O efeito vale até você dormir, e o prato do dia aparece no HUD.
+
+| Prato | Preço | Ingredientes | Efeito |
+|---|---|---|---|
+| Sopa do Rio | ¥150 | 2 peixes de rio | Área verde da luta 15% maior |
+| Ensopado do Mar | ¥300 | 2 peixes do mar ou do alto-mar | +0,4 s para fisgar |
+| Moqueca Real | ¥800 | 1 peixe de 3 estrelas ou mais | +30 de raridade, somado à isca |
+| Caldo da Sorte | ¥1.500 | 1 peixe muito raro (raridade 4+) | Chance de brilhante ×1,5 |
 
 ### Missão diária
 
@@ -154,6 +189,32 @@ Todo dia o quadro da taverna pede de 1 a 2 peixes de uma espécie sorteada. A re
 | Velho Joe | perto da cabana | a cada 4 dias |
 
 Moradores bloqueiam a passagem. Fale com eles com Espaço; a fala muda na taverna.
+
+**Amizade.** Cada morador tem até 10 corações, e cada coração vale 3 pontos.
+
+- Conversar dá 1 ponto, uma vez por dia.
+- Um presente por dia: no diálogo, aperte G para dar o peixe da mochila de que ele mais gosta. Peixe do gosto dele dá 3 pontos; qualquer outro, 1. Lixo não conta.
+- Com 3 corações a fala muda, e com 6 muda de novo.
+
+| Morador | Gosta de | Vantagem | Corações |
+|---|---|---|---|
+| Capitão Thomas | peixes do mar e do alto-mar | Dá uma dica do dia sobre um peixe raro do mar | 5 |
+| Mestre Gema | peixes de rio | 10% de desconto em construções e melhorias | 5 |
+| Ana a Cozinheira | peixes de 3 estrelas ou mais | Pratos pela metade do preço | 5 |
+| Velho Joe | peixes muito raros | Conta a lenda do Rei do Rio | 3 |
+
+### 👑 A lenda do Rei do Rio
+
+Com 3 corações, o Velho Joe ganha a opção [J] no diálogo. A missão tem quatro etapas, e cada uma é conferida quando você fala com ele:
+
+| Etapa | Pedido | Recompensa |
+|---|---|---|
+| 1. O olho do pescador | Ter na mochila um peixe de rio com 3 estrelas ou mais | ¥500 |
+| 2. Memórias do fundo | 3 tesouros no museu | ¥1.500 + 5 Iscas Metálicas |
+| 3. Conhecer as águas | 20 espécies no catálogo | ¥3.000 + 3 Iscas Lendárias |
+| 4. A lenda | Pescar o lendário | ¥10.000 + 10 Iscas Lendárias |
+
+O lendário só existe depois da etapa 3. É o **Rei do Rio** no modo Normal e o **Suicune** no modo Pokémon. Ele aparece no rio, na zona funda, à noite, em qualquer estação. Peixes de tempestade e o lendário não entram na missão diária nem nos torneios.
 
 ### Festivais
 
@@ -203,6 +264,8 @@ npm test             # roda uma vez
 npm run test:watch   # roda de novo a cada alteração
 ```
 
+Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o do VS Code e o do Cursor abrem com a letra do drive em minúscula (`c:\`), e isso faz o Vitest 5 se carregar duas vezes e falhar com "failed to find the runner". O script corrige a letra antes de chamar o Vitest.
+
 | Arquivo | O que garante |
 |---|---|
 | `map.test.js` | Mapas retangulares, todo chão alcançável, toda porta, móvel, barraca e cais com acesso, NPCs em chão livre. Os NPCs e a barraca contam como obstáculo. |
@@ -210,6 +273,12 @@ npm run test:watch   # roda de novo a cada alteração
 | `saveSystem.test.js` | Salvar e carregar sem perder nada, jogo novo zerando o progresso e mantendo o nome, migração de saves antigos. |
 | `phases.test.js` | Todo `PHASES.X` usado no código existe e os grupos de fases são coerentes. |
 | `tournament.test.js` | Quem pode competir, pontuação, colocação, prêmios, horário de fechamento, pagamento único e se todo torneio pode ser vencido nos dois modos. |
+| `clock.test.js` | Relógio andando só na rua e fora de menus, aviso do pôr do sol uma vez só e desmaio às 22h. |
+| `collections.test.js` | Marcos do museu e do aquário: pagos uma vez só, todos de uma vez ao completar, nos dois modos. |
+| `friendship.test.js` | Pontos por conversa e presente, limite diário, máximo de corações, falas por nível, descontos e dica do capitão. |
+| `joeQuest.test.js` | Ids únicos nos catálogos, lendário bloqueado, etapas em ordem com recompensa e desbloqueio na hora certa. |
+| `dishes.test.js` | Ingredientes certos (os mais baratos primeiro), cobrança, efeito só no dia do prato e recusa sem gastar nada. |
+| `controls.test.js` | Som certo para cada fase da pesca e botões e analógico do gamepad virando teclas. |
 
 ## 🗂️ Estrutura
 
@@ -217,26 +286,37 @@ npm run test:watch   # roda de novo a cada alteração
 src/
 ├── App.svelte, main.js, app.css
 ├── components/            # telas e camadas visuais
-│   ├── GameContainer.svelte   # teclado, relógio e troca de telas
+│   ├── GameContainer.svelte   # liga teclado, gamepad, relógio e som; troca de telas
 │   ├── GameCanvas.svelte      # junta MapLayer, SeaShadows, NpcLayer e PlayerLayer
 │   ├── HUD.svelte, FishingOverlay.svelte
-│   └── *Modal.svelte          # loja, marceneiro, catálogo, museu, aquário etc.
+│   ├── TouchControls.svelte   # direcional e botões na tela (só em telas de toque)
+│   ├── CollectionMilestones.svelte  # progresso e prêmios do museu e do aquário
+│   └── *Modal.svelte          # loja, marceneiro, catálogo, museu, aquário, cozinha etc.
 └── game/                  # regras do jogo, sem interface
     ├── data/                  # só dados
     │   ├── world.js           # mapas e coordenadas fixas
     │   ├── calendar.js        # estações, clima, festivais e torneios
     │   ├── equipment.js       # varas, redes e iscas
-    │   ├── npcs.js            # moradores e onde ficam por horário
+    │   ├── npcs.js            # moradores, onde ficam por horário, gostos e amizade
     │   ├── fish.js            # catálogo do modo Normal
     │   ├── pokemon.js         # catálogo do modo Pokémon
-    │   └── progression.js     # upgrades e construções iniciais
-    ├── constants.js           # reexporta tudo de data/
+    │   ├── progression.js     # upgrades, construções, marcos de coleção e pratos
+    │   └── quests.js          # etapas da missão do Velho Joe
+    ├── constants.js           # reexporta tudo de data/ (menos pokemon.js)
     ├── stores.js              # estado global (Svelte stores)
     ├── phases.js              # fases do jogo e seus grupos
+    ├── clock.js               # relógio do jogo, pôr do sol e hora de dormir
+    ├── input.js               # teclado: o que cada tecla faz em cada fase
+    ├── gamepad.js             # gamepad, traduzido para as mesmas teclas
+    ├── audio.js               # efeitos e música (Web Audio)
     ├── movement.js            # andar suave, portas, câmera, regra de onde dá para andar
     ├── fishingEngine.js       # sorteio de peixe e etapas da pesca
     ├── tournament.js          # torneios dos festivais
-    ├── gameActions.js         # interações, loja, sono, barco
+    ├── collections.js         # marcos e prêmios do museu e do aquário
+    ├── friendship.js          # corações, presentes e vantagens dos moradores
+    ├── joeQuest.js            # missão em etapas do Velho Joe
+    ├── dishes.js              # pratos da Ana e seus efeitos do dia
+    ├── gameActions.js         # interações, loja, sono, barco, diálogos
     ├── quests.js              # missão diária
     ├── saveSystem.js          # save, carregamento e migração
     ├── sprites.js, tileRenderer.js
@@ -251,7 +331,11 @@ src/
 
 **Movimento.** O mapa é uma grade de tiles de 40px. `canWalkOn` (`movement.js`) é a regra de onde dá para andar, usada pelo jogo e pelos testes. As portas ficam em `HOUSE_DOORS`, e `isInterior` sai delas.
 
-**Catálogo ativo.** Use `getActiveDatabase()` no código de regras e `$currentDatabase` nos componentes, em vez de escolher entre `FISH_DB` e `POKEMON_DB` na mão.
+**Catálogo ativo.** Use `getActiveDatabase()` no código de regras e `$currentDatabase` nos componentes, em vez de escolher entre `FISH_DB` e `POKEMON_DB` na mão. Para sortear peixes, use `availableDatabase()` (`fishingEngine.js`): ela tira os peixes de tempestade fora da tempestade e os que pedem um desbloqueio (`requires`) que o jogador ainda não tem.
+
+**Controles.** Toda entrada passa por `pressKey` e `releaseKey` (`input.js`). O teclado chama essas funções direto; o gamepad e os botões de toque traduzem seus botões para as mesmas teclas. Uma ação nova só precisa ser escrita uma vez.
+
+**Som.** `audio.js` observa os stores em vez de ser chamado pelas regras: mudanças de `phase` tocam os sons da pesca, o dinheiro subir toca uma moeda e trocar de mapa toca uma porta. O áudio só começa no primeiro clique ou tecla, porque os navegadores bloqueiam som antes disso.
 
 ## 🛠️ Como estender
 
@@ -271,16 +355,14 @@ Edite `data/world.js`. Um interior novo precisa de uma letra em `HOUSE_DOORS` e 
 
 ## 🗺️ Próximos passos
 
-**Organização**
-- [ ] Tirar o relógio (`game/clock.js`) e o teclado (`game/input.js`) de dentro do `GameContainer.svelte`.
-- [ ] Atualizar Vite e o plugin do Svelte para resolver os avisos do `npm audit`. Exige subir de versão principal.
+**Feito**
+- [x] Relógio (`clock.js`) e teclado (`input.js`) fora do `GameContainer.svelte`.
+- [x] Svelte 5, Vite 8 e Vitest 5: `npm audit` sem vulnerabilidades.
+- [x] Pratos da Ana, amizade com os moradores, prêmios de coleção, peixes de tempestade, missão do Velho Joe com lendário, peixes diurnos do alto-mar, som e música, gamepad e toque.
 
-**Features**
-- [ ] Pratos da Ana feitos com peixe, que dão bônus temporário.
-- [ ] Amizade com os moradores: presentes, falas novas e dicas.
-- [ ] Recompensas por completar o museu e o aquário.
-- [ ] Peixes que só aparecem em tempestade.
-- [ ] Missões em etapas do Velho Joe atrás de um lendário.
-- [ ] Peixes de vara próprios do alto-mar durante o dia. Hoje ele usa os de mar aberto.
-- [ ] Som e música.
-- [ ] Gamepad e botões na tela para celular.
+**Ideias**
+- [ ] Migrar os componentes para a sintaxe de runes do Svelte 5. Hoje eles rodam no modo de compatibilidade.
+- [ ] Tailwind CSS 4.
+- [ ] Um lendário para o mar e outro para o alto-mar, com missões de outros moradores.
+- [ ] Eventos de amizade com 10 corações.
+- [ ] Remapear teclas e ajustar o volume.

@@ -52,7 +52,7 @@ function typicalStars(fish) {
 
 export function rivalScores(rule, database, key) {
   const references = database
-    .filter((fish) => qualifies(rule, fish))
+    .filter((fish) => qualifies(rule, fish) && !fish.weather && !fish.requires)
     .map((fish) =>
       rule.metric === "value" ? fish.price * typicalStars(fish) : (fish.minW + fish.maxW) / 2
     )

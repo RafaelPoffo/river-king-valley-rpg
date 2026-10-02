@@ -10,6 +10,8 @@ import {
   seasonIndex,
   eqBaitId,
   upgrades,
+  currentWeather,
+  unlocks,
 } from "./stores.js";
 
 const DAY = 10 * 60;
@@ -25,8 +27,10 @@ function seededRandom(seed) {
   };
 }
 
-function setScene({ mode = "normal", biome = "river", minutes = DAY, season = 0, bait = "minhoca", lucky = false }) {
+function setScene({ mode = "normal", biome = "river", minutes = DAY, season = 0, bait = "minhoca", lucky = false, weather = "sunny", unlocked = [] }) {
   gameMode.set(mode);
+  currentWeather.set(weather);
+  unlocks.set(unlocked);
   deepSeaFishingActive.set(biome === "deep_sea");
   fishingBiome.set(biome === "deep_sea" ? "sea" : biome);
   inGameMinutes.set(minutes);
@@ -84,10 +88,25 @@ describe("rollFishByZone no modo normal", () => {
     }
   });
 
-  it("o alto-mar de dia ainda dá peixe na zona funda", () => {
+  it("o alto-mar de dia tem espécies próprias na zona funda", () => {
     setScene({ biome: "deep_sea", minutes: DAY });
     const fish = rollMany(3, 300).filter((f) => f.type === "fish" && !isTrash(f));
-    expect(fish.length).toBeGreaterThan(0);
+    expect(fish.some((f) => f.biome === "deep_sea")).toBe(true);
+  });
+
+  it("peixe de tempestade só aparece na tempestade", () => {
+    for (const weather of ["sunny", "rainy"]) {
+      for (const biome of ["river", "sea", "deep_sea"]) {
+        setScene({ biome, weather });
+        expect(rollMany(3, 300).filter((f) => f.weather)).toEqual([]);
+      }
+    }
+  });
+
+  it.each(["river", "sea", "deep_sea"])("na tempestade, %s dá peixe de tempestade", (biome) => {
+    setScene({ biome, weather: "storm" });
+    const stormFish = rollMany(3, 500).filter((f) => f.weather === "storm");
+    expect(stormFish.length).toBeGreaterThan(0);
   });
 
   it("lixo só sai da lista de lixo e é mais comum sem isca", () => {

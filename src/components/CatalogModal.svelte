@@ -82,7 +82,7 @@
               </div>
             {/if}
             <div class="retro-font text-[6px] text-gray-500 line-clamp-2">
-              {caught ? fish.desc : (isPokeMode ? "Área: " + (fish.dist.includes(1) ? "Rasa" : fish.dist.includes(2) ? "Média" : "Funda") : fish.biome)}
+              {caught ? fish.desc : (isPokeMode ? "Área: " + (fish.dist.includes(1) ? "Rasa" : fish.dist.includes(2) ? "Média" : "Funda") : fish.biome + (fish.weather === "storm" ? " ⛈️" : ""))}
             </div>
           </div>
         </div>

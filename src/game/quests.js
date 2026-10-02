@@ -4,7 +4,14 @@ import { getActiveDatabase, dailyQuest, money, currentMessage } from "./stores.j
 export function generateDailyQuest() {
   const database = getActiveDatabase();
   const pool = database.filter(
-    (f) => f.type === "fish" && f.rarity > 0 && !f.id.startsWith("poke_") && !f.id.includes("bota") && !f.id.includes("lata")
+    (f) =>
+      f.type === "fish" &&
+      f.rarity > 0 &&
+      !f.weather &&
+      !f.requires &&
+      !f.id.startsWith("poke_") &&
+      !f.id.includes("bota") &&
+      !f.id.includes("lata")
   );
   const randFish = pool[Math.floor(Math.random() * pool.length)] || pool[0];
   dailyQuest.set({

@@ -33,14 +33,14 @@
   </div>
 
   {#if $isNight && $currentMap === "village"}
-    <div class="absolute inset-0 pointer-events-none bg-blue-950/50 mix-blend-multiply z-30" />
+    <div class="absolute inset-0 pointer-events-none bg-blue-950/50 mix-blend-multiply z-30"></div>
   {/if}
 
   {#if $phase === PHASES.DIALOG}
-    <div class="absolute inset-0 bg-black/10 z-40" />
+    <div class="absolute inset-0 bg-black/10 z-40"></div>
   {/if}
 
   {#if $isFading}
-    <div class="absolute inset-0 bg-black z-[100] fade-overlay" />
+    <div class="absolute inset-0 bg-black z-[100] fade-overlay"></div>
   {/if}
 </div>

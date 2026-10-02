@@ -1,7 +1,11 @@
 <script>
   import { PHASES } from "../game/phases.js";
-  import { phase, constructions, upgrades } from "../game/stores.js";
+  import { phase, constructions, upgrades, friendship } from "../game/stores.js";
   import { orderConstruction, buyUpgrade } from "../game/gameActions.js";
+  import { friendPrice, hasPerk } from "../game/friendship.js";
+
+  $: price = ($friendship, friendPrice);
+  $: discount = ($friendship, hasPerk("carpenter"));
 </script>
 
 <div
@@ -12,6 +16,7 @@
   >
     <h2 class="retro-font text-sm">
       OFICINA DO MARCENEIRO & MELHORIAS
+      {#if discount}<span class="text-[8px] text-red-600"> ❤️ -10% DE AMIGO</span>{/if}
     </h2>
     <button
       class="bg-black text-white px-4 py-2 retro-font text-[9px] hover:bg-gray-800"
@@ -31,7 +36,7 @@
       >
         <div>
           <div class="retro-font text-[10px] font-bold mb-1">
-            {c.name} ({c.cost}¥)
+            {c.name} ({price(c.cost)}¥)
           </div>
           <div class="retro-font text-[8px]">
             Status: {c.status === "none"
@@ -70,7 +75,7 @@
       >
         <div>
           <div class="retro-font text-[10px] font-bold mb-1">
-            {up.name} ({up.cost}¥)
+            {up.name} ({price(up.cost)}¥)
           </div>
           <div class="retro-font text-[8px]">
             Status: {up.bought ? "Adquirido ✅" : "Disponível"}

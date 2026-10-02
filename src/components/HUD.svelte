@@ -9,9 +9,13 @@
     deepSeaFishingActive,
     currentMessage,
     phase,
+    activeDish,
   } from "../game/stores.js";
+  import { todaysDish } from "../game/dishes.js";
   import { SEASONS, WEATHER_NAMES } from "../game/constants.js";
   import { returnFromDeepSea } from "../game/gameActions.js";
+
+  $: dish = ($activeDish, $day, $seasonIndex, todaysDish());
 
   function formatTime(mins) {
     const h = Math.floor(mins / 60);
@@ -33,6 +37,9 @@
   <div class="retro-font text-[7px] text-gray-700">
     {WEATHER_NAMES[$currentWeather]}
   </div>
+  {#if dish}
+    <div class="retro-font text-[7px] text-orange-700">🍲 {dish.name}</div>
+  {/if}
   <div class="retro-font text-[8px] text-[#4a9090] mt-1 font-bold">
     ¥ {$money}
   </div>

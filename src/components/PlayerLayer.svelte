@@ -46,7 +46,7 @@
     class="tile"
     style="left: {$bobberPos.x * TILE_SIZE}px; top: {$bobberPos.y * TILE_SIZE}px; z-index: 15;"
   >
-    <div class={`bobber ${$phase === PHASES.FISHING_BITE ? "bobber-bite" : "bobber-float"}`} />
+    <div class={`bobber ${$phase === PHASES.FISHING_BITE ? "bobber-bite" : "bobber-float"}`}></div>
   </div>
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index: 10;">
     <line

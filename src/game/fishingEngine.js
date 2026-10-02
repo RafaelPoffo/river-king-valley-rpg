@@ -27,6 +27,7 @@ import {
   museum,
   currentMessage,
   currentWeather,
+  unlocks,
   isNight,
   deepSeaFishingActive,
   fishingBiome,
@@ -36,6 +37,10 @@ import {
 import { checkDailyQuestProgress } from "./quests.js";
 import { saveGame } from "./saveSystem.js";
 import { recordTournamentCatch } from "./tournament.js";
+import { claimCollectionRewards, rewardMessage } from "./collections.js";
+import { dishEffect } from "./dishes.js";
+
+const STORM_PRIORITY = 0.2;
 
 let aimDir = 1;
 let minigameDir = 1;
@@ -164,7 +169,8 @@ function updateApproach(time) {
     shadowActive.set(false);
     phase.set(PHASES.FISHING_BITE);
     const currentFish = get(activeFish);
-    const biteDuration = Math.max(0.4, 1.2 - (currentFish?.rarity || 1) * 0.15);
+    const biteDuration =
+      Math.max(0.4, 1.2 - (currentFish?.rarity || 1) * 0.15) + dishEffect("biteBonus", 0);
 
     clearTimeout(loopIds.escape);
     loopIds.escape = setTimeout(() => {
@@ -204,6 +210,22 @@ function matchesBiome(fish, biome) {
   return fish.biome === biome || fish.biome === "all";
 }
 
+function matchesWeather(fish, weather) {
+  return !fish.weather || fish.weather === weather;
+}
+
+function isUnlocked(fish, unlocked) {
+  return !fish.requires || unlocked.includes(fish.requires);
+}
+
+export function availableDatabase() {
+  const weather = get(currentWeather);
+  const unlocked = get(unlocks);
+  return getActiveDatabase().filter(
+    (f) => matchesWeather(f, weather) && isUnlocked(f, unlocked)
+  );
+}
+
 function isRodFish(fish) {
   return (
     fish.type === "fish" &&
@@ -234,6 +256,7 @@ function decorateCatch(fishBase) {
   let chance = 0;
   if (!junk && rare) chance = lucky ? 0.22 : 0.08;
   else if (!junk && lucky) chance = 0.06;
+  chance *= dishEffect("shinyMult", 1);
   const isShiny = chance > 0 && Math.random() < chance;
   if (isShiny) stars = 6;
   return {
@@ -246,7 +269,8 @@ function decorateCatch(fishBase) {
 
 export function rollFishByZone(zone) {
   const isPokeMode = get(gameMode) === "pokemon";
-  const database = getActiveDatabase();
+  const database = availableDatabase();
+  const stormRoll = get(currentWeather) === "storm" && Math.random() < STORM_PRIORITY;
   const night = get(isNight);
   const deepSea = get(deepSeaFishingActive);
   const biomeTarget = deepSea ? "deep_sea" : get(fishingBiome);
@@ -305,6 +329,7 @@ export function rollFishByZone(zone) {
   if (bait !== "sem_isca" && currentBait) {
     roll -= currentBait.bonus;
   }
+  roll -= dishEffect("rarityBonus", 0);
 
   if (zone === 1) {
     rarityTarget = roll < 75 ? 1 : roll < 95 ? 2 : 3;
@@ -366,6 +391,7 @@ export function rollFishByZone(zone) {
     const inReach = (f) => matchesBiome(f, biomeTarget) && matchesDist(f, zone);
     const openSea = (f) => deepSea && matchesBiome(f, "sea") && matchesDist(f, zone);
     pool = firstPool(rods, [
+      (f) => stormRoll && inReach(f) && !!f.weather && matchesTime(f, night),
       (f) =>
         inReach(f) &&
         f.rarity === rarityTarget &&
@@ -430,6 +456,7 @@ export function startMinigame() {
 
   let baseWidth = Math.max(12, 60 - (curFish?.diff || 10) * (tool?.power || 1));
   if (up.widerBar.bought) baseWidth *= 1.2;
+  baseWidth *= dishEffect("catchBar", 1);
 
   catchTargetWidth.set(baseWidth);
   catchTargetCenter.set(20 + Math.random() * 60);
@@ -509,22 +536,25 @@ export function addFishToInventory(fishObj) {
 
 export function finishCatchSequence(finalFish) {
   const tournamentRecord = recordTournamentCatch(finalFish);
+  const isTreasure = finalFish.type === "treasure";
+  const museumRewards = isTreasure ? claimCollectionRewards("museum") : [];
   saveGame();
   phase.set(PHASES.CAUGHT);
   activeFish.set(finalFish);
-  const caughtMsg =
-    finalFish.type === "treasure"
-      ? `TESOURO! Você desenterrou um artefato histórico (${finalFish.name})!`
-      : `BOA! Você fisgou um ${finalFish.isShiny ? "✨ " : ""}${finalFish.name} de ${finalFish.weight}kg!`;
+  const caughtMsg = isTreasure
+    ? `TESOURO! Você desenterrou um artefato histórico (${finalFish.name})!`
+    : `BOA! Você fisgou um ${finalFish.isShiny ? "✨ " : ""}${finalFish.name} de ${finalFish.weight}kg!`;
+  const tournamentMsg = tournamentRecord ? " 🏆 Novo melhor peixe do torneio!" : "";
+  const legendMsg = finalFish.requires ? " 👑 A LENDA! Conte ao Velho Joe!" : "";
   currentMessage.set(
-    tournamentRecord ? `${caughtMsg} 🏆 Novo melhor peixe do torneio!` : caughtMsg
+    caughtMsg + legendMsg + tournamentMsg + rewardMessage("museum", museumRewards)
   );
 }
 
 export function useNetAtShore(biome) {
   if (!get(eqNetId)) return;
   const isPokeMode = get(gameMode) === "pokemon";
-  const database = getActiveDatabase();
+  const database = availableDatabase();
   const curSeason = get(seasonIndex);
   const night = get(isNight);
   let pool = database.filter(
