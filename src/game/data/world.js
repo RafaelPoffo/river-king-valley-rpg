@@ -6,6 +6,17 @@ export const DOCK_BOUNDS = { x1: 18, x2: 20, y1: 17, y2: 18 };
 export const BOAT_BOUNDS = { x1: 18, x2: 19, y1: 17, y2: 17 };
 export const AQUARIUM_FOOTPRINT = { x1: 28, x2: 32, y1: 10, y2: 11 };
 
+// Signs sit on the roof row, centered over the building's door column.
+export const BUILDING_SIGNS = [
+  { x: 6, y: 6, label: "SUA CASA" },
+  { x: 14, y: 6, label: "EQUIPAMENTOS" },
+  { x: 22, y: 6, label: "ISCAS" },
+  { x: 32, y: 6, label: "OFICINA" },
+  { x: 6, y: 10, label: "CABANA DO JOE" },
+  { x: 14, y: 10, label: "TAVERNA" },
+  { x: 30, y: 10, label: "AQUÁRIO", requires: "aquarium_building", fallback: "AQUÁRIO (FECHADO)" },
+];
+
 export function inBounds(x, y, box) {
   return x >= box.x1 && x <= box.x2 && y >= box.y1 && y <= box.y2;
 }
