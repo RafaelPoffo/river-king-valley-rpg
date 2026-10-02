@@ -1,4 +1,5 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
   import {
     phase,
@@ -12,7 +13,7 @@
 </script>
 
 <!-- Definir Força (Aim Bar) -->
-{#if $phase === "fishing_aim"}
+{#if $phase === PHASES.FISHING_AIM}
   <div
     class="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 bg-white border-4 border-black p-4 text-center pixel-shadow"
   >
@@ -31,7 +32,7 @@
 {/if}
 
 <!-- Bateu Alerta -->
-{#if $phase === "fishing_bite"}
+{#if $phase === PHASES.FISHING_BITE}
   <div
     class="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 bg-red-600 text-white border-4 border-black p-4 text-center pixel-shadow animate-bounce"
   >
@@ -42,7 +43,7 @@
 {/if}
 
 <!-- Minigame Tug-of-war -->
-{#if $phase === "fishing_minigame"}
+{#if $phase === PHASES.FISHING_MINIGAME}
   <div
     class="absolute inset-0 bg-white/80 z-40 flex flex-col items-center justify-center pb-10"
   >
@@ -65,7 +66,7 @@
 {/if}
 
 <!-- Capturado / Artefato Descoberto -->
-{#if $phase === "caught" && $activeFish}
+{#if $phase === PHASES.CAUGHT && $activeFish}
   <div
     class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center"
   >

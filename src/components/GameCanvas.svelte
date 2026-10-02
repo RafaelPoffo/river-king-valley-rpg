@@ -1,4 +1,5 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { TILE_SIZE, MAPS_DATA } from "../game/constants.js";
   import {
     currentMap,
@@ -35,7 +36,7 @@
     <div class="absolute inset-0 pointer-events-none bg-blue-950/50 mix-blend-multiply z-30" />
   {/if}
 
-  {#if $phase === "dialog"}
+  {#if $phase === PHASES.DIALOG}
     <div class="absolute inset-0 bg-black/10 z-40" />
   {/if}
 

@@ -1,4 +1,5 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { phase, currentToolType, gameMode } from "../game/stores.js";
   import { toggleTool } from "../game/gameActions.js";
 </script>
@@ -16,19 +17,19 @@
     </h2>
     <button
       class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black"
-      on:click={() => phase.set("equipment")}
+      on:click={() => phase.set(PHASES.EQUIPMENT)}
     >
       🎒 MOCHILA & EQUIP.
     </button>
     <button
       class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black"
-      on:click={() => phase.set("fish_log")}
+      on:click={() => phase.set(PHASES.FISH_LOG)}
     >
       {$gameMode === "pokemon" ? "🔴 POKÉDEX" : "📖 CATÁLOGO DE PEIXES"}
     </button>
     <button
       class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black"
-      on:click={() => phase.set("museum")}
+      on:click={() => phase.set(PHASES.MUSEUM)}
     >
       MUSEU
     </button>
@@ -40,7 +41,7 @@
     </button>
     <button
       class="text-center retro-font text-[9px] hover:bg-gray-200 p-2 text-red-600 mt-4 border-2 border-black"
-      on:click={() => phase.set("playing")}
+      on:click={() => phase.set(PHASES.PLAYING)}
     >
       FECHAR [X]
     </button>

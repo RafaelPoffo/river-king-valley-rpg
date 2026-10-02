@@ -1,4 +1,5 @@
 import { get } from "svelte/store";
+import { PHASES } from "./phases.js";
 import {
   MAPS_DATA,
   TILE_SIZE,
@@ -89,6 +90,26 @@ const HOUSE_DOORS = {
   R: "tavern",
 };
 
+const INTERIOR_MAPS = new Set(Object.values(HOUSE_DOORS));
+
+export function isInterior(mapName) {
+  return INTERIOR_MAPS.has(mapName);
+}
+
+export function houseForDoor(tile) {
+  return HOUSE_DOORS[tile] || null;
+}
+
+const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S"]);
+
+export function canWalkOn(tile, x, y, constr) {
+  if (WALKABLE_TILES.has(tile)) return true;
+  if (tile === "X" && inBounds(x, y, DOCK_BOUNDS)) {
+    return constr.docks.status === "built" || constr.pier.status === "built";
+  }
+  return false;
+}
+
 export function enterHouse(houseMapName, fromX, fromY) {
   lastEnteringHouse.set({ map: "village", x: fromX, y: fromY, dir: "down" });
   currentMap.set(houseMapName);
@@ -140,7 +161,7 @@ export function setDirectionHeld(dir, isDown) {
 
 function tryStep() {
   if (walking) return;
-  if (get(phase) !== "playing" || get(deepSeaFishingActive)) return;
+  if (get(phase) !== PHASES.PLAYING || get(deepSeaFishingActive)) return;
   const dir = activeDirection();
   if (!dir) return;
   const [dx, dy] = VECTORS[dir];
@@ -183,25 +204,16 @@ function beginStep(dx, dy, dirStr) {
     afterMove = () => enterHouse(HOUSE_DOORS[tile], originX, originY);
   } else if (tile === "-") {
     afterMove = () => exitHouse();
-  } else {
-    const walkableTiles = ["G", ".", "=", "F", "S"];
-    let canWalk = walkableTiles.includes(tile);
-    if (tile === "X" && inBounds(nx, ny, DOCK_BOUNDS)) {
-      const hasDocks =
-        constr.docks.status === "built" || constr.pier.status === "built";
-      if (hasDocks) canWalk = true;
-    }
-    if (!canWalk) {
-      player.set({ x: originX, y: originY, dir: dirStr });
-      return;
-    }
+  } else if (!canWalkOn(tile, nx, ny, constr)) {
+    player.set({ x: originX, y: originY, dir: dirStr });
+    return;
   }
 
   walking = true;
   const started = performance.now();
 
   const tick = (now) => {
-    if (get(phase) !== "playing") {
+    if (get(phase) !== PHASES.PLAYING) {
       walking = false;
       walkFrame = 0;
       player.set({ x: originX, y: originY, dir: dirStr });

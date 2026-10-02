@@ -1,4 +1,5 @@
 import { get } from "svelte/store";
+import { PHASES } from "./phases.js";
 import {
   phase,
   currentMessage,
@@ -45,7 +46,9 @@ import {
   BOAT_BOUNDS,
   inBounds,
   getNpcLocation,
+  TOURNAMENT_CLOSE_MINUTES,
 } from "./constants.js";
+import { todaysTournament, submitTournament, formatScore, dayKey } from "./tournament.js";
 import {
   updateCamera,
   getTileInFront,
@@ -67,7 +70,7 @@ export function showRPGMessage(msg) {
 }
 
 export function sleep() {
-  phase.set("fade");
+  phase.set(PHASES.FADE);
   isFading.set(true);
   setTimeout(() => {
     inGameMinutes.set(6 * 60);
@@ -96,7 +99,7 @@ export function sleep() {
 
     currentMap.set("player_house");
     player.set(interiorSpawn("player_house", "up"));
-    phase.set("playing");
+    phase.set(PHASES.PLAYING);
     isFading.set(false);
 
     const sIndex = get(seasonIndex);
@@ -110,23 +113,23 @@ export function sleep() {
 }
 
 export function forceSleep() {
-  phase.set("dialog");
+  phase.set(PHASES.DIALOG);
   currentMessage.set("A noite cai de vez... Você desmaia de exaustão.");
   setTimeout(sleep, 3000);
 }
 
 export function startBoatVoyage() {
-  phase.set("dialog");
+  phase.set(PHASES.DIALOG);
   currentMessage.set(
     "Capitão Thomas: 'Quer zarpar para o alto-mar?' [SPACE] Sim / [X] Não"
   );
   dialogActions.set({
     " ": () => {
-      phase.set("sailing");
+      phase.set(PHASES.SAILING);
       currentMessage.set("O barco se afasta do porto...");
       setTimeout(() => {
         deepSeaFishingActive.set(true);
-        phase.set("playing");
+        phase.set(PHASES.PLAYING);
         player.set({ x: 19, y: 20, dir: "down" });
         updateCamera();
         showRPGMessage(
@@ -135,17 +138,17 @@ export function startBoatVoyage() {
       }, 2000);
     },
     X: () => {
-      phase.set("playing");
+      phase.set(PHASES.PLAYING);
       showRPGMessage("");
     },
   });
 }
 
 export function returnFromDeepSea() {
-  phase.set("sailing");
+  phase.set(PHASES.SAILING);
   setTimeout(() => {
     deepSeaFishingActive.set(false);
-    phase.set("playing");
+    phase.set(PHASES.PLAYING);
     player.set({ x: 19, y: 16, dir: "up" });
     updateCamera();
     showRPGMessage("Retornou em segurança às Docas.");
@@ -270,22 +273,18 @@ export function selectBackpackItem(index) {
 }
 
 export function sellFish(index) {
-  inventory.update((inv) => {
-    const item = inv[index];
-    if (item) {
-      money.update((m) => m + item.priceFinal);
-      inv.splice(index, 1);
-    }
-    return [...inv];
-  });
+  const inv = get(inventory);
+  const item = inv[index];
+  if (!item) return;
+  money.update((m) => m + item.priceFinal);
+  inventory.set(inv.filter((_, i) => i !== index));
   saveGame();
 }
 
 export function sellAll() {
-  inventory.update((inv) => {
-    inv.forEach((f) => money.update((m) => m + f.priceFinal));
-    return [];
-  });
+  const total = get(inventory).reduce((sum, f) => sum + f.priceFinal, 0);
+  money.update((m) => m + total);
+  inventory.set([]);
   saveGame();
 }
 
@@ -323,8 +322,57 @@ export function toggleTool() {
   currentToolType.update((t) => (t === "rod" ? "net" : "rod"));
 }
 
+function closeDialog() {
+  phase.set(PHASES.PLAYING);
+  showRPGMessage("Setas para andar. [ENTER] para o Menu.");
+}
+
+function openTournamentStall() {
+  const { name, rule, entry, rivals } = todaysTournament();
+  phase.set(PHASES.DIALOG);
+
+  if (entry.submitted) {
+    const prizeText = entry.prize > 0 ? ` Prêmio: ¥${entry.prize}.` : "";
+    currentMessage.set(`${name} encerrado: você ficou em ${entry.place}º lugar.${prizeText}`);
+    dialogActions.set({ " ": closeDialog });
+    return;
+  }
+
+  const leader = [...rivals].sort((a, b) => b.score - a.score)[0];
+  const leaderText = `Líder: ${leader.name} (${formatScore(rule, leader.score)}).`;
+  const closed = get(inGameMinutes) >= TOURNAMENT_CLOSE_MINUTES;
+
+  if (!entry.best) {
+    currentMessage.set(
+      closed
+        ? `${name}: as capturas fecharam às 17h e você não trouxe nada. ${leaderText}`
+        : `${name}! Traga ${rule.goal} até as 17h. ${leaderText}`
+    );
+    dialogActions.set({ " ": closeDialog });
+    return;
+  }
+
+  const bestText = `Seu melhor: ${entry.best.name} (${formatScore(rule, entry.best.score)}).`;
+  currentMessage.set(
+    `${name}: ${bestText} ${leaderText} [SPACE] Entregar / [X] ${closed ? "Depois" : "Continuar pescando"}`
+  );
+  dialogActions.set({
+    " ": () => {
+      const result = submitTournament();
+      saveGame();
+      currentMessage.set(
+        result.prize > 0
+          ? `🏆 Você ficou em ${result.place}º lugar e ganhou ¥${result.prize}!`
+          : `Você ficou em ${result.place}º lugar. Fica para o próximo festival!`
+      );
+      dialogActions.set({ " ": closeDialog });
+    },
+    X: closeDialog,
+  });
+}
+
 export function interact() {
-  if (get(phase) !== "playing") return;
+  if (get(phase) !== PHASES.PLAYING) return;
   if (isWalking()) {
     afterCurrentStep(() => interact());
     return;
@@ -346,11 +394,11 @@ export function interact() {
       loc.map === "tavern"
         ? clickedNpc.dialogTavern
         : clickedNpc.dialogNormal;
-    phase.set("dialog");
+    phase.set(PHASES.DIALOG);
     currentMessage.set(`${clickedNpc.name}: "${msg}"`);
     dialogActions.set({
       " ": () => {
-        phase.set("playing");
+        phase.set(PHASES.PLAYING);
         showRPGMessage("Setas para andar. [ENTER] para o Menu.");
       },
     });
@@ -379,8 +427,12 @@ export function interact() {
     target.x === FESTIVAL_STALL.x &&
     target.y === FESTIVAL_STALL.y
   ) {
-    const claimKey = get(seasonIndex) * 100 + curDay;
-    phase.set("dialog");
+    if (todaysTournament()) {
+      openTournamentStall();
+      return;
+    }
+    const claimKey = dayKey(get(seasonIndex), curDay);
+    phase.set(PHASES.DIALOG);
     if (get(lastFestivalClaim) !== claimKey) {
       lastFestivalClaim.set(claimKey);
       money.update((m) => m + 200);
@@ -391,7 +443,7 @@ export function interact() {
     }
     dialogActions.set({
       " ": () => {
-        phase.set("playing");
+        phase.set(PHASES.PLAYING);
         showRPGMessage("Setas para andar. [ENTER] para o Menu.");
       },
     });
@@ -427,13 +479,13 @@ export function interact() {
     startAim();
   } else if (target.tile === "C") {
     if (cMap === "shop_gear") {
-      phase.set("shop");
+      phase.set(PHASES.SHOP);
       shopTab.set("buy_rod");
     } else if (cMap === "shop_bait") {
-      phase.set("shop");
+      phase.set(PHASES.SHOP);
       shopTab.set("buy_bait");
     } else if (cMap === "carpenter_shop") {
-      phase.set("carpenter");
+      phase.set(PHASES.CARPENTER);
     } else if (cMap === "tavern") {
       showRPGMessage("Ana: Bem-vindo! Veja o quadro de missões.");
     }
@@ -447,14 +499,14 @@ export function interact() {
     showRPGMessage("Tábuas e madeira de lei.");
   } else if (target.tile === "_") {
     if (cMap === "player_house") {
-      phase.set("dialog");
+      phase.set(PHASES.DIALOG);
       currentMessage.set(
         "Deseja terminar o dia e ir dormir? [SPACE] Sim / [X] Não"
       );
       dialogActions.set({
         " ": sleep,
         X: () => {
-          phase.set("playing");
+          phase.set(PHASES.PLAYING);
           showRPGMessage("");
         },
       });

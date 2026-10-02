@@ -1,9 +1,9 @@
 import { get } from "svelte/store";
-import { FISH_DB } from "./constants.js";
-import { POKEMON_DB } from "./pokemonConstants.js";
+import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
 import {
   gameMode,
+  getActiveDatabase,
   phase,
   player,
   aimPower,
@@ -35,6 +35,7 @@ import {
 } from "./stores.js";
 import { checkDailyQuestProgress } from "./quests.js";
 import { saveGame } from "./saveSystem.js";
+import { recordTournamentCatch } from "./tournament.js";
 
 let aimDir = 1;
 let minigameDir = 1;
@@ -48,7 +49,7 @@ const loopIds = {
 };
 
 export function startAim() {
-  phase.set("fishing_aim");
+  phase.set(PHASES.FISHING_AIM);
   aimPower.set(1.0);
   aimDir = 1;
   lastTime = performance.now();
@@ -57,7 +58,7 @@ export function startAim() {
 }
 
 function updateAim(time) {
-  if (get(phase) !== "fishing_aim") return;
+  if (get(phase) !== PHASES.FISHING_AIM) return;
   const delta = (time - lastTime) / 1000;
   lastTime = time;
   const speed = 5.0;
@@ -82,7 +83,7 @@ export function throwLine() {
   const dist = Math.floor(power);
   targetDistance.set(dist);
 
-  phase.set("fishing_wait");
+  phase.set(PHASES.FISHING_WAIT);
   shadowActive.set(false);
 
   const p = get(player);
@@ -114,7 +115,7 @@ export function throwLine() {
 
   clearTimeout(loopIds.wait);
   loopIds.wait = setTimeout(() => {
-    if (get(phase) !== "fishing_wait") return;
+    if (get(phase) !== PHASES.FISHING_WAIT) return;
 
     const currentBait = get(eqBaitId);
     if (currentBait !== "sem_isca") {
@@ -135,7 +136,7 @@ export function throwLine() {
     }
     activeFish.set(rolled);
 
-    phase.set("fishing_approach");
+    phase.set(PHASES.FISHING_APPROACH);
     const bPos = get(bobberPos);
     shadowPos.set({
       x: bPos.x + (Math.random() > 0.5 ? 2 : -2),
@@ -149,7 +150,7 @@ export function throwLine() {
 }
 
 function updateApproach(time) {
-  if (get(phase) !== "fishing_approach") return;
+  if (get(phase) !== PHASES.FISHING_APPROACH) return;
   const delta = (time - lastTime) / 1000;
   lastTime = time;
 
@@ -161,7 +162,7 @@ function updateApproach(time) {
 
   if (dist < 0.15) {
     shadowActive.set(false);
-    phase.set("fishing_bite");
+    phase.set(PHASES.FISHING_BITE);
     const currentFish = get(activeFish);
     const biteDuration = Math.max(0.4, 1.2 - (currentFish?.rarity || 1) * 0.15);
 
@@ -245,7 +246,7 @@ function decorateCatch(fishBase) {
 
 export function rollFishByZone(zone) {
   const isPokeMode = get(gameMode) === "pokemon";
-  const database = isPokeMode ? POKEMON_DB : FISH_DB;
+  const database = getActiveDatabase();
   const night = get(isNight);
   const deepSea = get(deepSeaFishingActive);
   const biomeTarget = deepSea ? "deep_sea" : get(fishingBiome);
@@ -363,6 +364,7 @@ export function rollFishByZone(zone) {
   } else {
     const rods = database.filter(isRodFish);
     const inReach = (f) => matchesBiome(f, biomeTarget) && matchesDist(f, zone);
+    const openSea = (f) => deepSea && matchesBiome(f, "sea") && matchesDist(f, zone);
     pool = firstPool(rods, [
       (f) =>
         inReach(f) &&
@@ -371,7 +373,8 @@ export function rollFishByZone(zone) {
         matchesTime(f, night),
       (f) => inReach(f) && matchesSeason(f, curSeason) && matchesTime(f, night),
       (f) => inReach(f) && matchesTime(f, night),
-      (f) => inReach(f),
+      (f) => openSea(f) && matchesSeason(f, curSeason) && matchesTime(f, night),
+      (f) => openSea(f) && matchesTime(f, night),
     ]);
   }
 
@@ -419,7 +422,7 @@ export function processCaughtFish(fishBase) {
 
 export function startMinigame() {
   clearTimeout(loopIds.escape);
-  phase.set("fishing_minigame");
+  phase.set(PHASES.FISHING_MINIGAME);
 
   const curFish = get(activeFish);
   const tool = get(currentToolData);
@@ -438,7 +441,7 @@ export function startMinigame() {
 }
 
 function updateMinigame(time) {
-  if (get(phase) !== "fishing_minigame") return;
+  if (get(phase) !== PHASES.FISHING_MINIGAME) return;
   const delta = (time - lastTime) / 1000;
   lastTime = time;
 
@@ -457,7 +460,7 @@ function updateMinigame(time) {
 }
 
 export function attemptCatch() {
-  if (get(phase) !== "fishing_minigame") return;
+  if (get(phase) !== PHASES.FISHING_MINIGAME) return;
   if (loopIds.mini) cancelAnimationFrame(loopIds.mini);
 
   const bar = get(minigameBar);
@@ -505,20 +508,23 @@ export function addFishToInventory(fishObj) {
 }
 
 export function finishCatchSequence(finalFish) {
+  const tournamentRecord = recordTournamentCatch(finalFish);
   saveGame();
-  phase.set("caught");
+  phase.set(PHASES.CAUGHT);
   activeFish.set(finalFish);
-  currentMessage.set(
+  const caughtMsg =
     finalFish.type === "treasure"
       ? `TESOURO! Você desenterrou um artefato histórico (${finalFish.name})!`
-      : `BOA! Você fisgou um ${finalFish.isShiny ? "✨ " : ""}${finalFish.name} de ${finalFish.weight}kg!`
+      : `BOA! Você fisgou um ${finalFish.isShiny ? "✨ " : ""}${finalFish.name} de ${finalFish.weight}kg!`;
+  currentMessage.set(
+    tournamentRecord ? `${caughtMsg} 🏆 Novo melhor peixe do torneio!` : caughtMsg
   );
 }
 
 export function useNetAtShore(biome) {
   if (!get(eqNetId)) return;
   const isPokeMode = get(gameMode) === "pokemon";
-  const database = isPokeMode ? POKEMON_DB : FISH_DB;
+  const database = getActiveDatabase();
   const curSeason = get(seasonIndex);
   const night = get(isNight);
   let pool = database.filter(
@@ -541,7 +547,7 @@ export function useNetAtShore(biome) {
     resetAction("A rede voltou vazia.");
     return;
   }
-  phase.set("caught");
+  phase.set(PHASES.CAUGHT);
   const caughtBase = decorateCatch(
     pool[Math.floor(Math.random() * pool.length)]
   );
@@ -556,7 +562,7 @@ export function resetAction(msg) {
   clearTimeout(loopIds.wait);
   clearTimeout(loopIds.escape);
 
-  phase.set("playing");
+  phase.set(PHASES.PLAYING);
   shadowActive.set(false);
   activeFish.set(null);
   if (msg) currentMessage.set(msg);

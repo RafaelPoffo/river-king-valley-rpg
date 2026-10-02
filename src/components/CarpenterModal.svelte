@@ -1,4 +1,5 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { phase, constructions, upgrades } from "../game/stores.js";
   import { orderConstruction, buyUpgrade } from "../game/gameActions.js";
 </script>
@@ -14,7 +15,7 @@
     </h2>
     <button
       class="bg-black text-white px-4 py-2 retro-font text-[9px] hover:bg-gray-800"
-      on:click={() => phase.set("playing")}
+      on:click={() => phase.set(PHASES.PLAYING)}
     >
       FECHAR [X]
     </button>

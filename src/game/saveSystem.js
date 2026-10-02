@@ -1,4 +1,5 @@
 import { get } from "svelte/store";
+import { PHASES } from "./phases.js";
 import {
   gameMode,
   savedGameMode,
@@ -17,6 +18,7 @@ import {
   baitStock,
   lastWormHarvestDay,
   lastFestivalClaim,
+  tournament,
   constructions,
   inventory,
   currentWeather,
@@ -37,6 +39,81 @@ import { generateDailyQuest } from "./quests.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constants.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
+export const SAVE_VERSION = 2;
+
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
+// The key names are kept as-is so saves written before the registry still load.
+export const PERSISTED_FIELDS = [
+  { key: "gameMode", store: gameMode, initial: () => "normal" },
+  { key: "log", store: fishLog, initial: () => ({}) },
+  { key: "money", store: money, initial: () => 500 },
+  { key: "name", store: playerName, initial: () => "", keepOnNewGame: true },
+  { key: "day", store: day, initial: () => 1 },
+  { key: "season", store: seasonIndex, initial: () => 0 },
+  { key: "time", store: inGameMinutes, initial: () => 360 },
+  { key: "rod", store: eqRodId, initial: () => "vara_vime" },
+  { key: "net", store: eqNetId, initial: () => null },
+  { key: "bait", store: eqBaitId, initial: () => "sem_isca" },
+  { key: "ownedRods", store: ownedRods, initial: () => ["vara_vime"] },
+  { key: "ownedNets", store: ownedNets, initial: () => [] },
+  { key: "ownedBaits", store: ownedBaits, initial: () => ["sem_isca"] },
+  { key: "baitStock", store: baitStock, initial: () => ({ minhoca: 5 }) },
+  { key: "lastWormDay", store: lastWormHarvestDay, initial: () => 0 },
+  { key: "lastFestivalClaim", store: lastFestivalClaim, initial: () => 0 },
+  { key: "tournament", store: tournament, initial: () => null },
+  { key: "constructions", store: constructions, initial: () => clone(INITIAL_CONSTRUCTIONS) },
+  { key: "inv", store: inventory, initial: () => [] },
+  { key: "weather", store: currentWeather, initial: () => "sunny" },
+  { key: "aquarium", store: aquarium, initial: () => ({}) },
+  { key: "museum", store: museum, initial: () => ({}) },
+  { key: "dailyQuest", store: dailyQuest, initial: () => null },
+  { key: "upgrades", store: upgrades, initial: () => clone(INITIAL_UPGRADES) },
+];
+
+// Each entry upgrades a save from version N to N + 1.
+const MIGRATIONS = {
+  1: (data) => ({
+    ...data,
+    constructions: { ...clone(INITIAL_CONSTRUCTIONS), ...(data.constructions || {}) },
+    upgrades: { ...clone(INITIAL_UPGRADES), ...(data.upgrades || {}) },
+  }),
+};
+
+export function migrateSave(data) {
+  let migrated = { ...data };
+  let version = migrated.version || 1;
+  while (version < SAVE_VERSION) {
+    const step = MIGRATIONS[version];
+    if (step) migrated = step(migrated);
+    version += 1;
+  }
+  migrated.version = SAVE_VERSION;
+  return migrated;
+}
+
+export function serializeState() {
+  const data = { version: SAVE_VERSION };
+  for (const field of PERSISTED_FIELDS) {
+    data[field.key] = get(field.store);
+  }
+  return data;
+}
+
+export function applyState(data) {
+  for (const field of PERSISTED_FIELDS) {
+    field.store.set(data[field.key] ?? field.initial());
+  }
+  savedGameMode.set(get(gameMode));
+}
+
+export function resetState(selectedMode = "normal") {
+  for (const field of PERSISTED_FIELDS) {
+    if (!field.keepOnNewGame) field.store.set(field.initial());
+  }
+  gameMode.set(selectedMode);
+  savedGameMode.set(selectedMode);
+}
 
 export function checkSaveExists() {
   const raw = localStorage.getItem(SAVE_KEY);
@@ -57,32 +134,7 @@ export function checkSaveExists() {
 
 export function saveGame() {
   try {
-    const data = {
-      gameMode: get(gameMode),
-      log: get(fishLog),
-      money: get(money),
-      name: get(playerName),
-      day: get(day),
-      season: get(seasonIndex),
-      time: get(inGameMinutes),
-      rod: get(eqRodId),
-      net: get(eqNetId),
-      bait: get(eqBaitId),
-      ownedRods: get(ownedRods),
-      ownedNets: get(ownedNets),
-      ownedBaits: get(ownedBaits),
-      baitStock: get(baitStock),
-      lastWormDay: get(lastWormHarvestDay),
-      lastFestivalClaim: get(lastFestivalClaim),
-      constructions: get(constructions),
-      inv: get(inventory),
-      weather: get(currentWeather),
-      aquarium: get(aquarium),
-      museum: get(museum),
-      dailyQuest: get(dailyQuest),
-      upgrades: get(upgrades),
-    };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    localStorage.setItem(SAVE_KEY, JSON.stringify(serializeState()));
     hasSaveGame.set(true);
     savedGameMode.set(get(gameMode));
   } catch (e) {
@@ -94,32 +146,7 @@ export function loadGame() {
   try {
     const saved = localStorage.getItem(SAVE_KEY);
     if (saved) {
-      const data = JSON.parse(saved);
-      gameMode.set(data.gameMode || "normal");
-      savedGameMode.set(data.gameMode || "normal");
-      fishLog.set(data.log || {});
-      money.set(data.money ?? 500);
-      playerName.set(data.name || "");
-      day.set(data.day || 1);
-      seasonIndex.set(data.season || 0);
-      inGameMinutes.set(data.time || 360);
-      eqRodId.set(data.rod || "vara_vime");
-      eqNetId.set(data.net || null);
-      eqBaitId.set(data.bait || "sem_isca");
-      ownedRods.set(data.ownedRods || ["vara_vime"]);
-      ownedNets.set(data.ownedNets || []);
-      ownedBaits.set(data.ownedBaits || ["sem_isca"]);
-      baitStock.set(data.baitStock || { minhoca: 5 });
-      lastWormHarvestDay.set(data.lastWormDay || 0);
-      lastFestivalClaim.set(data.lastFestivalClaim || 0);
-      constructions.set(data.constructions || JSON.parse(JSON.stringify(INITIAL_CONSTRUCTIONS)));
-      inventory.set(data.inv || []);
-      currentWeather.set(data.weather || "sunny");
-      aquarium.set(data.aquarium || {});
-      museum.set(data.museum || {});
-      dailyQuest.set(data.dailyQuest || null);
-      upgrades.set(data.upgrades || JSON.parse(JSON.stringify(INITIAL_UPGRADES)));
-
+      applyState(migrateSave(JSON.parse(saved)));
       startGameSession();
     }
   } catch (e) {
@@ -137,27 +164,7 @@ export function deleteSave() {
 }
 
 export function newGame(selectedMode = "normal") {
-  gameMode.set(selectedMode);
-  savedGameMode.set(selectedMode);
-  fishLog.set({});
-  money.set(500);
-  day.set(1);
-  seasonIndex.set(0);
-  inGameMinutes.set(360);
-  eqRodId.set("vara_vime");
-  eqNetId.set(null);
-  eqBaitId.set("sem_isca");
-  ownedRods.set(["vara_vime"]);
-  ownedNets.set([]);
-  ownedBaits.set(["sem_isca"]);
-  baitStock.set({ minhoca: 5 });
-  lastFestivalClaim.set(0);
-  inventory.set([]);
-  aquarium.set({});
-  museum.set({});
-  constructions.set(JSON.parse(JSON.stringify(INITIAL_CONSTRUCTIONS)));
-  upgrades.set(JSON.parse(JSON.stringify(INITIAL_UPGRADES)));
-
+  resetState(selectedMode);
   generateDailyQuest();
   const currentName = get(playerName);
   if (!currentName || !currentName.trim()) {
@@ -167,10 +174,10 @@ export function newGame(selectedMode = "normal") {
 }
 
 export function startGameSession() {
-  phase.set("fade");
+  phase.set(PHASES.FADE);
   isFading.set(true);
   setTimeout(() => {
-    phase.set("playing");
+    phase.set(PHASES.PLAYING);
     isFading.set(false);
     currentMap.set("village");
     player.set({ ...PLAYER_START });

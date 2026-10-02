@@ -1,4 +1,5 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import {
     inGameMinutes,
     day,
@@ -57,7 +58,7 @@
     <p class="retro-font text-[10px] text-black leading-loose">
       {$currentMessage}
     </p>
-    {#if $phase === "dialog" || $phase === "sailing"}
+    {#if $phase === PHASES.DIALOG || $phase === PHASES.SAILING}
       <div
         class="absolute bottom-6 right-6 retro-font text-red-600 animate-bounce text-[10px]"
       >

@@ -1,4 +1,5 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { draw } from "../game/sprites.js";
   import { TOOLS, BAITS } from "../game/constants.js";
   import {
@@ -19,7 +20,7 @@
 >
   <button
     class="absolute top-4 right-4 bg-black text-white w-10 h-10 retro-font text-xs z-50 hover:bg-gray-800"
-    on:click={() => phase.set("playing")}
+    on:click={() => phase.set(PHASES.PLAYING)}
   >
     X
   </button>

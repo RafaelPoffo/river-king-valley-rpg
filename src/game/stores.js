@@ -1,4 +1,5 @@
 import { writable, derived, get } from "svelte/store";
+import { PHASES } from "./phases.js";
 import {
   INITIAL_CONSTRUCTIONS,
   INITIAL_UPGRADES,
@@ -10,7 +11,7 @@ import {
   FISH_DB,
   PLAYER_START,
 } from "./constants.js";
-import { POKEMON_DB } from "./pokemonConstants.js";
+import { POKEMON_DB } from "./data/pokemon.js";
 
 // Game Mode: 'normal' | 'pokemon'
 export const gameMode = writable("normal");
@@ -24,8 +25,7 @@ export function getActiveDatabase() {
   return get(gameMode) === "pokemon" ? POKEMON_DB : FISH_DB;
 }
 
-// Game phase: 'menu' | 'playing' | 'pause_menu' | 'shop' | 'carpenter' | 'fish_log' | 'equipment' | 'dialog' | 'sailing' | 'fishing_aim' | 'fishing_wait' | 'fishing_approach' | 'fishing_bite' | 'fishing_minigame' | 'caught' | 'fade'
-export const phase = writable("menu");
+export const phase = writable(PHASES.MENU);
 
 // Player state
 export const playerName = writable("");
@@ -93,6 +93,7 @@ export const lastEnteringHouse = writable(null);
 export const deepSeaFishingActive = writable(false);
 export const lastWormHarvestDay = writable(0);
 export const lastFestivalClaim = writable(0);
+export const tournament = writable(null);
 export const cameraX = writable(0);
 export const cameraY = writable(0);
 export const villagers = writable([...INITIAL_VILLAGERS]);

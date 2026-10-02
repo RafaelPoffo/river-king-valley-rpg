@@ -1,4 +1,5 @@
 <script>
+  import { PHASES, LINE_IN_WATER, isFishingPhase } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
   import { TILE_SIZE } from "../game/constants.js";
   import {
@@ -23,14 +24,9 @@
     right: "/assets/crystal_player_fish_right.png",
   };
 
-  $: fishing = $phase.startsWith("fishing_");
+  $: fishing = isFishingPhase($phase);
   $: src = (fishing ? FISH_SPRITE : SPRITE)[$player.dir] || SPRITE.down;
-  $: showBobber = [
-    "fishing_wait",
-    "fishing_approach",
-    "fishing_bite",
-    "fishing_minigame",
-  ].includes($phase);
+  $: showBobber = LINE_IN_WATER.has($phase);
 </script>
 
 <div
@@ -50,7 +46,7 @@
     class="tile"
     style="left: {$bobberPos.x * TILE_SIZE}px; top: {$bobberPos.y * TILE_SIZE}px; z-index: 15;"
   >
-    <div class={`bobber ${$phase === "fishing_bite" ? "bobber-bite" : "bobber-float"}`} />
+    <div class={`bobber ${$phase === PHASES.FISHING_BITE ? "bobber-bite" : "bobber-float"}`} />
   </div>
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index: 10;">
     <line
@@ -58,8 +54,8 @@
       y1={$player.y * TILE_SIZE + 20}
       x2={$bobberPos.x * TILE_SIZE + 20}
       y2={$bobberPos.y * TILE_SIZE + 20}
-      stroke={$phase === "fishing_bite" ? "#ff0000" : "#000"}
-      stroke-width={$phase === "fishing_bite" ? "3" : "2"}
+      stroke={$phase === PHASES.FISHING_BITE ? "#ff0000" : "#000"}
+      stroke-width={$phase === PHASES.FISHING_BITE ? "3" : "2"}
     />
   </svg>
 {/if}

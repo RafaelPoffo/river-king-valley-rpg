@@ -1,12 +1,10 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
-  import { FISH_DB } from "../game/constants.js";
-  import { POKEMON_DB } from "../game/pokemonConstants.js";
-  import { phase, fishLog, gameMode } from "../game/stores.js";
+  import { phase, fishLog, gameMode, currentDatabase } from "../game/stores.js";
 
   $: isPokeMode = $gameMode === "pokemon";
-  $: database = isPokeMode ? POKEMON_DB : FISH_DB;
-  $: filteredFish = database.filter((f) => {
+  $: filteredFish = $currentDatabase.filter((f) => {
     if (isPokeMode) {
       // Filtrar apenas pokémon reais (excluir lixo do catálogo principal da pokedex)
       return f.stage !== undefined && !f.id.startsWith("poke_");
@@ -28,7 +26,7 @@
     </div>
     <button
       class="bg-black text-white px-4 py-2 retro-font text-[9px] hover:bg-gray-800"
-      on:click={() => phase.set("playing")}
+      on:click={() => phase.set(PHASES.PLAYING)}
     >
       FECHAR [X]
     </button>

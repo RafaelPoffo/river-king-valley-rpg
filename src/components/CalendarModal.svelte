@@ -1,5 +1,5 @@
 <script>
-  import { SEASONS, FESTIVALS } from "../game/constants.js";
+  import { SEASONS, FESTIVALS, TOURNAMENTS } from "../game/constants.js";
   import { showCalendarModal } from "../game/stores.js";
 </script>
 
@@ -32,7 +32,9 @@
             {#each Object.entries(FESTIVALS[sIdx]) as [dNum, fName]}
               <li class="flex justify-between">
                 <span>Dia {dNum}:</span>
-                <span class="font-bold text-black">{fName}</span>
+                <span class="font-bold text-black">
+                  {TOURNAMENTS[fName] ? "🏆 " : ""}{fName}
+                </span>
               </li>
             {/each}
           </ul>

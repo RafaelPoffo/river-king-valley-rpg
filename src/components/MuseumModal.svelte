@@ -1,11 +1,9 @@
 <script>
+  import { PHASES } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
-  import { FISH_DB } from "../game/constants.js";
-  import { POKEMON_DB } from "../game/pokemonConstants.js";
-  import { phase, museum, gameMode } from "../game/stores.js";
+  import { phase, museum, currentDatabase } from "../game/stores.js";
 
-  $: database = $gameMode === "pokemon" ? POKEMON_DB : FISH_DB;
-  $: relics = database.filter((entry) => entry.type === "treasure");
+  $: relics = $currentDatabase.filter((entry) => entry.type === "treasure");
   $: found = relics.filter((entry) => $museum[entry.id]).length;
 </script>
 
@@ -15,7 +13,7 @@
       <h3 class="retro-font text-xs">MUSEU ({found}/{relics.length})</h3>
       <button
         class="bg-black text-white px-2 py-1 retro-font text-[8px] hover:bg-gray-800"
-        on:click={() => phase.set("playing")}
+        on:click={() => phase.set(PHASES.PLAYING)}
       >
         X
       </button>

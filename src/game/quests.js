@@ -1,11 +1,8 @@
 import { get } from "svelte/store";
-import { FISH_DB } from "./constants.js";
-import { POKEMON_DB } from "./pokemonConstants.js";
-import { gameMode, dailyQuest, money, currentMessage } from "./stores.js";
+import { getActiveDatabase, dailyQuest, money, currentMessage } from "./stores.js";
 
 export function generateDailyQuest() {
-  const isPokeMode = get(gameMode) === "pokemon";
-  const database = isPokeMode ? POKEMON_DB : FISH_DB;
+  const database = getActiveDatabase();
   const pool = database.filter(
     (f) => f.type === "fish" && f.rarity > 0 && !f.id.startsWith("poke_") && !f.id.includes("bota") && !f.id.includes("lata")
   );

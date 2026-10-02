@@ -1,4 +1,5 @@
 <script>
+  import { PHASES, CLOSABLE_SCREENS, CANCELABLE_FISHING } from "../game/phases.js";
   import { onMount, onDestroy } from "svelte";
   import {
     phase,
@@ -14,7 +15,8 @@
     showCalendarModal,
   } from "../game/stores.js";
   import { checkSaveExists } from "../game/saveSystem.js";
-  import { setDirectionHeld, releaseMovement } from "../game/movement.js";
+  import { todaysTournament } from "../game/tournament.js";
+  import { setDirectionHeld, releaseMovement, isInterior } from "../game/movement.js";
   import {
     throwLine,
     startMinigame,
@@ -89,16 +91,9 @@
 
   function startClock() {
     clockInterval = setInterval(() => {
-      const isInside = [
-        "player_house",
-        "shop_gear",
-        "shop_bait",
-        "carpenter_shop",
-        "hut_old",
-        "tavern",
-      ].includes($currentMap);
+      const isInside = isInterior($currentMap);
 
-      if ($phase === "playing" && !isInside) {
+      if ($phase === PHASES.PLAYING && !isInside) {
         inGameMinutes.update((m) => m + 10);
         const curHours = Math.floor($inGameMinutes / 60);
 
@@ -107,8 +102,11 @@
           if ($deepSeaFishingActive) {
             returnFromDeepSea();
           } else {
+            const today = todaysTournament();
             showRPGMessage(
-              "O sol está se pondo... Os moradores começam a ir para a taverna!"
+              today && today.entry.best && !today.entry.submitted
+                ? `O ${today.name} encerrou as capturas! Entregue seu peixe na barraca da praça.`
+                : "O sol está se pondo... Os moradores começam a ir para a taverna!"
             );
           }
         }
@@ -163,21 +161,18 @@
       e.preventDefault();
     }
 
-    if ($phase === "dialog" && $dialogActions) {
+    if ($phase === PHASES.DIALOG && $dialogActions) {
       const action = $dialogActions[k.toUpperCase()] || $dialogActions[k];
       if (action) action();
       return;
     }
 
-    if (
-      ["fishing_wait", "fishing_approach"].includes($phase) &&
-      (k === " " || k === "Spacebar")
-    ) {
+    if (CANCELABLE_FISHING.has($phase) && (k === " " || k === "Spacebar")) {
       resetAction("Você recolheu a linha.");
       return;
     }
 
-    if ($phase === "playing") {
+    if ($phase === PHASES.PLAYING) {
       const dir = directionFromKey(k);
       if (dir) {
         setDirectionHeld(dir, true);
@@ -185,25 +180,20 @@
       }
       if (k === "Enter") {
         releaseMovement();
-        phase.set("pause_menu");
+        phase.set(PHASES.PAUSE_MENU);
         return;
       }
       if (k === " " || k === "Spacebar") interact();
-    } else if ($phase === "fishing_aim" && (k === " " || k === "Spacebar")) {
+    } else if ($phase === PHASES.FISHING_AIM && (k === " " || k === "Spacebar")) {
       throwLine();
-    } else if ($phase === "fishing_bite" && (k === " " || k === "Spacebar")) {
+    } else if ($phase === PHASES.FISHING_BITE && (k === " " || k === "Spacebar")) {
       startMinigame();
-    } else if ($phase === "fishing_minigame" && (k === " " || k === "Spacebar")) {
+    } else if ($phase === PHASES.FISHING_MINIGAME && (k === " " || k === "Spacebar")) {
       attemptCatch();
-    } else if ($phase === "caught" && (k === " " || k === "Spacebar")) {
+    } else if ($phase === PHASES.CAUGHT && (k === " " || k === "Spacebar")) {
       resetAction("Use as setas para se mover.");
-    } else if (
-      ["shop", "fish_log", "equipment", "carpenter", "pause_menu", "museum"].includes(
-        $phase
-      ) &&
-      ["Escape", "x", "X"].includes(k)
-    ) {
-      phase.set("playing");
+    } else if (CLOSABLE_SCREENS.has($phase) && ["Escape", "x", "X"].includes(k)) {
+      phase.set(PHASES.PLAYING);
     }
   }
 </script>
@@ -234,17 +224,17 @@
       />
 
       <!-- Content Views -->
-      {#if $phase === "menu"}
+      {#if $phase === PHASES.MENU}
         <MainMenu />
-      {:else if $phase === "carpenter"}
+      {:else if $phase === PHASES.CARPENTER}
         <CarpenterModal />
-      {:else if $phase === "fish_log"}
+      {:else if $phase === PHASES.FISH_LOG}
         <CatalogModal />
-      {:else if $phase === "equipment"}
+      {:else if $phase === PHASES.EQUIPMENT}
         <BackpackModal />
-      {:else if $phase === "shop"}
+      {:else if $phase === PHASES.SHOP}
         <ShopModal />
-      {:else if $phase === "museum"}
+      {:else if $phase === PHASES.MUSEUM}
         <MuseumModal />
       {:else}
         <!-- Active Playing Canvas -->
@@ -254,7 +244,7 @@
         <FishingOverlay />
 
         <!-- Modal Windows -->
-        {#if $phase === "pause_menu"}
+        {#if $phase === PHASES.PAUSE_MENU}
           <PauseMenuModal />
         {/if}
 

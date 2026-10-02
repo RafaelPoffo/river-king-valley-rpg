@@ -1,4 +1,4 @@
-import { SPRITES } from "./sprites.js";
+import { SPRITES } from "../sprites.js";
 
 function pmdUrl(id) {
   return `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${id}/Normal.png`;
