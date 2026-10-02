@@ -79,7 +79,7 @@ export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
     case "0":
       return draw(SPRITES.void);
     case ".":
-      return imgTile("/assets/crystal_path_pure.png", "Caminho Johto");
+      return imgTile("/assets/crystal_real_path.png", "Caminho Johto");
     case "C":
       return imgTile("/assets/crystal_counter.png", "Balcão");
     case "M":
