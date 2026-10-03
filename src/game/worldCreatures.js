@@ -1,4 +1,4 @@
-import { MAPS_DATA, PLAYER_START, FESTIVAL_STALL, INITIAL_VILLAGERS, AQUARIUM_FOOTPRINT, DOCK_BOUNDS, getNpcLocation, inBounds } from "./constants.js";
+import { MAPS_DATA, PLAYER_START, FESTIVAL_STALL, INITIAL_VILLAGERS, AQUARIUM_FOOTPRINT, DOCK_BOUNDS, CAST_TILES, getNpcLocation, inBounds } from "./constants.js";
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
@@ -72,7 +72,7 @@ export function createDailyPopulation(key, landSpecies, waterSpecies, blocked = 
         zone,
         size,
         x: 2 + Math.floor(random() * (36 - size)),
-        y: aquatic ? biome === "river" ? 5 - zone * 2 : 16 + zone * 2 : 5 + Math.floor(random() * 11),
+        y: aquatic ? biome === "river" ? 5 - CAST_TILES[zone] : 16 + CAST_TILES[zone] : 5 + Math.floor(random() * 11),
         direction: "down",
         target: null,
         progress: 0,

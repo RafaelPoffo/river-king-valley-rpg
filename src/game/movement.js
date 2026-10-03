@@ -4,6 +4,8 @@ import { worldCreatureBlocks } from "./worldCreatures.js";
 import {
   MAPS_DATA,
   TILE_SIZE,
+  VIEW_WIDTH,
+  VIEW_HEIGHT,
   FESTIVAL_STALL,
   PLAYER_START,
   DOCK_BOUNDS,
@@ -25,7 +27,7 @@ import {
   currentFestival,
 } from "./stores.js";
 
-const STEP_MS = 120;
+const STEP_MS = 165;
 const VECTORS = {
   up: [0, -1],
   down: [0, 1],
@@ -64,12 +66,10 @@ export function updateCamera() {
   const mapArr = MAPS_DATA[cMap];
   if (!mapArr) return;
 
-  const viewW = 800;
-  const viewH = 450;
-  const cx = p.x * TILE_SIZE - viewW / 2 + TILE_SIZE / 2;
-  const cy = p.y * TILE_SIZE - viewH / 2 + TILE_SIZE / 2;
-  cameraX.set(Math.max(0, Math.min(cx, mapArr[0].length * TILE_SIZE - viewW)));
-  cameraY.set(Math.max(0, Math.min(cy, mapArr.length * TILE_SIZE - viewH)));
+  const cx = p.x * TILE_SIZE - VIEW_WIDTH / 2 + TILE_SIZE / 2;
+  const cy = p.y * TILE_SIZE - VIEW_HEIGHT / 2 + TILE_SIZE / 2;
+  cameraX.set(Math.max(0, Math.min(cx, mapArr[0].length * TILE_SIZE - VIEW_WIDTH)));
+  cameraY.set(Math.max(0, Math.min(cy, mapArr.length * TILE_SIZE - VIEW_HEIGHT)));
 }
 
 export function interiorSpawn(mapName, dir = "up") {

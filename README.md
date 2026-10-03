@@ -73,7 +73,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 3. **Espera:** de 6 a 20 segundos. Aperte Espaço se quiser recolher a linha.
 4. **Análise da isca:** no mar, a sombra vem da esquerda, direita ou de baixo; no rio, da esquerda, direita ou de cima. Paredes laterais bloqueiam a entrada por aquele lado. A sombra circula lentamente a boia por 3 a 5 segundos. Um coração rosa indica interesse: isca favorita dá 80% de chance de mordida e duas alternativas dão 50%. Uma isca incompatível mostra um X vermelho e o peixe vai embora.
 5. **Fisgada:** a boia afunda e você tem pouco tempo para apertar Espaço. Quanto mais raro o peixe, menor a janela (de 1,05 s até 0,4 s, mais o bônus do Ensopado do Mar).
-6. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é menor para peixes difíceis e maior com varas melhores e com o upgrade Braço Forte.
+6. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é estreita (de 8% a 40% da barra): menor para peixes difíceis e maior com varas melhores, com o upgrade Braço Forte e com a Sopa do Rio. O marcador é rápido, e peixes mais ágeis o deixam ainda mais rápido.
 
 **Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
 
@@ -92,7 +92,9 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Peixe raro ou lendário | 8% | 22% |
 | Peixe comum | 0% | 6% |
 
-O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. Os preços-base dos Pokémon foram reduzidos a um décimo dos valores anteriores para novas capturas, mantendo essa mesma fórmula. O peso é sorteado entre o mínimo e o máximo da espécie, e de vez em quando passa do seu recorde.
+O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. Os preços-base foram reduzidos para alongar o jogo: os Pokémon valem um décimo do valor original e os peixes e criaturas de rede do modo Normal, um quarto. Lixo e tesouros não mudaram.
+
+**Peso e recordes.** O peso é sorteado entre o mínimo e o máximo da espécie, mas puxado para baixo: a maioria das capturas fica no terço mais leve, e chegar perto do peso máximo é raro. Em 1,5% das capturas o peixe chega até 3% acima do seu recorde, sem passar do máximo da espécie.
 
 **Rede.** Troque entre vara e rede no menu (Enter). A rede só funciona na margem (rio ou mar raso) e pega criaturas de rede e peixes pequenos na hora, sem minigame.
 
@@ -101,13 +103,13 @@ O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. Os pre
 | Vara | Preço | Alcance | Luta |
 |---|---|---|---|
 | Vara de Vime (Nv 1) | inicial | zona 1 | difícil |
-| Vara de Fibra (Nv 2) | ¥250 | até zona 2 | ↓ |
-| Vara Amadora (Nv 3) | ¥800 | até zona 3 | ↓ |
-| Vara Profissional (Nv 4) | ¥2.500 | até zona 3 | ↓ |
-| Vara Marítima (Nv 5) | ¥8.000 | até zona 3 | ↓ |
-| Vara Mítica (Nv 6) | ¥25.000 | até zona 3 | mais fácil |
+| Vara de Fibra (Nv 2) | ¥1.500 | até zona 2 | ↓ |
+| Vara Amadora (Nv 3) | ¥6.000 | até zona 3 | ↓ |
+| Vara Profissional (Nv 4) | ¥20.000 | até zona 3 | ↓ |
+| Vara Marítima (Nv 5) | ¥60.000 | até zona 3 | ↓ |
+| Vara Mítica (Nv 6) | ¥180.000 | até zona 3 | mais fácil |
 
-As redes custam ¥100 (Nv 1), ¥400 (Nv 2) e ¥1.500 (Nv 3). Quanto melhor a rede, mais fácil a captura.
+As redes custam ¥800 (Nv 1), ¥3.500 (Nv 2) e ¥12.000 (Nv 3). Quanto melhor a rede, mais fácil a captura.
 
 | Isca | Preço (5 unidades) | Preferência |
 |---|---|---|
@@ -271,6 +273,7 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 | `fishingEngine.test.js` | Em todas as combinações de bioma, zona, horário e estação: peixe só sai no horário, bioma e distância certos, lixo só da lista de lixo, preço final certo e o upgrade de sorte funcionando. Usa números aleatórios com semente fixa. |
 | `saveSystem.test.js` | Salvar e carregar sem perder nada, jogo novo zerando o progresso e mantendo o nome, migração de saves antigos. |
 | `phases.test.js` | Todo `PHASES.X` usado no código existe e os grupos de fases são coerentes. |
+| `balance.test.js` | Peso sempre dentro da espécie e raramente pesado, área verde menor que antes e nunca zerada, vara melhor sempre ajuda, preços de equipamento crescentes, nenhum peixe pagando sozinho a vara mais cara e distâncias do lançamento dentro do mar. |
 | `tournament.test.js` | Quem pode competir, pontuação, colocação, prêmios, horário de fechamento, pagamento único e se todo torneio pode ser vencido nos dois modos. |
 | `clock.test.js` | Relógio andando só na rua e fora de menus, aviso do pôr do sol uma vez só e desmaio às 22h. |
 | `collections.test.js` | Marcos do museu e do aquário: pagos uma vez só, todos de uma vez ao completar, nos dois modos. |

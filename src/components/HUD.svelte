@@ -113,7 +113,7 @@
 <!-- Deep Sea Return Button -->
 {#if $deepSeaFishingActive}
   <button
-    class="absolute bottom-4 right-4 bg-red-600 text-white border-4 border-black p-3 retro-font text-[9px] pixel-shadow pointer-events-auto active:bg-red-800 z-40"
+    class="absolute bottom-[116px] right-4 bg-red-600 text-white border-4 border-black p-3 retro-font text-[9px] pixel-shadow pointer-events-auto active:bg-red-800 z-40"
     on:click={returnFromDeepSea}
   >
     VOLTAR AO PORTO
@@ -122,17 +122,17 @@
 
 <!-- Bottom Dialogue & Message Box -->
 <div
-  class="h-[150px] bg-gray-200 p-3 flex items-center justify-center relative select-none"
+  class="h-[100px] bg-gray-200 p-2 flex items-center justify-center relative select-none"
 >
   <div
-    class="w-full h-full border-4 border-black bg-white p-4 flex flex-col justify-start shadow-[inset_4px_4px_0_#9ce6e6] relative"
+    class="w-full h-full border-4 border-black bg-white px-3 py-2 flex flex-col justify-start shadow-[inset_4px_4px_0_#9ce6e6] relative overflow-y-auto"
   >
-    <p class="retro-font text-[10px] text-black leading-loose">
+    <p class="retro-font text-[10px] text-black leading-relaxed pr-4">
       {$currentMessage}
     </p>
     {#if $phase === PHASES.DIALOG || $phase === PHASES.SAILING}
       <div
-        class="absolute bottom-6 right-6 retro-font text-red-600 animate-bounce text-[10px]"
+        class="absolute bottom-2 right-3 retro-font text-red-600 animate-bounce text-[10px]"
       >
         ▼
       </div>

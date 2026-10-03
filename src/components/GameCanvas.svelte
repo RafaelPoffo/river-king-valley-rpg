@@ -19,7 +19,7 @@
   $: mapHeight = (map?.length || 1) * TILE_SIZE;
 </script>
 
-<div class="h-[450px] relative bg-[#4a9090] overflow-hidden border-b-8 border-black select-none">
+<div class="h-[476px] relative bg-[#4a9090] overflow-hidden border-b-8 border-black select-none">
   <div
     class="absolute will-change-transform"
     style="transform: translate({-$cameraX}px, {-$cameraY}px); width: {mapWidth}px; height: {mapHeight}px;"

@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
-import { BAITS, MAPS_DATA } from "./constants.js";
+import { BAITS, MAPS_DATA, CAST_TILES } from "./constants.js";
 import {
   gameMode,
   getActiveDatabase,
@@ -117,7 +117,7 @@ export function throwLine() {
   if (castBaitId !== equippedBait) eqBaitId.set(castBaitId);
 
   const p = get(player);
-  const distTiles = dist * 2;
+  const distTiles = CAST_TILES[dist] ?? dist * 2;
   const targetBobber = {
     x:
       p.dir === "left"
@@ -466,6 +466,14 @@ export function rollFishByZone(zone) {
   return decorateCatch(fishBase);
 }
 
+// Heavy fish are rare: the curve keeps most catches in the lower third of the range.
+const WEIGHT_CURVE = 2.5;
+const RECORD_PUSH_CHANCE = 0.015;
+
+export function rollWeight(minW, maxW, random = Math.random) {
+  return Number((minW + Math.pow(random(), WEIGHT_CURVE) * (maxW - minW)).toFixed(2));
+}
+
 export function processCaughtFish(fishBase) {
   const minW = fishBase.minW || 0.2;
   const maxW = fishBase.maxW || 5.0;
@@ -482,9 +490,9 @@ export function processCaughtFish(fishBase) {
   }
 
   const currentRecord = currentLog[fishBase.id].recordWeight || minW;
-  let weight = Number((minW + Math.random() * (maxW - minW)).toFixed(2));
-  if (Math.random() < 0.05) {
-    weight = Number((currentRecord * (1 + Math.random() * 0.1)).toFixed(2));
+  let weight = rollWeight(minW, maxW);
+  if (Math.random() < RECORD_PUSH_CHANCE) {
+    weight = Number(Math.min(maxW, currentRecord * (1 + Math.random() * 0.03)).toFixed(2));
   }
 
   if (weight > currentRecord) currentLog[fishBase.id].recordWeight = weight;
@@ -502,6 +510,13 @@ export function processCaughtFish(fishBase) {
   return { ...fishBase, weight };
 }
 
+const MIN_CATCH_WIDTH = 8;
+const MINIGAME_SPEED = 150;
+
+export function catchZoneWidth(diff, toolPower) {
+  return Math.max(MIN_CATCH_WIDTH, 40 - diff * toolPower * 1.5);
+}
+
 export function startMinigame() {
   clearTimeout(loopIds.escape);
   phase.set(PHASES.FISHING_MINIGAME);
@@ -510,7 +525,7 @@ export function startMinigame() {
   const tool = get(currentToolData);
   const up = get(upgrades);
 
-  let baseWidth = Math.max(12, 60 - (curFish?.diff || 10) * (tool?.power || 1));
+  let baseWidth = catchZoneWidth(curFish?.diff || 10, tool?.power || 1);
   if (up.widerBar.bought) baseWidth *= 1.2;
   baseWidth *= dishEffect("catchBar", 1);
 
@@ -529,7 +544,7 @@ function updateMinigame(time) {
   lastTime = time;
 
   const curFish = get(activeFish);
-  let bar = get(minigameBar) + minigameDir * ((curFish?.spd || 1) * 7.0) * delta * 15;
+  let bar = get(minigameBar) + minigameDir * (curFish?.spd || 1) * MINIGAME_SPEED * delta;
   if (bar > 100) {
     bar = 100;
     minigameDir = -1;

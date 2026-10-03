@@ -1,4 +1,11 @@
 export const TILE_SIZE = 40;
+// Visible map area inside the 12px frame and above the 100px message box.
+export const VIEW_WIDTH = 776;
+export const VIEW_HEIGHT = 468;
+
+// How far from the shore the bobber lands for each zone. Only visual: the
+// zone itself still decides which species can bite.
+export const CAST_TILES = { 1: 2, 2: 3, 3: 4 };
 
 export const FESTIVAL_STALL = { x: 22, y: 14 };
 export const PLAYER_START = { x: 6, y: 9, dir: "up" };

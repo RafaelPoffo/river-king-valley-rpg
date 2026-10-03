@@ -20,7 +20,7 @@ export const TOOLS = {
       power: 1.0,
       maxDist: 2,
       desc: "Alcança o canal.",
-      price: 250,
+      price: 1500,
     },
     {
       id: "vara_amadora",
@@ -30,7 +30,7 @@ export const TOOLS = {
       power: 0.8,
       maxDist: 3,
       desc: "Equilibrada.",
-      price: 800,
+      price: 6000,
     },
     {
       id: "vara_profissional",
@@ -40,7 +40,7 @@ export const TOOLS = {
       power: 0.6,
       maxDist: 3,
       desc: "Alta precisão.",
-      price: 2500,
+      price: 20000,
     },
     {
       id: "vara_pesada",
@@ -50,7 +50,7 @@ export const TOOLS = {
       power: 0.5,
       maxDist: 3,
       desc: "Resistente.",
-      price: 8000,
+      price: 60000,
     },
     {
       id: "vara_mitica",
@@ -60,7 +60,7 @@ export const TOOLS = {
       power: 0.4,
       maxDist: 3,
       desc: "Alcance supremo.",
-      price: 25000,
+      price: 180000,
     },
   ],
   net: [
@@ -72,7 +72,7 @@ export const TOOLS = {
       power: 1.2,
       maxDist: 1,
       desc: "Siris e crustáceos rasos.",
-      price: 100,
+      price: 800,
     },
     {
       id: "rede_2",
@@ -82,7 +82,7 @@ export const TOOLS = {
       power: 1.0,
       maxDist: 1,
       desc: "Rede reforçada.",
-      price: 400,
+      price: 3500,
     },
     {
       id: "rede_3",
@@ -92,7 +92,7 @@ export const TOOLS = {
       power: 0.8,
       maxDist: 1,
       desc: "Rede profissional.",
-      price: 1500,
+      price: 12000,
     },
   ],
 };

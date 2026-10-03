@@ -6,6 +6,7 @@ import {
   FESTIVAL_STALL,
   INITIAL_VILLAGERS,
   INITIAL_CONSTRUCTIONS,
+  CAST_TILES,
   getNpcLocation,
 } from "./constants.js";
 import { canWalkOn, houseForDoor, interiorSpawn, isInterior, setDirectionHeld, releaseMovement } from "./movement.js";
@@ -72,7 +73,7 @@ describe("população diária da vila", () => {
       expect(creatures.some((creature) => !creature.aquatic)).toBe(true);
       for (const creature of creatures) {
         expect(canPlaceCreature(creature, creatures.filter((other) => other.id !== creature.id))).toBe(true);
-        if (creature.aquatic) expect(creature.y).toBe(creature.biome === "river" ? 5 - creature.zone * 2 : 16 + creature.zone * 2);
+        if (creature.aquatic) expect(creature.y).toBe(creature.biome === "river" ? 5 - CAST_TILES[creature.zone] : 16 + CAST_TILES[creature.zone]);
       }
     }
   });

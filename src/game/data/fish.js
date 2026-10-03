@@ -1,6 +1,8 @@
 import { SPRITES } from "../sprites.js";
 import { withBaitPreferences } from "./equipment.js";
 
+const SELLABLE = new Set(["fish", "net"]);
+
 export const FISH_DB = [
   // 10 Itens de Lixo do Mar (1 a 2 Estrelas)
   {
@@ -1838,4 +1840,9 @@ export const FISH_DB = [
     minW: 50.0,
     maxW: 150.0,
   },
-].map(withBaitPreferences);
+].map((species) => withBaitPreferences({
+  ...species,
+  price: SELLABLE.has(species.type) && species.sprite !== SPRITES.trash
+    ? Math.max(2, Math.round(species.price / 4))
+    : species.price,
+}));

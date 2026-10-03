@@ -15,7 +15,7 @@
 <!-- Definir Força (Aim Bar) -->
 {#if $phase === PHASES.FISHING_AIM}
   <div
-    class="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 bg-white border-4 border-black p-4 text-center pixel-shadow"
+    class="absolute bottom-[120px] left-1/2 -translate-x-1/2 z-40 bg-white border-4 border-black p-4 text-center pixel-shadow"
   >
     <h3 class="retro-font text-[9px] mb-2 text-red-600 animate-pulse">
       DEFINIR FORÇA (ZONA {Math.floor($aimPower)}): [SPACE]
@@ -34,7 +34,7 @@
 <!-- Bateu Alerta -->
 {#if $phase === PHASES.FISHING_BITE}
   <div
-    class="absolute bottom-10 left-1/2 -translate-x-1/2 z-40 bg-red-600 text-white border-4 border-black p-4 text-center pixel-shadow animate-bounce"
+    class="absolute bottom-[120px] left-1/2 -translate-x-1/2 z-40 bg-red-600 text-white border-4 border-black p-4 text-center pixel-shadow animate-bounce"
   >
     <h3 class="retro-font text-[11px]">
       BATEU! APERTE [SPACE] RÁPIDO!
