@@ -3,6 +3,7 @@
   import { phase, constructions, upgrades, friendship } from "../game/stores.js";
   import { orderConstruction, buyUpgrade } from "../game/gameActions.js";
   import { friendPrice, hasPerk } from "../game/friendship.js";
+  import { INITIAL_CONSTRUCTIONS } from "../game/constants.js";
 
   $: price = ($friendship, friendPrice);
   $: discount = ($friendship, hasPerk("carpenter"));
@@ -35,6 +36,9 @@
     </h3>
     {#each Object.keys($constructions) as key}
       {@const c = $constructions[key]}
+      {@const info = INITIAL_CONSTRUCTIONS[key] || c}
+      {@const required = info.required}
+      {@const locked = !!required && $constructions[required]?.status !== "built"}
       <div
         class="border-2 border-black p-4 flex justify-between items-center bg-[#9ce6e6]/30"
       >
@@ -42,6 +46,14 @@
           <div class="retro-font text-[10px] font-bold mb-1">
             {c.name} ({price(c.cost)}¥)
           </div>
+          {#if info.desc}
+            <div class="text-[12px] leading-snug mb-1">{info.desc}</div>
+          {/if}
+          {#if locked}
+            <div class="retro-font text-[8px] text-red-700 mb-1">
+              Requer: {INITIAL_CONSTRUCTIONS[required]?.name || required}
+            </div>
+          {/if}
           <div class="retro-font text-[8px]">
             Status: {c.status === "none"
               ? "Disponível"
@@ -52,7 +64,13 @@
                   : "Pronto!"}
           </div>
         </div>
-        {#if c.status === "none"}
+        {#if c.status === "none" && locked}
+          <span
+            class="retro-font text-[8px] px-3 py-1 bg-gray-200 border border-black"
+          >
+            🔒 BLOQUEADO
+          </span>
+        {:else if c.status === "none"}
           <button
             class="bg-black text-white retro-font text-[9px] px-4 py-2 hover:bg-gray-800"
             on:click={() => orderConstruction(key)}

@@ -45,6 +45,11 @@ import {
   WEATHER_NAMES,
   FESTIVAL_STALL,
   BOAT_BOUNDS,
+  BOAT_BOARDING,
+  DEEP_SEA_CAPTAIN,
+  DEEP_SEA_SPAWN,
+  LAST_DEPARTURE_HOUR,
+  INITIAL_CONSTRUCTIONS,
   inBounds,
   getNpcLocation,
   TOURNAMENT_CLOSE_MINUTES,
@@ -70,6 +75,7 @@ import {
   isWalking,
   afterCurrentStep,
   interiorSpawn,
+  canWalkOn,
 } from "./movement.js";
 import { saveGame } from "./saveSystem.js";
 import { ensureWorldPopulation } from "./worldCreatures.js";
@@ -113,6 +119,7 @@ export function sleep() {
       return { ...constr };
     });
 
+    deepSeaFishingActive.set(false);
     currentMap.set("player_house");
     player.set(interiorSpawn("player_house", "up"));
     ensureWorldPopulation();
@@ -136,9 +143,13 @@ export function forceSleep() {
 }
 
 export function startBoatVoyage() {
+  if (get(inGameMinutes) >= LAST_DEPARTURE_HOUR * 60) {
+    showRPGMessage(`Capitão Thomas: "Já é tarde, o sol se põe às 17h. Zarpamos amanhã, até as ${LAST_DEPARTURE_HOUR}h!"`);
+    return;
+  }
   phase.set(PHASES.DIALOG);
   currentMessage.set(
-    "Capitão Thomas: 'Quer zarpar para o alto-mar?' [SPACE] Sim / [X] Não"
+    "Capitão Thomas: 'Quer zarpar para o alto-mar? Voltamos às 17h.' [SPACE] Sim / [X] Não"
   );
   dialogActions.set({
     " ": () => {
@@ -146,27 +157,33 @@ export function startBoatVoyage() {
       currentMessage.set("O barco se afasta do porto...");
       setTimeout(() => {
         deepSeaFishingActive.set(true);
+        currentMap.set("deep_sea");
+        player.set({ ...DEEP_SEA_SPAWN });
         phase.set(PHASES.PLAYING);
-        player.set({ x: 19, y: 20, dir: "down" });
         updateCamera();
         showRPGMessage(
-          "Você chegou ao Alto-Mar! Águas profundas e perigosas."
+          "Alto-mar! Ande pelo convés e pesque pelos lados. Fale com o Capitão para voltar."
         );
       }, 2000);
     },
-    X: () => {
-      phase.set(PHASES.PLAYING);
-      showRPGMessage("");
-    },
+    X: closeDialog,
   });
+}
+
+function offerReturnToPort() {
+  phase.set(PHASES.DIALOG);
+  currentMessage.set("Capitão Thomas: 'Voltamos para o porto?' [SPACE] Sim / [X] Não");
+  dialogActions.set({ " ": returnFromDeepSea, X: closeDialog });
 }
 
 export function returnFromDeepSea() {
   phase.set(PHASES.SAILING);
+  currentMessage.set("O barco volta para o porto...");
   setTimeout(() => {
     deepSeaFishingActive.set(false);
+    currentMap.set("village");
+    player.set({ ...BOAT_BOARDING });
     phase.set(PHASES.PLAYING);
-    player.set({ x: 19, y: 16, dir: "up" });
     updateCamera();
     showRPGMessage("Retornou em segurança às Docas.");
   }, 1500);
@@ -199,9 +216,9 @@ export function harvestWorms() {
 
 export function orderConstruction(key) {
   const constr = get(constructions);
-  const c = constr[key];
-  if (c.required && constr[c.required].status !== "built") {
-    showRPGMessage(`Construa ${constr[c.required].name} primeiro!`);
+  const c = INITIAL_CONSTRUCTIONS[key];
+  if (c.required && constr[c.required]?.status !== "built") {
+    showRPGMessage(`Construa ${INITIAL_CONSTRUCTIONS[c.required].name} primeiro!`);
     return;
   }
   const curMoney = get(money);
@@ -486,8 +503,13 @@ export function interact() {
   }
 
   const constr = get(constructions);
-  if (constr.boat.status === "built" && inBounds(target.x, target.y, BOAT_BOUNDS)) {
+  if (cMap === "village" && constr.boat.status === "built" && inBounds(target.x, target.y, BOAT_BOUNDS)) {
     startBoatVoyage();
+    return;
+  }
+
+  if (cMap === "deep_sea" && target.x === DEEP_SEA_CAPTAIN.x && target.y === DEEP_SEA_CAPTAIN.y) {
+    offerReturnToPort();
     return;
   }
 
@@ -530,8 +552,14 @@ export function interact() {
     return;
   }
 
+  if (cMap === "village" && target.tile === "X" && canWalkOn("X", target.x, target.y, constr)) return;
+
   if (["~", "S", "X", "O"].includes(target.tile)) {
     if (get(deepSeaFishingActive)) {
+      if (get(currentToolType) === "net") {
+        currentToolType.set("rod");
+        showRPGMessage("A rede não alcança o fundo do alto-mar. Você pegou a vara.");
+      }
       startAim();
       return;
     }

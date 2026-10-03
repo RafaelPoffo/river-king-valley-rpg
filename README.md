@@ -60,7 +60,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 ### Tempo e clima
 
 - Cada 1,5 s real equivale a 10 minutos no jogo. O relógio para dentro das casas e durante menus e diálogos.
-- Às 17h o sol se põe. Quem estiver no alto-mar volta para as docas.
+- Às 17h o sol se põe. Quem estiver no alto-mar volta para as docas. O barco só zarpa até as 16h.
 - Às 22h você desmaia de cansaço e acorda em casa às 6h do dia seguinte. Também dá para dormir antes, na cama.
 - Cada estação dura 15 dias. São quatro: Primavera, Verão, Outono e Inverno.
 - O clima do dia é sorteado ao dormir: 50% sol, 25% chuva, 25% tempestade. Com chuva, a espera pela fisgada cai 20%; com tempestade, cai 40%.
@@ -80,7 +80,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 
 **Criaturas visíveis.** A população da vila (2 a 8 criaturas) se renova ao dormir e fica preservada no save durante aquele dia. Peixes e Pokémon visíveis na água podem ser atraídos: lance a boia perto deles, na zona em que estão, e eles vêm analisar a isca com coração ou X como qualquer sombra. Se fugirem ou forem pescados, saem do mapa até o dia seguinte. Os Pokémon terrestres são só visitantes: andam pela grama e bloqueiam a passagem. Lapras, Onix e Snorlax ocupam 2×2 quadrados; os demais, um.
 
-**Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio e no mar, longe da doca. São só decoração, sorteadas por dia, e não têm relação com a pesca.
+**Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio, no mar (longe do cais e do barco) e em volta do barco no alto-mar. São só decoração, sorteadas por dia, e não têm relação com a pesca.
 
 **Atlas do overworld.** Jogador, moradores e Pokemon do mapa usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16x16 (e os três de 32x32 da linha 14) com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direcoes e uma sequencia de caminhada/parado; Pokemon usam seus pares de animacao. Para adicionar sprites, cadastre suas coordenadas e especie, sem alterar as imagens do catalogo ou da captura. Saves antigos sao adaptados sem repovoar o dia. Os antigos arquivos de overworld em `public/assets/world/` nao sao mais usados pelo mapa; seus creditos permanecem nessa pasta.
 
@@ -137,12 +137,12 @@ A mochila tem 10 espaços, ou 15 com a Mochila Expandida. Com ela cheia, você e
 
 | Construção | Preço | O que faz |
 |---|---|---|
-| Píer de Pesca | ¥1.500 | Libera o cais, para andar sobre ele e pescar no mar. |
-| Docas do Porto | ¥3.500 | Também libera o cais. É exigida para o barco. |
-| Barco de Pesca | ¥9.000 | Leva ao alto-mar com o Capitão Thomas. Precisa das docas. |
+| Píer de Pesca | ¥1.500 | Uma passarela curta sobre o mar, para pescar mais longe da margem. |
+| Docas do Porto | ¥3.500 | Precisa do píer. Alarga e alonga o cais e cria o atracadouro do barco. |
+| Barco de Pesca | ¥9.000 | Precisa das docas. Fica atracado ao lado delas e leva ao alto-mar. |
 | Aquário Municipal | ¥5.000 | Permite doar peixes para exposição. |
 
-A obra começa no dia seguinte à encomenda e fica pronta depois de mais uma noite.
+A obra começa no dia seguinte à encomenda e fica pronta depois de mais uma noite. Enquanto isso, uma placa de obras marca o lugar no mar. Na oficina, cada construção mostra o que faz e o que precisa antes; as que dependem de outra ficam bloqueadas. Saves antigos que já tinham as docas ganham o píer.
 
 | Melhoria | Preço | Efeito |
 |---|---|---|
@@ -152,7 +152,11 @@ A obra começa no dia seguinte à encomenda e fica pronta depois de mais uma noi
 
 ### Alto-mar
 
-Com o barco pronto, fale com o barco no cais para zarpar. No alto-mar ficam os peixes mais pesados e raros. De dia aparecem o Dourado do Alto-Mar, o Atum-Azul e, na primavera e no verão, o Marlim-Azul. À noite saem a Lula Gigante e o Espadarte Negro. O barco volta sozinho às 17h; se você zarpar depois disso, fica até as 22h.
+Com o barco pronto, fique na ponta das docas virado para ele e interaja para zarpar com o Capitão Thomas. Não dá para andar sobre o barco atracado. O barco só sai até as 16h.
+
+O alto-mar é um mapa próprio: o barco no meio do oceano, com convés de madeira, mastro e o capitão no leme (na popa). Ande pelo convés e pesque por qualquer lado; a linha sempre cai na água e cada zona vai mais longe. Lá só se pesca com vara (se a rede estiver na mão, você troca para a vara) e as criaturas da vila não aparecem. Para voltar, fale com o capitão. Às 17h ele volta sozinho para as docas.
+
+No alto-mar ficam os peixes mais pesados e raros. De dia aparecem o Dourado do Alto-Mar, o Atum-Azul e, na primavera e no verão, o Marlim-Azul. À noite saem a Lula Gigante e o Espadarte Negro.
 
 ### Coleções
 
@@ -252,7 +256,7 @@ Nos dias 5 e 15, a barraca da praça dá ¥200 de brinde uma vez por dia.
 
 ### Modo Pokémon
 
-Funciona como o modo Normal, com Pokémon de água das gerações 1 e 2 no lugar dos peixes. A zona define o estágio de evolução mais provável: na rasa saem mais formas básicas, na funda mais evoluções finais e Pokémon de águas profundas, como Gyarados, Lapras e Mantine. O catálogo vira a Pokédex.
+Funciona como o modo Normal, com Pokémon de água das gerações 1 e 2 no lugar dos peixes. A zona define o estágio de evolução mais provável: na rasa saem mais formas básicas, na funda mais evoluções finais e Pokémon de águas profundas, como Gyarados e Lapras. Tentacruel, Lanturn, Octillery, Mantine, Kingdra e Lugia só aparecem no alto-mar. O catálogo vira a Pokédex.
 
 ## 🚀 Como executar
 
@@ -288,6 +292,7 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 | `friendship.test.js` | Pontos por conversa e presente, limite diário, máximo de corações, falas por nível, descontos e dica do capitão. |
 | `joeQuest.test.js` | Ids únicos nos catálogos, lendário bloqueado, etapas em ordem com recompensa e desbloqueio na hora certa. |
 | `dishes.test.js` | Ingredientes certos (os mais baratos primeiro), cobrança, efeito só no dia do prato e recusa sem gastar nada. |
+| `boat.test.js` | Píer liberando só a passarela curta e docas estendendo o cais, barco fora do caminho de quem anda, criaturas e sombras longe do cais, convés do alto-mar todo alcançável, linha caindo na água dos quatro lados, docas exigindo o píer, migração do save, ida e volta com o capitão, partida recusada depois das 16h, rede virando vara e Pokémon próprios do alto-mar. |
 | `controls.test.js` | Som certo para cada fase da pesca e botões e analógico do gamepad virando teclas. |
 
 ## 🗂️ Estrutura
@@ -297,7 +302,7 @@ src/
 ├── App.svelte, main.js, app.css
 ├── components/            # telas e camadas visuais
 │   ├── GameContainer.svelte   # liga teclado, gamepad, relógio e som; troca de telas
-│   ├── GameCanvas.svelte      # junta MapLayer, SeaShadows, NpcLayer e PlayerLayer
+│   ├── GameCanvas.svelte      # junta MapLayer, AmbientShadows, BoatLayer, NpcLayer e PlayerLayer
 │   ├── HUD.svelte, FishingOverlay.svelte
 │   ├── HudSelector.svelte     # seletor com setas (isca, vara e rede)
 │   ├── TouchControls.svelte   # direcional e botões na tela (só em telas de toque)

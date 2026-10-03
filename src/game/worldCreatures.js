@@ -1,4 +1,4 @@
-import { MAPS_DATA, PLAYER_START, FESTIVAL_STALL, INITIAL_VILLAGERS, AQUARIUM_FOOTPRINT, DOCK_BOUNDS, CAST_TILES, getNpcLocation, inBounds } from "./constants.js";
+import { MAPS_DATA, PLAYER_START, FESTIVAL_STALL, INITIAL_VILLAGERS, AQUARIUM_FOOTPRINT, DOCK_BOUNDS, BOAT_BOUNDS, CAST_TILES, getNpcLocation, inBounds } from "./constants.js";
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
@@ -34,7 +34,7 @@ export function canPlaceCreature(creature, creatures, blocked = []) {
       const tileY = creature.y + offsetY;
       const tile = rows[tileY]?.[tileX];
       if (creature.aquatic ? !["X", "~"].includes(tile) : tile !== "G") return false;
-      if (inBounds(tileX, tileY, AQUARIUM_FOOTPRINT) || inBounds(tileX, tileY, DOCK_BOUNDS)) return false;
+      if (inBounds(tileX, tileY, AQUARIUM_FOOTPRINT) || inBounds(tileX, tileY, DOCK_BOUNDS) || inBounds(tileX, tileY, BOAT_BOUNDS)) return false;
       if (Math.abs(tileX - PLAYER_START.x) + Math.abs(tileY - PLAYER_START.y) <= 1) return false;
       if (Math.abs(tileX - FESTIVAL_STALL.x) + Math.abs(tileY - FESTIVAL_STALL.y) <= 1) return false;
       if (blocked.some((position) => Math.abs(tileX - position.x) <= 1 && Math.abs(tileY - position.y) <= 1)) return false;

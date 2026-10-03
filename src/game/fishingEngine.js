@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
-import { BAITS, MAPS_DATA, CAST_TILES } from "./constants.js";
+import { BAITS, MAPS_DATA, CAST_TILES, DEEP_SEA_DECK } from "./constants.js";
 import {
   gameMode,
   getActiveDatabase,
@@ -48,8 +48,33 @@ import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldS
 const STORM_PRIORITY = 0.02;
 const BAIT_BITE_BONUS = 0.1;
 
+export function waterBounds(biome, map) {
+  if (biome === "river") return { top: 1, bottom: 4 };
+  if (biome === "deep_sea") return { top: 1, bottom: map.length - 2 };
+  return { top: 17, bottom: map.length - 2 };
+}
+
+function deckOutward(bobber, distance) {
+  const deck = DEEP_SEA_DECK;
+  return {
+    x: bobber.x < deck.x1 ? -distance : bobber.x > deck.x2 ? distance : 0,
+    y: bobber.y < deck.y1 ? -distance : bobber.y > deck.y2 ? distance : 0,
+  };
+}
+
 export function shadowEntry(bobber, biome, mapWidth, random = Math.random) {
   const distance = 3;
+  if (biome === "deep_sea") {
+    const outward = deckOutward(bobber, distance);
+    const directions = [outward];
+    if (outward.x === 0) directions.push({ x: -distance, y: 0 }, { x: distance, y: 0 });
+    if (outward.y === 0) directions.push({ x: 0, y: -distance }, { x: 0, y: distance });
+    const direction = directions[Math.floor(random() * directions.length)];
+    return {
+      x: Math.max(0.5, Math.min(mapWidth - 1.5, bobber.x + direction.x)),
+      y: bobber.y + direction.y,
+    };
+  }
   const directions = [{ x: 0, y: biome === "river" ? -distance : distance }];
   if (bobber.x >= distance + 1) directions.push({ x: -distance, y: 0 });
   if (bobber.x <= mapWidth - 2 - distance) directions.push({ x: distance, y: 0 });
@@ -103,8 +128,7 @@ function updateAim(time) {
 export function castTarget(p, zone, biome, map) {
   const distTiles = CAST_TILES[zone] ?? zone * 2;
   const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[p.dir] || [0, 0];
-  const waterTop = biome === "river" ? 1 : 17;
-  const waterBottom = biome === "river" ? 4 : map.length - 2;
+  const { top: waterTop, bottom: waterBottom } = waterBounds(biome, map);
   return {
     x: Math.max(1, Math.min(map[0].length - 2, p.x + step[0] * distTiles)),
     y: Math.max(waterTop, Math.min(waterBottom, p.y + step[1] * distTiles)),
@@ -129,9 +153,8 @@ export function throwLine() {
   if (castBaitId !== equippedBait) eqBaitId.set(castBaitId);
 
   const map = MAPS_DATA[get(currentMap)];
-  const biome = get(deepSeaFishingActive) ? "sea" : get(fishingBiome);
-  const waterTop = biome === "river" ? 1 : 17;
-  const waterBottom = biome === "river" ? 4 : map.length - 2;
+  const biome = get(deepSeaFishingActive) ? "deep_sea" : get(fishingBiome);
+  const { top: waterTop, bottom: waterBottom } = waterBounds(biome, map);
   bobberPos.set(castTarget(get(player), dist, biome, map));
 
   const isFastBite = Math.random() < 0.2;

@@ -47,7 +47,7 @@ import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constan
 import { ensureWorldPopulation } from "./worldCreatures.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -93,6 +93,19 @@ const MIGRATIONS = {
     constructions: { ...clone(INITIAL_CONSTRUCTIONS), ...(data.constructions || {}) },
     upgrades: { ...clone(INITIAL_UPGRADES), ...(data.upgrades || {}) },
   }),
+  // The docks now require the pier; saves that already paid for the docks
+  // get the pier for free.
+  2: (data) => {
+    const saved = data.constructions || {};
+    const constructions = Object.fromEntries(Object.entries(clone(INITIAL_CONSTRUCTIONS)).map(([key, info]) => [
+      key,
+      { ...info, status: saved[key]?.status || "none", orderDay: saved[key]?.orderDay || 0 },
+    ]));
+    if (constructions.docks.status !== "none" && constructions.pier.status === "none") {
+      constructions.pier.status = "built";
+    }
+    return { ...data, constructions };
+  },
 };
 
 export function migrateSave(data) {

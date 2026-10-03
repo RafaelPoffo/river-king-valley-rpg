@@ -5,6 +5,7 @@
   import {
     TILE_SIZE,
     FESTIVAL_STALL,
+    DEEP_SEA_CAPTAIN,
     getNpcLocation,
   } from "../game/constants.js";
   import {
@@ -28,6 +29,16 @@
     </div>
   {/if}
 {/each}
+
+{#if $currentMap === "deep_sea"}
+  <div
+    class="tile"
+    style="left: {DEEP_SEA_CAPTAIN.x * TILE_SIZE}px; top: {DEEP_SEA_CAPTAIN.y * TILE_SIZE}px; z-index: 20;"
+    title="Capitão Thomas"
+  >
+    <OverworldSprite sprite={CHARACTER_SPRITES.veteran} direction="up" label="Capitão Thomas" />
+  </div>
+{/if}
 
 {#if $currentFestival && $currentMap === "village"}
   <div

@@ -8,6 +8,7 @@ import {
   VIEW_HEIGHT,
   FESTIVAL_STALL,
   PLAYER_START,
+  PIER_BOUNDS,
   DOCK_BOUNDS,
   inBounds,
   getNpcLocation,
@@ -16,7 +17,6 @@ import {
   player,
   currentMap,
   phase,
-  deepSeaFishingActive,
   cameraX,
   cameraY,
   lastEnteringHouse,
@@ -101,14 +101,13 @@ export function houseForDoor(tile) {
   return HOUSE_DOORS[tile] || null;
 }
 
-const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S"]);
+const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S", "b"]);
 
 export function canWalkOn(tile, x, y, constr) {
   if (WALKABLE_TILES.has(tile)) return true;
-  if (tile === "X" && inBounds(x, y, DOCK_BOUNDS)) {
-    return constr.docks.status === "built" || constr.pier.status === "built";
-  }
-  return false;
+  if (tile !== "X") return false;
+  if (constr.docks.status === "built" && inBounds(x, y, DOCK_BOUNDS)) return true;
+  return constr.pier.status === "built" && inBounds(x, y, PIER_BOUNDS);
 }
 
 export function enterHouse(houseMapName, fromX, fromY) {
@@ -162,7 +161,7 @@ export function setDirectionHeld(dir, isDown) {
 
 function tryStep() {
   if (walking) return;
-  if (get(phase) !== PHASES.PLAYING || get(deepSeaFishingActive)) return;
+  if (get(phase) !== PHASES.PLAYING) return;
   const dir = activeDirection();
   if (!dir) return;
   const [dx, dy] = VECTORS[dir];

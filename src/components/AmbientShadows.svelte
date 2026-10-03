@@ -3,10 +3,10 @@
   import { currentMap, day, seasonIndex, gameMode } from "../game/stores.js";
   import { ambientShadows } from "../game/ambientShadows.js";
 
-  $: shadows = ambientShadows(`${$gameMode}:${$seasonIndex}:${$day}`);
+  $: shadows = ambientShadows(`${$gameMode}:${$seasonIndex}:${$day}`, $currentMap);
 </script>
 
-{#if $currentMap === "village"}
+{#if shadows.length}
   {#each shadows as shadow (shadow.id)}
     {@const px = shadow.size * TILE_SIZE}
     {@const offset = (TILE_SIZE - px) / 2}

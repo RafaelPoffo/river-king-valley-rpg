@@ -13,7 +13,7 @@
       key: `${$currentMap}-${x}-${y}`,
       x,
       y,
-      html: getTileSvg(char, x, y, $constructions, $deepSeaFishingActive),
+      html: getTileSvg(char, x, y, $constructions, $currentMap),
     }))
   );
   $: signs =

@@ -1,7 +1,7 @@
 import { draw, SPRITES } from "./sprites.js";
 import {
   AQUARIUM_FOOTPRINT,
-  BOAT_BOUNDS,
+  PIER_BOUNDS,
   DOCK_BOUNDS,
   inBounds,
 } from "./constants.js";
@@ -10,31 +10,20 @@ function imgTile(src, alt = "Tile") {
   return `<img src="${src}" style="width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block;" alt="${alt}" onerror="this.onerror=null; this.outerHTML='<div class=\\'w-full h-full bg-[#578839]\\'></div>'" />`;
 }
 
-export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
-  const dockBuilt =
-    constructions?.docks?.status === "built" ||
-    constructions?.pier?.status === "built";
-  const dockBuilding =
-    constructions?.docks?.status === "building" ||
-    constructions?.pier?.status === "building";
+function walkwayStatus(constructions, x, y) {
+  const pier = constructions?.pier?.status;
+  const docks = constructions?.docks?.status;
+  if (inBounds(x, y, PIER_BOUNDS) && pier === "built") return "built";
+  if (inBounds(x, y, DOCK_BOUNDS) && docks === "built") return "built";
+  if (inBounds(x, y, PIER_BOUNDS) && pier === "building") return "building";
+  if (inBounds(x, y, DOCK_BOUNDS) && docks === "building") return "building";
+  return null;
+}
 
-  if (inBounds(x, y, DOCK_BOUNDS)) {
-    if (
-      dockBuilt &&
-      constructions?.boat?.status === "built" &&
-      !deepSeaFishingActive &&
-      inBounds(x, y, BOAT_BOUNDS)
-    ) {
-      return imgTile(
-        x === BOAT_BOUNDS.x1
-          ? "/assets/crystal_boat_front.png"
-          : "/assets/crystal_boat_back.png",
-        "Barco"
-      );
-    }
-    if (dockBuilt) return imgTile("/assets/crystal_pier.png", "Doca");
-    if (dockBuilding) return imgTile("/assets/crystal_sign.png", "Obras");
-  }
+export function getTileSvg(char, x, y, constructions, mapName = "village") {
+  const walkway = mapName === "village" && char === "X" ? walkwayStatus(constructions, x, y) : null;
+  if (walkway === "built") return imgTile("/assets/crystal_pier.png", "Cais");
+  if (walkway === "building") return imgTile("/assets/crystal_sign.png", "Obras");
 
   if (
     constructions?.aquarium_building?.status === "built" &&
@@ -60,6 +49,9 @@ export function getTileSvg(char, x, y, constructions, deepSeaFishingActive) {
     case "S":
       return imgTile("/assets/crystal_shallow.png", "Água Rasa / Margem");
     case "X":
+    case "b":
+    case "m":
+    case "c":
       return imgTile("/assets/crystal_deep_water.png", "Água Profunda");
     case "O":
       return imgTile("/assets/Agua.png", "Água Johto");

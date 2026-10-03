@@ -6,7 +6,6 @@
     seasonIndex,
     currentWeather,
     money,
-    deepSeaFishingActive,
     currentMessage,
     phase,
     activeDish,
@@ -21,7 +20,7 @@
   } from "../game/stores.js";
   import { todaysDish } from "../game/dishes.js";
   import { BAITS, SEASONS, TOOLS, WEATHER_NAMES } from "../game/constants.js";
-  import { equipItem, equipTool, returnFromDeepSea } from "../game/gameActions.js";
+  import { equipItem, equipTool } from "../game/gameActions.js";
   import HudSelector from "./HudSelector.svelte";
   import { SPRITES } from "../game/sprites.js";
 
@@ -122,16 +121,6 @@
     ¥ {$money}
   </div>
 </div>
-
-<!-- Deep Sea Return Button -->
-{#if $deepSeaFishingActive}
-  <button
-    class="absolute bottom-[116px] right-4 bg-red-600 text-white border-4 border-black p-3 retro-font text-[9px] pixel-shadow pointer-events-auto active:bg-red-800 z-40"
-    on:click={returnFromDeepSea}
-  >
-    VOLTAR AO PORTO
-  </button>
-{/if}
 
 <!-- Bottom Dialogue & Message Box -->
 <div

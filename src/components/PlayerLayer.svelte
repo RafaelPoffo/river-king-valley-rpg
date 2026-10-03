@@ -26,7 +26,7 @@
   $: moving = $phase === PHASES.PLAYING && (!Number.isInteger($player.x) || !Number.isInteger($player.y));
   $: showBobber = LINE_IN_WATER.has($phase);
   $: aimZone = Math.floor($aimPower);
-  $: aimBiome = $deepSeaFishingActive ? "sea" : $fishingBiome;
+  $: aimBiome = $deepSeaFishingActive ? "deep_sea" : $fishingBiome;
   $: aimTarget = $phase === PHASES.FISHING_AIM
     ? castTarget($player, aimZone, aimBiome, MAPS_DATA[$currentMap])
     : null;

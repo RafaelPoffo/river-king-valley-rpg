@@ -11,6 +11,7 @@
   } from "../game/stores.js";
   import MapLayer from "./MapLayer.svelte";
   import AmbientShadows from "./AmbientShadows.svelte";
+  import BoatLayer from "./BoatLayer.svelte";
   import WorldCreatureLayer from "./WorldCreatureLayer.svelte";
   import NpcLayer from "./NpcLayer.svelte";
   import PlayerLayer from "./PlayerLayer.svelte";
@@ -27,6 +28,7 @@
   >
     <MapLayer />
     <AmbientShadows />
+    <BoatLayer />
     <WorldCreatureLayer />
     <NpcLayer />
     <PlayerLayer />

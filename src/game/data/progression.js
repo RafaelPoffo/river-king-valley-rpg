@@ -72,11 +72,25 @@ export const DISHES = [
 ];
 
 export const INITIAL_CONSTRUCTIONS = {
-  pier: { name: "Píer de Pesca", cost: 1500, status: "none", orderDay: 0 },
-  docks: { name: "Docas do Porto", cost: 3500, status: "none", orderDay: 0 },
+  pier: {
+    name: "Píer de Pesca",
+    cost: 1500,
+    desc: "Uma passarela curta sobre o mar, para pescar mais longe da margem.",
+    status: "none",
+    orderDay: 0,
+  },
+  docks: {
+    name: "Docas do Porto",
+    cost: 3500,
+    desc: "Alarga e alonga o píer e cria o atracadouro do barco.",
+    status: "none",
+    orderDay: 0,
+    required: "pier",
+  },
   boat: {
     name: "Barco de Pesca",
     cost: 9000,
+    desc: "Fica atracado nas docas. Leva ao alto-mar com o Capitão Thomas até as 16h.",
     status: "none",
     orderDay: 0,
     required: "docks",
@@ -84,6 +98,7 @@ export const INITIAL_CONSTRUCTIONS = {
   aquarium_building: {
     name: "Aquário Municipal",
     cost: 5000,
+    desc: "Expõe os peixes doados e libera os prêmios de coleção do aquário.",
     status: "none",
     orderDay: 0,
   },
