@@ -14,7 +14,7 @@ Jogue em [river-king-valley-rpg.vercel.app](https://river-king-valley-rpg.vercel
 - **Criaturas pela vila**: de 2 a 8 visitantes por dia, com caminhada lenta e pausas. Os Pokemon do mapa usam o atlas local de 16x16, ocupam um quadrado e sao decorativos, sem encontros ou captura direta. Os peixes do modo Normal mantem seu comportamento.
 - **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
 - **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
-- **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨).
+- **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨). Clique numa espécie para ver habitat, iscas preferidas, peso, força e preço.
 - **Museu e aquário**, com prêmios a cada marco da coleção.
 - **Cozinha da Ana**: pratos feitos com seus peixes que dão bônus de pesca até o fim do dia.
 - **Construções e melhorias**: píer, docas, barco para o alto-mar, aquário municipal, mochila maior, barra de captura maior e sorte para brilhantes.
@@ -51,7 +51,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Loja de Equipamentos | Varas e redes, e a venda de peixes. |
 | Loja de Iscas | Iscas e a venda de peixes. |
 | Oficina do Marceneiro | Construções e melhorias com a Mestre Gema. |
-| Cabana do Velho Joe | Caixa de minhocas: de 1 a 3 minhocas grátis por dia. |
+| Cabana do Velho Joe | Caixa de minhocas: de 2 a 4 minhocas grátis por dia e, se o estoque zerar, mais 2 de reserva a qualquer momento. |
 | Taverna | Quadro de missões, calendário de festivais e a cozinha da Ana (no balcão). À noite, os moradores se reúnem aqui. |
 | Terreno do aquário | Vazio até o Aquário Municipal ser construído. |
 | Praça | A barraca do festival aparece em dia de festa. |
@@ -73,7 +73,8 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 3. **Espera:** de 6 a 20 segundos. Aperte Espaço se quiser recolher a linha.
 4. **Análise da isca:** no mar, a sombra vem da esquerda, direita ou de baixo; no rio, da esquerda, direita ou de cima. Paredes laterais bloqueiam a entrada por aquele lado. A sombra circula lentamente a boia por 3 a 5 segundos. Um coração rosa indica interesse: isca favorita dá 80% de chance de mordida e duas alternativas dão 50%. Uma isca incompatível mostra um X vermelho e o peixe vai embora.
 5. **Fisgada:** a boia afunda e você tem pouco tempo para apertar Espaço. Quanto mais raro o peixe, menor a janela (de 1,05 s até 0,4 s, mais o bônus do Ensopado do Mar).
-6. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é estreita (de 8% a 40% da barra): menor para peixes difíceis e maior com varas melhores, com o upgrade Braço Forte e com a Sopa do Rio. O marcador é rápido, e peixes mais ágeis o deixam ainda mais rápido.
+6. **Força:** ao fisgar, o peso do peixe é sorteado e comparado com a força da vara. Se o peixe for forte demais, a linha arrebenta antes da luta e ele leva a isca. Veja a tabela de força abaixo.
+7. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é estreita (de 8% a 40% da barra): menor para peixes difíceis e maior com varas melhores, com o upgrade Braço Forte e com a Sopa do Rio. O marcador é rápido, e peixes mais ágeis o deixam ainda mais rápido.
 
 **Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
 
@@ -96,18 +97,22 @@ O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. Os pre
 
 **Peso e recordes.** O peso é sorteado entre o mínimo e o máximo da espécie, mas puxado para baixo: a maioria das capturas fica no terço mais leve, e chegar perto do peso máximo é raro. Em 1,5% das capturas o peixe chega até 3% acima do seu recorde, sem passar do máximo da espécie.
 
-**Rede.** Troque entre vara e rede no menu (Enter). A rede só funciona na margem (rio ou mar raso) e pega criaturas de rede e peixes pequenos na hora, sem minigame.
+**Rede.** Troque entre vara e rede no seletor do canto superior esquerdo (abaixo do seletor de isca) ou no menu (Enter). A rede só funciona na margem (rio ou mar raso) e pega na hora, sem minigame, apenas criaturas de rede: crustáceos, polvos e lulas no modo Normal; Shellder, Krabby, Staryu, Corsola, Tentacool, Omanyte, Kabuto, Wooper e Slowpoke no modo Pokémon. Peixes só saem na vara.
+
+**Força e linha arrebentada.** Cada peixe tem força = `raridade × 1,6 + até 3 pelo peso` (quanto mais perto do peso máximo, mais forte). Na fisgada, a diferença entre a força do peixe e a da vara define a chance de a linha arrebentar: de 2% (vara bem mais forte) até 90% (peixe muito mais forte). Lixo e tesouros nunca arrebentam a linha. A faixa de força de cada espécie aparece no catálogo.
 
 ### Equipamentos
 
-| Vara | Preço | Alcance | Luta |
-|---|---|---|---|
-| Vara de Vime (Nv 1) | inicial | zona 1 | difícil |
-| Vara de Fibra (Nv 2) | ¥1.500 | até zona 2 | ↓ |
-| Vara Amadora (Nv 3) | ¥6.000 | até zona 3 | ↓ |
-| Vara Profissional (Nv 4) | ¥20.000 | até zona 3 | ↓ |
-| Vara Marítima (Nv 5) | ¥60.000 | até zona 3 | ↓ |
-| Vara Mítica (Nv 6) | ¥180.000 | até zona 3 | mais fácil |
+| Vara | Preço | Alcance | Força | Luta |
+|---|---|---|---|---|
+| Vara de Vime (Nv 1) | inicial | zona 1 | 2 | difícil |
+| Vara de Fibra (Nv 2) | ¥1.500 | até zona 2 | 4 | ↓ |
+| Vara Amadora (Nv 3) | ¥6.000 | até zona 3 | 6 | ↓ |
+| Vara Profissional (Nv 4) | ¥20.000 | até zona 3 | 8 | ↓ |
+| Vara Marítima (Nv 5) | ¥60.000 | até zona 3 | 10 | ↓ |
+| Vara Mítica (Nv 6) | ¥180.000 | até zona 3 | 12 | mais fácil |
+
+Na prática: com a Vara de Vime, um peixe comum quase nunca arrebenta a linha, um intermediário pesado arrebenta cerca de 1 em cada 3 vezes e um lendário quase sempre.
 
 As redes custam ¥800 (Nv 1), ¥3.500 (Nv 2) e ¥12.000 (Nv 3). Quanto melhor a rede, mais fácil a captura.
 
@@ -273,6 +278,7 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 | `fishingEngine.test.js` | Em todas as combinações de bioma, zona, horário e estação: peixe só sai no horário, bioma e distância certos, lixo só da lista de lixo, preço final certo e o upgrade de sorte funcionando. Usa números aleatórios com semente fixa. |
 | `saveSystem.test.js` | Salvar e carregar sem perder nada, jogo novo zerando o progresso e mantendo o nome, migração de saves antigos. |
 | `phases.test.js` | Todo `PHASES.X` usado no código existe e os grupos de fases são coerentes. |
+| `fight.test.js` | Peixe mais pesado é mais forte, vara melhor sempre arrebenta menos, vara fraca contra lenda quase sempre arrebenta, lixo e tesouro nunca arrebentam, rede só pega criaturas de rede nos dois modos e a caixa do Joe sempre dá minhocas quando o estoque zera. |
 | `balance.test.js` | Peso sempre dentro da espécie e raramente pesado, área verde menor que antes e nunca zerada, vara melhor sempre ajuda, preços de equipamento crescentes, nenhum peixe pagando sozinho a vara mais cara e distâncias do lançamento dentro do mar. |
 | `tournament.test.js` | Quem pode competir, pontuação, colocação, prêmios, horário de fechamento, pagamento único e se todo torneio pode ser vencido nos dois modos. |
 | `clock.test.js` | Relógio andando só na rua e fora de menus, aviso do pôr do sol uma vez só e desmaio às 22h. |
@@ -291,6 +297,7 @@ src/
 │   ├── GameContainer.svelte   # liga teclado, gamepad, relógio e som; troca de telas
 │   ├── GameCanvas.svelte      # junta MapLayer, SeaShadows, NpcLayer e PlayerLayer
 │   ├── HUD.svelte, FishingOverlay.svelte
+│   ├── HudSelector.svelte     # seletor com setas (isca, vara e rede)
 │   ├── TouchControls.svelte   # direcional e botões na tela (só em telas de toque)
 │   ├── CollectionMilestones.svelte  # progresso e prêmios do museu e do aquário
 │   └── *Modal.svelte          # loja, marceneiro, catálogo, museu, aquário, cozinha etc.
@@ -313,6 +320,7 @@ src/
     ├── audio.js               # efeitos e música (Web Audio)
     ├── movement.js            # andar suave, portas, câmera, regra de onde dá para andar
     ├── fishingEngine.js       # sorteio de peixe e etapas da pesca
+    ├── fight.js               # força do peixe contra a vara e chance de arrebentar
     ├── tournament.js          # torneios dos festivais
     ├── collections.js         # marcos e prêmios do museu e do aquário
     ├── friendship.js          # corações, presentes e vantagens dos moradores

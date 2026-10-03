@@ -1,6 +1,20 @@
 import { SPRITES } from "../sprites.js";
 import { withBaitPreferences } from "./equipment.js";
 
+// Shoreline creatures that are not swimming fish: crabs, shells, stars,
+// jellyfish and amphibians. Only these come up in the net.
+const NET_CREATURES = new Set([
+  "shellder",
+  "krabby",
+  "staryu",
+  "corsola",
+  "tentacool",
+  "omanyte",
+  "kabuto",
+  "wooper",
+  "slowpoke",
+]);
+
 function pmdUrl(id) {
   return `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${id}/Normal.png`;
 }
@@ -1313,5 +1327,6 @@ export const POKEMON_DB = [
   },
 ].map((species) => withBaitPreferences({
   ...species,
+  netCatch: NET_CREATURES.has(species.id),
   price: species.dexNum ? Math.max(5, Math.round(species.price / 10)) : species.price,
 }));

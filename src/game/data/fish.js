@@ -1840,9 +1840,12 @@ export const FISH_DB = [
     minW: 50.0,
     maxW: 150.0,
   },
-].map((species) => withBaitPreferences({
-  ...species,
-  price: SELLABLE.has(species.type) && species.sprite !== SPRITES.trash
-    ? Math.max(2, Math.round(species.price / 4))
-    : species.price,
-}));
+].map((species) => {
+  const sellable = SELLABLE.has(species.type) && species.sprite !== SPRITES.trash;
+  return withBaitPreferences({
+    ...species,
+    price: sellable ? Math.max(2, Math.round(species.price / 4)) : species.price,
+    // Authored on a 1-99 scale; the minigame expects the Pokémon 1-11 scale.
+    diff: sellable ? Math.max(1, Math.round(species.diff / 9)) : species.diff,
+  });
+});

@@ -223,6 +223,7 @@ describe("análise da isca e consumo", () => {
     advanceUntil(() => get(shadowReaction) === "heart");
     Math.random.mockReturnValue(0);
     advanceUntil(() => get(phase) === PHASES.FISHING_BITE);
+    Math.random.mockReturnValue(0.99);
     startMinigame();
     minigameBar.set(get(catchTargetCenter));
     attemptCatch();
@@ -315,6 +316,7 @@ describe("análise da isca e consumo", () => {
     cast();
     Math.random.mockReturnValue(0);
     advanceUntil(() => get(phase) === PHASES.FISHING_BITE);
+    Math.random.mockReturnValue(0.99);
     startMinigame();
     minigameBar.set(success ? get(catchTargetCenter) : 100);
     attemptCatch();

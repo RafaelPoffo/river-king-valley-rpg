@@ -68,7 +68,12 @@
           >
             <div class="flex items-center gap-4">
               <div class="w-10 h-10">{@html draw(item.sprite)}</div>
-              <div class="retro-font text-[10px]">{item.name}</div>
+              <div class="retro-font text-[10px] leading-relaxed">
+                <div>{item.name}</div>
+                <div class="text-[8px] text-gray-600">
+                  {item.type === "rod" ? `Força ${item.strength} · aguenta peixes mais fortes` : "Pega crustáceos e criaturas da margem"}
+                </div>
+              </div>
             </div>
             <button
               class="bg-black text-white retro-font text-[9px] px-4 py-2 disabled:bg-gray-400"

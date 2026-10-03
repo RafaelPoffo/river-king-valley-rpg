@@ -172,19 +172,28 @@ export function returnFromDeepSea() {
   }, 1500);
 }
 
+const WORM_RESERVE = 2;
+
+function addWorms(qty) {
+  baitStock.update((stock) => ({ ...stock, minhoca: (stock.minhoca || 0) + qty }));
+  ownedBaits.update((list) => (list.includes("minhoca") ? list : [...list, "minhoca"]));
+  saveGame();
+}
+
+// The box never leaves the player without bait: one daily harvest, plus a
+// small reserve whenever the worm stock runs out.
 export function harvestWorms() {
-  const curDay = get(day);
-  const lastDay = get(lastWormHarvestDay);
-  if (lastDay === curDay) {
-    showRPGMessage("Você já pegou minhocas nesta caixa hoje.");
-  } else {
-    lastWormHarvestDay.set(curDay);
-    const qty = Math.floor(Math.random() * 3) + 1;
-    baitStock.update((stock) => {
-      stock.minhoca = (stock.minhoca || 0) + qty;
-      return { ...stock };
-    });
+  const today = dayKey(get(seasonIndex), get(day));
+  if (get(lastWormHarvestDay) !== today) {
+    lastWormHarvestDay.set(today);
+    const qty = 2 + Math.floor(Math.random() * 3);
+    addWorms(qty);
     showRPGMessage(`Você encontrou ${qty} Minhocas na caixa do Velho Joe!`);
+  } else if ((get(baitStock).minhoca || 0) === 0) {
+    addWorms(WORM_RESERVE);
+    showRPGMessage(`Joe deixou ${WORM_RESERVE} Minhocas de reserva para você não ficar sem isca.`);
+  } else {
+    showRPGMessage("Você já pegou minhocas hoje. Volte quando acabarem.");
   }
 }
 
@@ -335,6 +344,11 @@ export function equipItem(id, type) {
   if (type === "net") eqNetId.set(id);
   if (type === "bait") eqBaitId.set(id);
   saveGame();
+}
+
+export function equipTool(id, type) {
+  currentToolType.set(type);
+  equipItem(id, type);
 }
 
 export function toggleTool() {

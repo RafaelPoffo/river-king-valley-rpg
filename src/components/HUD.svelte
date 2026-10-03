@@ -13,11 +13,17 @@
     baitStock,
     eqBaitId,
     currentBaitData,
+    ownedRods,
+    ownedNets,
+    eqRodId,
+    eqNetId,
+    currentToolType,
   } from "../game/stores.js";
   import { todaysDish } from "../game/dishes.js";
-  import { BAITS, SEASONS, WEATHER_NAMES } from "../game/constants.js";
-  import { equipItem, returnFromDeepSea } from "../game/gameActions.js";
-  import { draw, SPRITES } from "../game/sprites.js";
+  import { BAITS, SEASONS, TOOLS, WEATHER_NAMES } from "../game/constants.js";
+  import { equipItem, equipTool, returnFromDeepSea } from "../game/gameActions.js";
+  import HudSelector from "./HudSelector.svelte";
+  import { SPRITES } from "../game/sprites.js";
 
   const baitSprites = {
     sem_isca: ["...0....", "...0....", "...0....", "...0....", "...0..0.", "...0..0.", "....00..", "........"],
@@ -44,6 +50,20 @@
     if ($phase === PHASES.PLAYING && bait) equipItem(bait.id, "bait");
   }
 
+  $: tools = [
+    ...TOOLS.rod.filter((tool) => $ownedRods.includes(tool.id)).map((tool) => ({ ...tool, kind: "rod" })),
+    ...TOOLS.net.filter((tool) => $ownedNets.includes(tool.id)).map((tool) => ({ ...tool, kind: "net" })),
+  ];
+  $: toolIndex = tools.findIndex((tool) =>
+    tool.kind === $currentToolType && tool.id === ($currentToolType === "rod" ? $eqRodId : $eqNetId),
+  );
+  $: currentTool = tools[toolIndex];
+
+  function switchTool(step) {
+    const tool = tools[toolIndex + step];
+    if ($phase === PHASES.PLAYING && tool) equipTool(tool.id, tool.kind);
+  }
+
   function formatTime(mins) {
     const h = Math.floor(mins / 60);
     const m = Math.floor(mins % 60);
@@ -52,40 +72,33 @@
 </script>
 
 {#if $phase === PHASES.PLAYING}
-  <div
-    class="absolute top-2 left-2 z-40 flex w-[208px] items-center gap-1 rounded border-2 border-black bg-white p-1.5 text-black pixel-shadow"
-    role="group"
-    aria-label="Isca equipada"
-  >
-    <button
-      type="button"
-      class="h-8 w-8 shrink-0 border border-black bg-gray-100 text-sm active:bg-[#9ce6e6] disabled:cursor-not-allowed disabled:opacity-30"
-      aria-label="Isca anterior"
-      title="Isca anterior"
-      disabled={!previousBait}
-      on:click={() => switchBait(previousBait)}
-    >
-      ←
-    </button>
-    <div class="h-6 w-6 shrink-0" aria-hidden="true">
-      {@html draw(baitSprites[$eqBaitId] || baitSprites.sem_isca)}
-    </div>
-    <div class="min-w-0 flex-1 retro-font text-[7px] leading-relaxed" aria-live="polite">
-      <div>{$currentBaitData.name.replace(/ \(Nv \d+\)$/, "")}</div>
-      {#if $eqBaitId !== "sem_isca"}
-        <div class="text-[6px] text-gray-600">Qtd: {$baitStock[$eqBaitId] || 0}</div>
-      {/if}
-    </div>
-    <button
-      type="button"
-      class="h-8 w-8 shrink-0 border border-black bg-gray-100 text-sm active:bg-[#9ce6e6] disabled:cursor-not-allowed disabled:opacity-30"
-      aria-label="Próxima isca"
-      title="Próxima isca"
-      disabled={!nextBait}
-      on:click={() => switchBait(nextBait)}
-    >
-      →
-    </button>
+  <div class="absolute top-2 left-2 z-40 flex flex-col gap-1">
+    <HudSelector
+      label="Isca equipada"
+      sprite={baitSprites[$eqBaitId] || baitSprites.sem_isca}
+      title={$currentBaitData.name.replace(/ \(Nv \d+\)$/, "")}
+      detail={$eqBaitId !== "sem_isca" ? `Qtd: ${$baitStock[$eqBaitId] || 0}` : ""}
+      previousLabel="Isca anterior"
+      nextLabel="Próxima isca"
+      canPrevious={!!previousBait}
+      canNext={!!nextBait}
+      onPrevious={() => switchBait(previousBait)}
+      onNext={() => switchBait(nextBait)}
+    />
+    {#if currentTool}
+      <HudSelector
+        label="Equipamento"
+        sprite={currentTool.kind === "rod" ? SPRITES.rod : SPRITES.net}
+        title={currentTool.name}
+        detail={currentTool.kind === "rod" ? `Força: ${currentTool.strength}` : "Só criaturas de rede"}
+        previousLabel="Equipamento anterior"
+        nextLabel="Próximo equipamento"
+        canPrevious={toolIndex > 0}
+        canNext={toolIndex < tools.length - 1}
+        onPrevious={() => switchTool(-1)}
+        onNext={() => switchTool(1)}
+      />
+    {/if}
   </div>
 {/if}
 

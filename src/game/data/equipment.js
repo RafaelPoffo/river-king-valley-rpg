@@ -4,6 +4,7 @@ export const TOOLS = {
   rod: [
     {
       id: "vara_vime",
+      strength: 2,
       name: "Vara de Vime (Nv 1)",
       type: "rod",
       sprite: SPRITES.rod,
@@ -14,6 +15,7 @@ export const TOOLS = {
     },
     {
       id: "vara_fibra",
+      strength: 4,
       name: "Vara de Fibra (Nv 2)",
       type: "rod",
       sprite: SPRITES.rod,
@@ -24,6 +26,7 @@ export const TOOLS = {
     },
     {
       id: "vara_amadora",
+      strength: 6,
       name: "Vara Amadora (Nv 3)",
       type: "rod",
       sprite: SPRITES.rod,
@@ -34,6 +37,7 @@ export const TOOLS = {
     },
     {
       id: "vara_profissional",
+      strength: 8,
       name: "Vara Profissional (Nv 4)",
       type: "rod",
       sprite: SPRITES.rod,
@@ -44,6 +48,7 @@ export const TOOLS = {
     },
     {
       id: "vara_pesada",
+      strength: 10,
       name: "Vara Marítima (Nv 5)",
       type: "rod",
       sprite: SPRITES.rod,
@@ -54,6 +59,7 @@ export const TOOLS = {
     },
     {
       id: "vara_mitica",
+      strength: 12,
       name: "Vara Mítica (Nv 6)",
       type: "rod",
       sprite: SPRITES.rod,

@@ -42,6 +42,7 @@ import { saveGame } from "./saveSystem.js";
 import { recordTournamentCatch } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import { dishEffect } from "./dishes.js";
+import { canBreakLine, lineBreakChance } from "./fight.js";
 import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
 
 const STORM_PRIORITY = 0.02;
@@ -474,9 +475,18 @@ export function rollWeight(minW, maxW, random = Math.random) {
   return Number((minW + Math.pow(random(), WEIGHT_CURVE) * (maxW - minW)).toFixed(2));
 }
 
-export function processCaughtFish(fishBase) {
+export function rollCatchWeight(fishBase) {
   const minW = fishBase.minW || 0.2;
   const maxW = fishBase.maxW || 5.0;
+  const record = get(fishLog)[fishBase.id]?.recordWeight || minW;
+  if (Math.random() < RECORD_PUSH_CHANCE) {
+    return Number(Math.min(maxW, record * (1 + Math.random() * 0.03)).toFixed(2));
+  }
+  return rollWeight(minW, maxW);
+}
+
+export function processCaughtFish(fishBase) {
+  const minW = fishBase.minW || 0.2;
 
   let currentLog = get(fishLog);
   if (!currentLog[fishBase.id]) {
@@ -490,10 +500,7 @@ export function processCaughtFish(fishBase) {
   }
 
   const currentRecord = currentLog[fishBase.id].recordWeight || minW;
-  let weight = rollWeight(minW, maxW);
-  if (Math.random() < RECORD_PUSH_CHANCE) {
-    weight = Number(Math.min(maxW, currentRecord * (1 + Math.random() * 0.03)).toFixed(2));
-  }
+  const weight = fishBase.rolledWeight ?? rollCatchWeight(fishBase);
 
   if (weight > currentRecord) currentLog[fishBase.id].recordWeight = weight;
   currentLog[fishBase.id].lastWeight = weight;
@@ -507,7 +514,8 @@ export function processCaughtFish(fishBase) {
   }
   fishLog.set({ ...currentLog });
 
-  return { ...fishBase, weight };
+  const { rolledWeight, ...caught } = fishBase;
+  return { ...caught, weight };
 }
 
 const MIN_CATCH_WIDTH = 8;
@@ -519,10 +527,19 @@ export function catchZoneWidth(diff, toolPower) {
 
 export function startMinigame() {
   clearTimeout(loopIds.escape);
+  const tool = get(currentToolData);
+  const hooked = get(activeFish);
+  if (hooked && canBreakLine(hooked)) {
+    const rolledWeight = rollCatchWeight(hooked);
+    activeFish.set({ ...hooked, rolledWeight });
+    if (Math.random() < lineBreakChance(tool, hooked, rolledWeight)) {
+      resetAction("A linha arrebentou! O peixe era forte demais para a sua vara e fugiu com a isca.");
+      return;
+    }
+  }
   phase.set(PHASES.FISHING_MINIGAME);
 
   const curFish = get(activeFish);
-  const tool = get(currentToolData);
   const up = get(upgrades);
 
   let baseWidth = catchZoneWidth(curFish?.diff || 10, tool?.power || 1);
@@ -624,28 +641,23 @@ export function finishCatchSequence(finalFish) {
   );
 }
 
+export function isNetCreature(fish) {
+  return fish.type === "net" || !!fish.netCatch;
+}
+
 export function useNetAtShore(biome) {
   if (!get(eqNetId)) return;
   const isPokeMode = get(gameMode) === "pokemon";
   const database = availableDatabase();
   const curSeason = get(seasonIndex);
   const night = get(isNight);
-  let pool = database.filter(
-    (f) =>
-      (f.type === "net" || f.rarity <= 2 || f.stage === 1) &&
-      matchesBiome(f, biome) &&
-      matchesDist(f, 1) &&
-      matchesTime(f, night) &&
-      (isPokeMode || matchesSeason(f, curSeason))
+  const atShore = database.filter(
+    (f) => isNetCreature(f) && matchesBiome(f, biome) && matchesDist(f, 1)
   );
-  if (pool.length === 0) {
-    pool = database.filter(
-      (f) =>
-        (f.type === "net" || f.type === "fish") &&
-        matchesBiome(f, biome) &&
-        matchesDist(f, 1)
-    );
-  }
+  let pool = atShore.filter(
+    (f) => matchesTime(f, night) && (isPokeMode || matchesSeason(f, curSeason))
+  );
+  if (pool.length === 0) pool = atShore;
   if (pool.length === 0) {
     resetAction("A rede voltou vazia.");
     return;
