@@ -52,7 +52,7 @@ export function createDailyPopulation(key, landSpecies, waterSpecies, blocked = 
   const count = 2 + Math.floor(random() * 7);
   const creatures = [];
   for (let index = 0; index < count; index++) {
-    const aquatic = waterSpecies.length > 0 && (index === 1 || index > 1 && random() < 0.4);
+    const aquatic = !landSpecies.length || waterSpecies.length > 0 && (index === 1 || index > 1 && random() < 0.4);
     const catalog = aquatic ? waterSpecies : landSpecies;
     if (!catalog.length) continue;
     const species = catalog[Math.floor(random() * catalog.length)];
@@ -65,6 +65,8 @@ export function createDailyPopulation(key, landSpecies, waterSpecies, blocked = 
       const creature = {
         id: `${key}:${index}`,
         speciesId: species.id,
+        dexId: species.dexId,
+        decorative: !!species.dexId,
         aquatic,
         biome,
         zone,
@@ -87,9 +89,10 @@ export function createDailyPopulation(key, landSpecies, waterSpecies, blocked = 
 
 export function worldSpecies(creature) {
   if (!creature) return null;
-  return creature.aquatic
+  const species = creature.aquatic
     ? getActiveDatabase().find((species) => species.id === creature.speciesId)
     : LAND_VISITORS.find((species) => species.id === creature.speciesId);
+  return species || { name: "Pokemon", dexId: creature.dexId || "0025" };
 }
 
 export function creaturePosition(creature) {
@@ -112,7 +115,21 @@ function occupiedPositions() {
 
 export function ensureWorldPopulation() {
   const key = `${get(gameMode)}:${get(seasonIndex)}:${get(day)}`;
-  if (get(worldPopulationDay) === key) return false;
+  if (get(worldPopulationDay) === key) {
+    if (get(gameMode) === "pokemon") {
+      worldCreatures.update((creatures) => creatures.map((creature) => {
+        const previous = creature.aquatic
+          ? getActiveDatabase().find((candidate) => candidate.id === creature.speciesId)
+          : LAND_VISITORS.find((candidate) => candidate.id === creature.speciesId);
+        const species = WORLD_SPRITES[previous?.dexId] ? previous : creature.aquatic
+          ? getActiveDatabase().find((candidate) => candidate.dexId === "0129")
+          : LAND_VISITORS.find((candidate) => candidate.dexId === "0025");
+        if (creature.decorative && creature.size === 1 && creature.dexId === species.dexId && creature.state === "wild") return creature;
+        return { ...creature, speciesId: species.id, dexId: species.dexId, decorative: true, size: 1, state: "wild" };
+      }));
+    }
+    return false;
+  }
   const waterSpecies = getActiveDatabase().filter((species) =>
     species.type === "fish" && species.sprite !== SPRITES.trash && species.rarity <= 3 &&
     (!species.stage || species.stage <= 2) && !species.requires &&
@@ -123,9 +140,10 @@ export function ensureWorldPopulation() {
     (get(gameMode) !== "pokemon" || WORLD_SPRITES[species.dexId])
   ).map((species) => ({
     ...species,
-    worldSize: Math.max(species.weight || 0, species.maxW || 0) >= 30 ? 2 : 1,
+    worldSize: species.dexId ? 1 : Math.max(species.weight || 0, species.maxW || 0) >= 30 ? 2 : 1,
   }));
-  worldCreatures.set(createDailyPopulation(key, LAND_VISITORS, waterSpecies, occupiedPositions()));
+  const landSpecies = get(gameMode) === "pokemon" ? LAND_VISITORS : [];
+  worldCreatures.set(createDailyPopulation(key, landSpecies, waterSpecies, occupiedPositions()));
   worldPopulationDay.set(key);
   return true;
 }
@@ -186,7 +204,7 @@ export function startWorldCreatureLoop() {
 
 export function nearbyAquaticCreature(bobber, zone, biome) {
   const candidates = get(worldCreatures).filter((creature) =>
-    creature.aquatic && creature.state === "wild" && creature.zone === zone && creature.biome === biome
+    creature.aquatic && !creature.decorative && creature.state === "wild" && creature.zone === zone && creature.biome === biome
   ).map((creature) => {
     const position = creaturePosition(creature);
     const dx = Math.max(position.x - bobber.x - 0.5, 0, bobber.x + 0.5 - position.x - creature.size);
@@ -197,7 +215,7 @@ export function nearbyAquaticCreature(bobber, zone, biome) {
 }
 
 export function engageWorldCreature(id) {
-  const creature = get(worldCreatures).find((candidate) => candidate.id === id && candidate.state === "wild");
+  const creature = get(worldCreatures).find((candidate) => candidate.id === id && !candidate.decorative && candidate.state === "wild");
   if (!creature) return null;
   const position = creaturePosition(creature);
   const engaged = { ...creature, ...position, target: null, progress: 0, state: "engaged" };

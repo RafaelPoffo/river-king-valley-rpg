@@ -2,7 +2,6 @@ export const INITIAL_VILLAGERS = [
   {
     id: "veteran",
     name: "Capitão Thomas",
-    sprite: "/assets/crystal_npc_captain.png",
     freq: "always",
     homeX: 18,
     homeY: 15,
@@ -17,7 +16,6 @@ export const INITIAL_VILLAGERS = [
   {
     id: "carpenter",
     name: "Mestre Gema",
-    sprite: "/assets/crystal_npc_carpenter.png",
     freq: "often",
     homeX: 34,
     homeY: 8,
@@ -32,7 +30,6 @@ export const INITIAL_VILLAGERS = [
   {
     id: "anna",
     name: "Ana a Cozinheira",
-    sprite: "/assets/crystal_npc_girl.png",
     freq: "always",
     homeX: 16,
     homeY: 12,
@@ -47,7 +44,6 @@ export const INITIAL_VILLAGERS = [
   {
     id: "old_joe",
     name: "Velho Joe",
-    sprite: "/assets/crystal_npc_old.png",
     freq: "rare",
     homeX: 8,
     homeY: 12,

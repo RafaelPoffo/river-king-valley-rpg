@@ -98,14 +98,14 @@ describe("entrada das sombras", () => {
 });
 
 describe("preferências das iscas e preços", () => {
-  it("cada espécie gosta de três iscas com chances de 80% e 50%", () => {
+  it("cada espécie gosta de três iscas com chances-base de 80% e 50%", () => {
     for (const fish of [...FISH_DB, ...POKEMON_DB].filter((fish) => !isTrash(fish))) {
       const preferences = Object.entries(fish.baitPreferences);
       expect(preferences, fish.id).toHaveLength(3);
       expect(preferences.map(([, chance]) => chance).sort()).toEqual([0.5, 0.5, 0.8]);
       for (const [baitId, chance] of preferences) {
         expect(BAITS.some((bait) => bait.id === baitId), fish.id).toBe(true);
-        if (fish.type !== "treasure") expect(baitBiteChance(fish, baitId), fish.id).toBe(chance);
+        if (fish.type !== "treasure") expect(baitBiteChance(fish, baitId), fish.id).toBe(chance + 0.1);
       }
     }
   });
@@ -113,9 +113,9 @@ describe("preferências das iscas e preços", () => {
   it("comuns preferem minhocas, raros preferem a isca lendária e rejeitam as baratas", () => {
     const common = FISH_DB.find((fish) => fish.type === "fish" && fish.rarity === 1 && !isTrash(fish));
     const rare = POKEMON_DB.find((fish) => fish.stage === 3 && fish.type === "fish");
-    expect(baitBiteChance(common, "minhoca")).toBe(0.8);
+    expect(baitBiteChance(common, "minhoca")).toBe(0.9);
     expect(baitBiteChance(common, "isca_brilhante")).toBe(0);
-    expect(baitBiteChance(rare, "isca_brilhante")).toBe(0.8);
+    expect(baitBiteChance(rare, "isca_brilhante")).toBe(0.9);
     expect(baitBiteChance(rare, "minhoca")).toBe(0);
   });
 
@@ -214,7 +214,7 @@ describe("análise da isca e consumo", () => {
     advanceUntil(() => get(phase) === PHASES.PLAYING);
     expect(get(worldCreatures)).toEqual([]);
     expect(get(worldCreatureEncounter)).toBeNull();
-    expect(get(baitStock).isca_brilhante).toBe(4);
+    expect(get(baitStock).isca_brilhante).toBe(5);
   });
 
   it("criatura interessada mostra coração e pode ser capturada uma única vez", () => {
@@ -279,22 +279,22 @@ describe("análise da isca e consumo", () => {
     advanceUntil(() => get(phase) === PHASES.PLAYING);
     expect(get(shadowActive)).toBe(false);
     expect(get(shadowReaction)).toBeNull();
-    expect(get(baitStock).isca_brilhante).toBe(4);
-    expect(localStorage.setItem).toHaveBeenCalled();
+    expect(get(baitStock).isca_brilhante).toBe(5);
+    expect(localStorage.setItem).not.toHaveBeenCalled();
   });
 
   it.each([
-    ["minhoca", 0.79, true],
-    ["minhoca", 0.81, false],
-    ["massa_pao", 0.49, true],
-    ["massa_pao", 0.51, false],
+    ["minhoca", 0.89, true],
+    ["minhoca", 0.91, false],
+    ["massa_pao", 0.59, true],
+    ["massa_pao", 0.61, false],
   ])("%s respeita o sorteio %f de mordida", (bait, roll, bites) => {
     cast(bait);
     advanceUntil(() => get(shadowReaction) === "heart");
     Math.random.mockReturnValue(roll);
     advanceUntil(() => get(phase) !== PHASES.FISHING_APPROACH);
     expect(get(phase)).toBe(bites ? PHASES.FISHING_BITE : PHASES.PLAYING);
-    if (!bites) expect(get(baitStock)[bait]).toBe(4);
+    if (!bites) expect(get(baitStock)[bait]).toBe(5);
   });
 
   it("perder a janela de fisgada consome a última isca e desequipa", () => {

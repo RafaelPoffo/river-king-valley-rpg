@@ -11,7 +11,7 @@ Jogue em [river-king-valley-rpg.vercel.app](https://river-king-valley-rpg.vercel
 - **Vila com NPCs**: Capitão Thomas, Mestre Gema, Ana e Velho Joe, cada um com seu canto na vila e visitas à taverna à noite.
 - **Amizade**: converse e dê peixes de presente para ganhar corações. Cada morador libera uma vantagem.
 - **Pesca**: mira de distância limitada pelo alcance da vara, sombra se aproximando, fisgada e minigame de tensão na linha. Também dá para pescar com rede na margem.
-- **Criaturas pela vila**: de 2 a 8 visitantes por dia, com sprites de Mystery Dungeon, caminhada lenta e pausas. Criaturas pequenas ocupam um quadrado e grandes ocupam quatro, sem poder atravessá-las.
+- **Criaturas pela vila**: de 2 a 8 visitantes por dia, com caminhada lenta e pausas. Os Pokemon do mapa usam o atlas local de 16x16, ocupam um quadrado e sao decorativos, sem encontros ou captura direta. Os peixes do modo Normal mantem seu comportamento.
 - **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
 - **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
 - **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨).
@@ -77,9 +77,9 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 
 **Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
 
-**Criaturas visíveis.** A população da vila se renova ao dormir, sem recarregar a página, e fica preservada no save durante aquele dia. Os visitantes terrestres priorizam Pokémon comuns das gerações 1 e 2. Peixes e Pokémon aquáticos aparecem nas faixas correspondentes às zonas 1, 2 e 3 (o rio comporta as zonas 1 e 2). Lance a boia até cerca de um quadrado da criatura, na zona correta, para iniciar rapidamente um encontro com aquela espécie. Ela se aproxima, analisa a isca e mostra coração ou X. Uma criatura rejeitada foge e desaparece; uma interessada pode morder e ser capturada no minigame. Capturas e fugas removem aquele exemplar até a renovação diária. Visitantes terrestres não são capturáveis pela vara.
+**Criaturas visiveis.** A populacao da vila se renova ao dormir e fica preservada no save durante aquele dia. Os Pokemon terrestres e aquaticos usam apenas quadros do atlas local, ocupam um tile e nao oferecem interacao nem iniciam encontros de pesca. A pesca comum e as imagens de captura/Pokedex permanecem independentes. No modo Normal, os peixes visiveis ainda podem ser atraidos pela boia na zona correta.
 
-Os sprites locais e seus créditos estão em [public/assets/world/README.md](public/assets/world/README.md). A política do SpriteCollab exige atribuição e uso não comercial das contribuições da comunidade.
+**Atlas do overworld.** Jogador, moradores e Pokemon do mapa usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16x16 com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direcoes e uma sequencia de caminhada/parado; Pokemon usam seus pares de animacao. Para adicionar sprites, cadastre suas coordenadas e especie, sem alterar as imagens do catalogo ou da captura. Saves antigos sao adaptados sem repovoar o dia. Os antigos arquivos de overworld em `public/assets/world/` nao sao mais usados pelo mapa; seus creditos permanecem nessa pasta.
 
 **Raridade por zona.** Os encontros usam pesos: comuns são mais frequentes, raros e lendários têm pesos progressivamente menores. A profundidade aumenta um pouco o peso dos raros, mas não garante encontros raros. Iscas caras e pratos dão bônus limitados. As chances finais dependem das espécies disponíveis naquele bioma, zona, horário e estação. No modo Pokémon, níveis 2 e 3 têm pesos muito menores que nível 1; preferência por água funda não ignora essa regra.
 

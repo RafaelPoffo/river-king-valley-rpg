@@ -14,7 +14,7 @@
         data-creature-id={creature.id}
         style="width: {creature.size * TILE_SIZE}px; height: {creature.size * TILE_SIZE}px; transform: translate({position.x * TILE_SIZE}px, {position.y * TILE_SIZE}px); z-index: {creature.aquatic ? 12 : 20};"
       >
-        <CreatureSprite species={worldSpecies(creature)} size={creature.size} direction={creature.direction} moving={!!creature.target} />
+        <CreatureSprite species={worldSpecies(creature)} direction={creature.direction} moving={!!creature.target} />
       </div>
     {/if}
   {/each}

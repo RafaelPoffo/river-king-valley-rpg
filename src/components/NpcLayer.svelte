@@ -1,5 +1,7 @@
 <script>
   import { draw, SPRITES } from "../game/sprites.js";
+  import { CHARACTER_SPRITES } from "../game/overworldAtlas.js";
+  import OverworldSprite from "./OverworldSprite.svelte";
   import {
     TILE_SIZE,
     FESTIVAL_STALL,
@@ -22,7 +24,7 @@
       style="left: {loc.x * TILE_SIZE}px; top: {loc.y * TILE_SIZE}px; z-index: 20;"
       title={npc.name}
     >
-      {@html draw(npc.sprite)}
+      <OverworldSprite sprite={CHARACTER_SPRITES[npc.id] || CHARACTER_SPRITES.veteran} label={npc.name} />
     </div>
   {/if}
 {/each}

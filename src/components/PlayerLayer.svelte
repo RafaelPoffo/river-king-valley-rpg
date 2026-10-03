@@ -1,6 +1,7 @@
 <script>
-  import { PHASES, LINE_IN_WATER, isFishingPhase } from "../game/phases.js";
+  import { PHASES, LINE_IN_WATER } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
+  import { CHARACTER_SPRITES } from "../game/overworldAtlas.js";
   import { TILE_SIZE } from "../game/constants.js";
   import {
     player,
@@ -14,22 +15,9 @@
     worldCreatureEncounter,
   } from "../game/stores.js";
   import CreatureSprite from "./CreatureSprite.svelte";
+  import OverworldSprite from "./OverworldSprite.svelte";
 
-  const SPRITE = {
-    up: "/assets/crystal_player_up.png",
-    down: "/assets/crystal_player_down.png",
-    left: "/assets/crystal_player_left.png",
-    right: "/assets/crystal_player_right.png",
-  };
-  const FISH_SPRITE = {
-    up: "/assets/crystal_player_fish_up.png",
-    down: "/assets/crystal_player_fish_down.png",
-    left: "/assets/crystal_player_fish_left.png",
-    right: "/assets/crystal_player_fish_right.png",
-  };
-
-  $: fishing = isFishingPhase($phase);
-  $: src = (fishing ? FISH_SPRITE : SPRITE)[$player.dir] || SPRITE.down;
+  $: moving = $phase === PHASES.PLAYING && (!Number.isInteger($player.x) || !Number.isInteger($player.y));
   $: showBobber = LINE_IN_WATER.has($phase);
   $: encounter = $worldCreatures.find((creature) => creature.id === $worldCreatureEncounter);
   $: encounterSize = encounter?.size || 1;
@@ -42,12 +30,7 @@
   class="tile"
   style="left: 0; top: 0; z-index: 25; transform: translate({$player.x * TILE_SIZE}px, {$player.y * TILE_SIZE}px);"
 >
-  <img
-    {src}
-    alt="Pescador"
-    class="w-full h-full object-contain pointer-events-none select-none"
-    style="image-rendering: pixelated;"
-  />
+  <OverworldSprite sprite={CHARACTER_SPRITES.player} direction={$player.dir} {moving} label="Pescador" />
 </div>
 
 {#if showBobber}
@@ -79,7 +62,7 @@
     style="left: {($shadowPos.x - (encounterSize - 1) / 2) * TILE_SIZE}px; top: {($shadowPos.y - (encounterSize - 1) / 2) * TILE_SIZE}px; width: {encounterSize * TILE_SIZE}px; height: {encounterSize * TILE_SIZE}px; z-index: 12;"
   >
     {#if encounter}
-      <CreatureSprite species={$activeFish} size={encounterSize} direction={encounterDirection} moving />
+      <CreatureSprite species={$activeFish} direction={encounterDirection} moving />
     {:else}
       {@html draw(SPRITES.shadow)}
     {/if}

@@ -45,6 +45,7 @@ import { dishEffect } from "./dishes.js";
 import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
 
 const STORM_PRIORITY = 0.02;
+const BAIT_BITE_BONUS = 0.1;
 
 export function shadowEntry(bobber, biome, mapWidth, random = Math.random) {
   const distance = 3;
@@ -59,6 +60,7 @@ let aimDir = 1;
 let minigameDir = 1;
 let lastTime = 0;
 let castBaitId = null;
+let castBaitBitten = false;
 let shadowMotion = null;
 const loopIds = {
   aim: null,
@@ -111,6 +113,7 @@ export function throwLine() {
   castBaitId = equippedBait === "sem_isca" || (get(baitStock)[equippedBait] || 0) > 0
     ? equippedBait
     : "sem_isca";
+  castBaitBitten = false;
   if (castBaitId !== equippedBait) eqBaitId.set(castBaitId);
 
   const p = get(player);
@@ -241,10 +244,12 @@ function updateApproach(time) {
 
 export function baitBiteChance(fish, baitId) {
   if (isTrashSprite(fish) || fish.type === "treasure") return 1;
-  return fish.baitPreferences?.[baitId] || 0;
+  const preference = fish.baitPreferences?.[baitId] || 0;
+  return preference > 0 ? Math.min(1, preference + BAIT_BITE_BONUS) : 0;
 }
 
 function beginBite() {
+  castBaitBitten = true;
   shadowActive.set(false);
   shadowReaction.set(null);
   phase.set(PHASES.FISHING_BITE);
@@ -259,6 +264,9 @@ function beginBite() {
 function consumeCastBait() {
   const baitId = castBaitId;
   castBaitId = null;
+  const wasBitten = castBaitBitten;
+  castBaitBitten = false;
+  if (!wasBitten) return;
   if (!baitId || baitId === "sem_isca") return;
   baitStock.update((stock) => ({ ...stock, [baitId]: Math.max(0, (stock[baitId] || 0) - 1) }));
   if (get(eqBaitId) === baitId && !get(baitStock)[baitId]) eqBaitId.set("sem_isca");
