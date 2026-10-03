@@ -10,6 +10,7 @@
     isFading,
   } from "../game/stores.js";
   import MapLayer from "./MapLayer.svelte";
+  import AmbientShadows from "./AmbientShadows.svelte";
   import WorldCreatureLayer from "./WorldCreatureLayer.svelte";
   import NpcLayer from "./NpcLayer.svelte";
   import PlayerLayer from "./PlayerLayer.svelte";
@@ -25,6 +26,7 @@
     style="transform: translate({-$cameraX}px, {-$cameraY}px); width: {mapWidth}px; height: {mapHeight}px;"
   >
     <MapLayer />
+    <AmbientShadows />
     <WorldCreatureLayer />
     <NpcLayer />
     <PlayerLayer />

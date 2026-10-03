@@ -26,7 +26,7 @@
   });
 </script>
 
-<svg class="overworld-sprite" viewBox="0 0 16 16" role="img" aria-label={label} data-atlas-x={frame.x} data-atlas-y={frame.y}>
+<svg class="overworld-sprite" viewBox="0 0 {frame.width} {frame.height}" role="img" aria-label={label} data-atlas-x={frame.x} data-atlas-y={frame.y}>
   {#if source}
     <image href={source} x={-frame.x} y={-frame.y} width="170" height="1668" />
   {/if}

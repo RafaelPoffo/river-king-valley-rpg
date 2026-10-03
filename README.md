@@ -69,7 +69,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 ### Como pescar
 
 1. Fique de frente para a água e aperte Espaço.
-2. **Mira:** a barra de força oscila. Aperte Espaço para lançar. A força define a zona: 1 (rasa), 2 (média) ou 3 (funda). A vara limita até onde você alcança.
+2. **Mira:** a barra de força mostra as três zonas: 1 (rasa), 2 (média) e 3 (funda). O marcador vermelho oscila só pelas zonas que a sua vara alcança; as outras aparecem trancadas. No mapa, um alvo tracejado marca onde a boia vai cair e fica amarelo quando há um peixe ou Pokémon visível ao alcance. Aperte Espaço para lançar.
 3. **Espera:** de 6 a 20 segundos. Aperte Espaço se quiser recolher a linha.
 4. **Análise da isca:** no mar, a sombra vem da esquerda, direita ou de baixo; no rio, da esquerda, direita ou de cima. Paredes laterais bloqueiam a entrada por aquele lado. A sombra circula lentamente a boia por 3 a 5 segundos. Um coração rosa indica interesse: isca favorita dá 80% de chance de mordida e duas alternativas dão 50%. Uma isca incompatível mostra um X vermelho e o peixe vai embora.
 5. **Fisgada:** a boia afunda e você tem pouco tempo para apertar Espaço. Quanto mais raro o peixe, menor a janela (de 1,05 s até 0,4 s, mais o bônus do Ensopado do Mar).
@@ -78,9 +78,11 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 
 **Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
 
-**Criaturas visiveis.** A populacao da vila se renova ao dormir e fica preservada no save durante aquele dia. Os Pokemon terrestres e aquaticos usam apenas quadros do atlas local, ocupam um tile e nao oferecem interacao nem iniciam encontros de pesca. A pesca comum e as imagens de captura/Pokedex permanecem independentes. No modo Normal, os peixes visiveis ainda podem ser atraidos pela boia na zona correta.
+**Criaturas visíveis.** A população da vila (2 a 8 criaturas) se renova ao dormir e fica preservada no save durante aquele dia. Peixes e Pokémon visíveis na água podem ser atraídos: lance a boia perto deles, na zona em que estão, e eles vêm analisar a isca com coração ou X como qualquer sombra. Se fugirem ou forem pescados, saem do mapa até o dia seguinte. Os Pokémon terrestres são só visitantes: andam pela grama e bloqueiam a passagem. Lapras, Onix e Snorlax ocupam 2×2 quadrados; os demais, um.
 
-**Atlas do overworld.** Jogador, moradores e Pokemon do mapa usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16x16 com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direcoes e uma sequencia de caminhada/parado; Pokemon usam seus pares de animacao. Para adicionar sprites, cadastre suas coordenadas e especie, sem alterar as imagens do catalogo ou da captura. Saves antigos sao adaptados sem repovoar o dia. Os antigos arquivos de overworld em `public/assets/world/` nao sao mais usados pelo mapa; seus creditos permanecem nessa pasta.
+**Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio e no mar, longe da doca. São só decoração, sorteadas por dia, e não têm relação com a pesca.
+
+**Atlas do overworld.** Jogador, moradores e Pokemon do mapa usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16x16 (e os três de 32x32 da linha 14) com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direcoes e uma sequencia de caminhada/parado; Pokemon usam seus pares de animacao. Para adicionar sprites, cadastre suas coordenadas e especie, sem alterar as imagens do catalogo ou da captura. Saves antigos sao adaptados sem repovoar o dia. Os antigos arquivos de overworld em `public/assets/world/` nao sao mais usados pelo mapa; seus creditos permanecem nessa pasta.
 
 **Raridade por zona.** Os encontros usam pesos: comuns são mais frequentes, raros e lendários têm pesos progressivamente menores. A profundidade aumenta um pouco o peso dos raros, mas não garante encontros raros. Iscas caras e pratos dão bônus limitados. As chances finais dependem das espécies disponíveis naquele bioma, zona, horário e estação. No modo Pokémon, níveis 2 e 3 têm pesos muito menores que nível 1; preferência por água funda não ignora essa regra.
 
@@ -274,7 +276,7 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 
 | Arquivo | O que garante |
 |---|---|
-| `map.test.js` | Mapas retangulares, todo chão alcançável, toda porta, móvel, barraca e cais com acesso, NPCs em chão livre. Os NPCs e a barraca contam como obstáculo. |
+| `map.test.js` | Mapas retangulares, todo chão alcançável, toda porta, móvel, barraca e cais com acesso, NPCs em chão livre. Os NPCs e a barraca contam como obstáculo. Visitantes terrestres decorativos, Pokémon da água pescáveis, sprites 2×2, sombras de ambiente só na água e mira caindo na água. |
 | `fishingEngine.test.js` | Em todas as combinações de bioma, zona, horário e estação: peixe só sai no horário, bioma e distância certos, lixo só da lista de lixo, preço final certo e o upgrade de sorte funcionando. Usa números aleatórios com semente fixa. |
 | `saveSystem.test.js` | Salvar e carregar sem perder nada, jogo novo zerando o progresso e mantendo o nome, migração de saves antigos. |
 | `phases.test.js` | Todo `PHASES.X` usado no código existe e os grupos de fases são coerentes. |
@@ -321,6 +323,7 @@ src/
     ├── movement.js            # andar suave, portas, câmera, regra de onde dá para andar
     ├── fishingEngine.js       # sorteio de peixe e etapas da pesca
     ├── fight.js               # força do peixe contra a vara e chance de arrebentar
+    ├── ambientShadows.js      # sombras decorativas de peixe, sorteadas por dia
     ├── tournament.js          # torneios dos festivais
     ├── collections.js         # marcos e prêmios do museu e do aquário
     ├── friendship.js          # corações, presentes e vantagens dos moradores

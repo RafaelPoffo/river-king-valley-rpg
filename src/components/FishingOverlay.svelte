@@ -10,24 +10,54 @@
     catchTargetWidth,
     activeFish,
   } from "../game/stores.js";
+
+  const ZONES = [
+    { id: 1, label: "RASA", hint: "Peixes comuns", color: "bg-[#9ce6e6]", text: "text-black" },
+    { id: 2, label: "MÉDIA", hint: "Mais variedade", color: "bg-[#4a9090]", text: "text-white" },
+    { id: 3, label: "FUNDA", hint: "Mais chance de raros", color: "bg-[#1f4e5f]", text: "text-white" },
+  ];
+
+  $: reach = Math.min(3, $currentToolData?.maxDist || 1);
+  $: zone = ZONES[Math.min(reach, Math.floor($aimPower)) - 1];
+  $: marker = Math.min(100, Math.max(0, (($aimPower - 1) / 3) * 100));
 </script>
 
 <!-- Definir Força (Aim Bar) -->
 {#if $phase === PHASES.FISHING_AIM}
   <div
-    class="absolute bottom-[120px] left-1/2 -translate-x-1/2 z-40 bg-white border-4 border-black p-4 text-center pixel-shadow"
+    class="absolute bottom-[120px] left-1/2 -translate-x-1/2 z-40 w-[340px] bg-white border-4 border-black px-3 py-2 pixel-shadow"
   >
-    <h3 class="retro-font text-[9px] mb-2 text-red-600 animate-pulse">
-      DEFINIR FORÇA (ZONA {Math.floor($aimPower)}): [SPACE]
-    </h3>
-    <div
-      class="w-64 h-6 border-2 border-black bg-gray-200 relative overflow-hidden"
-    >
+    <div class="flex items-baseline justify-between retro-font text-[8px] mb-2">
+      <span>FORÇA DO ARREMESSO</span>
+      <span class="text-red-600 animate-pulse">[ESPAÇO] LANÇAR</span>
+    </div>
+    <div class="relative">
+      <div class="flex h-7 border-2 border-black overflow-hidden">
+        {#each ZONES as option}
+          {@const locked = option.id > reach}
+          <div
+            class="flex-1 flex items-center justify-center retro-font text-[7px] border-r-2 border-black last:border-r-0 transition-opacity {locked
+              ? 'locked-zone text-gray-600'
+              : `${option.color} ${option.text}`} {zone.id === option.id ? 'opacity-100' : 'opacity-60'}"
+          >
+            {#if locked}<span class="font-sans text-sm leading-none">🔒</span>{:else}{option.label}{/if}
+          </div>
+        {/each}
+      </div>
       <div
-        class="absolute top-0 bottom-0 bg-[#4a9090]"
-        style={`width: ${Math.min(100, ($aimPower / (($currentToolData?.maxDist || 1) + 0.99)) * 100)}%;`}
+        class="absolute -top-2 -bottom-2 w-1.5 -ml-[3px] bg-red-600 border border-black"
+        style="left: {marker}%;"
       ></div>
     </div>
+    <div class="mt-2 flex justify-between retro-font text-[7px]">
+      <span>ZONA {zone.id}: {zone.label}</span>
+      <span class="text-gray-600">{zone.hint}</span>
+    </div>
+    {#if reach < 3}
+      <div class="mt-1 text-center retro-font text-[6px] text-gray-500">
+        Zonas trancadas pedem uma vara de maior alcance.
+      </div>
+    {/if}
   </div>
 {/if}
 
@@ -115,3 +145,9 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .locked-zone {
+    background: repeating-linear-gradient(45deg, #d1d5db 0 6px, #e5e7eb 6px 12px);
+  }
+</style>

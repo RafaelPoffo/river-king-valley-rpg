@@ -7,6 +7,7 @@ import {
   INITIAL_VILLAGERS,
   INITIAL_CONSTRUCTIONS,
   CAST_TILES,
+  DOCK_BOUNDS,
   getNpcLocation,
 } from "./constants.js";
 import { canWalkOn, houseForDoor, interiorSpawn, isInterior, setDirectionHeld, releaseMovement } from "./movement.js";
@@ -15,16 +16,21 @@ import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, 
 import { resetState } from "./saveSystem.js";
 import { sleep } from "./gameActions.js";
 import { PHASES } from "./phases.js";
-import { CHARACTER_SPRITES, POKEMON_SPRITES, atlasFrame, clearFrameBackground } from "./overworldAtlas.js";
+import { CHARACTER_SPRITES, POKEMON_SPRITES, atlasFrame, clearFrameBackground, worldSizeFor } from "./overworldAtlas.js";
+import { LAND_VISITORS } from "./data/worldCreatures.js";
+import { ambientShadows } from "./ambientShadows.js";
+import { castTarget } from "./fishingEngine.js";
 
 describe("folha de sprites do overworld", () => {
   it("recorta quadros de 16 pixels sem incluir as faixas e usa o centro em repouso", () => {
     expect(atlasFrame(CHARACTER_SPRITES.player, "up")).toEqual({ x: 68, y: 0, width: 16, height: 16 });
     expect([0, 1, 2, 3].map((step) => atlasFrame(CHARACTER_SPRITES.player, "down", true, step).x)).toEqual([17, 0, 17, 34]);
-    expect(atlasFrame(POKEMON_SPRITES["0025"], "up", true, 1)).toEqual({ x: 51, y: 1453, width: 16, height: 16 });
+    expect(atlasFrame(POKEMON_SPRITES["0025"], "up", true, 1)).toEqual({ x: 153, y: 1436, width: 16, height: 16 });
+    expect(atlasFrame(POKEMON_SPRITES["0143"], "left", true, 3)).toEqual({ x: 68, y: 1538, width: 32, height: 32 });
     for (const sprite of [...Object.values(CHARACTER_SPRITES), ...Object.values(POKEMON_SPRITES)]) {
-      expect(sprite.y + 16).toBeLessThanOrEqual(1668);
-      expect(Math.max(...Object.values(sprite.directions).flat()) * 17 + 16).toBeLessThanOrEqual(170);
+      const size = sprite.size || 16;
+      expect(sprite.y + size).toBeLessThanOrEqual(1668);
+      expect(Math.max(...Object.values(sprite.directions).flat()) * 17 + size).toBeLessThanOrEqual(170);
     }
   });
 
@@ -128,7 +134,7 @@ describe("criaturas persistentes e movimento", () => {
           for (const creature of creatures) {
             expect(canPlaceCreature(creature, creatures.filter((other) => other.id !== creature.id))).toBe(true);
             if (creature.aquatic) {
-              expect(worldSpecies(creature).rarity).toBeLessThanOrEqual(3);
+              if (worldSpecies(creature).rarity > 3) expect(creature.size).toBe(2);
               expect(worldSpecies(creature).dist).toContain(creature.zone);
             }
           }
@@ -148,34 +154,46 @@ describe("criaturas persistentes e movimento", () => {
     expect(get(worldCreatures).some((creature) => creature.id === original[0].id)).toBe(false);
   });
 
-  it("Pokemon do atlas ocupam um tile e não iniciam encontros nem aceitam interação", () => {
+  it("visitantes terrestres são decorativos e Pokémon da água podem ser pescados", () => {
     gameMode.set("pokemon");
-    ensureWorldPopulation();
-    for (const creature of get(worldCreatures)) {
-      expect(creature.size).toBe(1);
-      expect(creature.decorative).toBe(true);
-      expect(POKEMON_SPRITES[worldSpecies(creature).dexId]).toBeDefined();
-      expect(worldCreatureBlocks("village", creature.x, creature.y)).toBe(true);
-      expect(engageWorldCreature(creature.id)).toBeNull();
-      if (creature.aquatic) {
-        expect(nearbyAquaticCreature({ x: creature.x, y: creature.y }, creature.zone, creature.biome)).toBeNull();
+    for (let today = 1; today <= 15; today++) {
+      day.set(today);
+      ensureWorldPopulation();
+      for (const creature of get(worldCreatures)) {
+        const species = worldSpecies(creature);
+        expect(POKEMON_SPRITES[species.dexId]).toBeDefined();
+        expect(creature.size).toBe(worldSizeFor(species.dexId));
+        expect(worldCreatureBlocks("village", creature.x, creature.y)).toBe(true);
+        if (creature.aquatic) {
+          expect(creature.decorative).toBe(false);
+          expect(nearbyAquaticCreature({ x: creature.x, y: creature.y }, creature.zone, creature.biome)?.id).toBe(creature.id);
+        } else {
+          expect(creature.decorative).toBe(true);
+          expect(engageWorldCreature(creature.id)).toBeNull();
+        }
       }
     }
   });
 
-  it("adapta saves antigos sem repovoar o mapa ou deixar sprites antigos interativos", () => {
+  it("Lapras, Onix e Snorlax ocupam quatro quadrados", () => {
+    expect(["0131", "0095", "0143"].map(worldSizeFor)).toEqual([2, 2, 2]);
+    expect(worldSizeFor("0025")).toBe(1);
+    expect(LAND_VISITORS.filter((visitor) => visitor.worldSize === 2).map((visitor) => visitor.id)).toEqual(["onix", "snorlax"]);
+    for (const visitor of LAND_VISITORS) expect(POKEMON_SPRITES[visitor.dexId]).toBeDefined();
+  });
+
+  it("adapta saves antigos sem repovoar o mapa", () => {
     gameMode.set("pokemon");
     worldPopulationDay.set("pokemon:0:1");
     worldCreatures.set([
       { id: "old-land", speciesId: "eevee", x: 16, y: 14, size: 2, aquatic: false, state: "wild" },
-      { id: "old-water", speciesId: "magikarp", x: 10, y: 18, size: 2, aquatic: true, biome: "sea", zone: 1, state: "wild" },
+      { id: "old-water", speciesId: "magikarp", x: 10, y: 18, size: 2, aquatic: true, biome: "sea", zone: 1, decorative: true, state: "wild" },
     ]);
     expect(ensureWorldPopulation()).toBe(false);
-    expect(get(worldCreatures).map((creature) => creature.id)).toEqual(["old-land", "old-water"]);
-    expect(get(worldCreatures).every((creature) => creature.decorative && creature.size === 1)).toBe(true);
-    expect(get(worldCreatures).every((creature) => POKEMON_SPRITES[worldSpecies(creature).dexId])).toBe(true);
-    expect(get(worldCreatures).map((creature) => worldSpecies(creature).name)).toEqual(["Pikachu", "Magikarp"]);
-    expect(get(worldCreatures).every((creature) => creature.speciesId)).toBe(true);
+    const creatures = get(worldCreatures);
+    expect(creatures.map((creature) => creature.id)).toEqual(["old-land", "old-water"]);
+    expect(creatures.map((creature) => worldSpecies(creature).name)).toEqual(["Pikachu", "Magikarp"]);
+    expect(creatures.map((creature) => [creature.size, creature.decorative])).toEqual([[1, true], [1, false]]);
   });
 
   it("dormir renova a população sem recarregar a página", () => {
@@ -395,5 +413,34 @@ describe("NPCs", () => {
     const cells = npcCellsOn("village", 10 * 60, 1);
     expect(cells.has(key(PLAYER_START.x, PLAYER_START.y))).toBe(false);
     expect(cells.has(key(FESTIVAL_STALL.x, FESTIVAL_STALL.y))).toBe(false);
+  });
+});
+
+describe("sombras de ambiente e mira", () => {
+  const rows = MAPS_DATA.village;
+  const isWater = (x, y) => ["~", "X"].includes(rows[y]?.[Math.floor(x)]);
+
+  it("nadam só na água, longe da doca, e se repetem no mesmo dia", () => {
+    for (let today = 1; today <= 30; today++) {
+      const shadows = ambientShadows(`normal:0:${today}`);
+      expect(shadows.filter((shadow) => shadow.biome === "river")).toHaveLength(3);
+      expect(shadows.filter((shadow) => shadow.biome === "sea")).toHaveLength(4);
+      for (const shadow of shadows) {
+        for (let x = shadow.x1; x <= shadow.x2 + shadow.size; x += 0.5) expect(isWater(x, shadow.y)).toBe(true);
+        expect(shadow.y < DOCK_BOUNDS.y1 || shadow.y > DOCK_BOUNDS.y2).toBe(true);
+      }
+      expect(shadows).toEqual(ambientShadows(`normal:0:${today}`));
+    }
+  });
+
+  it.each([
+    ["river", { x: 10, y: 5, dir: "up" }],
+    ["sea", { x: 10, y: 16, dir: "down" }],
+  ])("a mira no %s cai na água e fica mais longe a cada zona", (biome, from) => {
+    const targets = [1, 2, 3].map((zone) => castTarget(from, zone, biome, rows));
+    for (const target of targets) expect(isWater(target.x, target.y)).toBe(true);
+    const distances = targets.map((target) => Math.abs(target.y - from.y));
+    expect(distances[0]).toBeLessThan(distances[1]);
+    expect(distances[1]).toBeLessThanOrEqual(distances[2]);
   });
 });

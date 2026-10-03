@@ -235,6 +235,27 @@ describe("análise da isca e consumo", () => {
     expect(get(baitStock).minhoca).toBe(4);
   });
 
+  it("Pokémon visível na água reage à isca e pode ser pescado", () => {
+    setScene({ mode: "pokemon", biome: "river" });
+    const species = POKEMON_DB.find((pokemon) => pokemon.id === "magikarp");
+    worldCreatures.set([{
+      id: "visible-pokemon", speciesId: species.id, dexId: species.dexId, x: 10, y: 3, size: 1,
+      aquatic: true, decorative: false, biome: "river", zone: 1, state: "wild", target: null, progress: 0,
+    }]);
+    cast();
+    expect(get(worldCreatureEncounter)).toBe("visible-pokemon");
+    advanceUntil(() => get(shadowReaction) === "heart");
+    Math.random.mockReturnValue(0);
+    advanceUntil(() => get(phase) === PHASES.FISHING_BITE);
+    Math.random.mockReturnValue(0.99);
+    startMinigame();
+    minigameBar.set(get(catchTargetCenter));
+    attemptCatch();
+    expect(get(phase)).toBe(PHASES.CAUGHT);
+    expect(get(inventory)[0].id).toBe("magikarp");
+    expect(get(worldCreatures)).toEqual([]);
+  });
+
   it.each([
     [{ x: 15, y: 3 }, 1],
     [{ x: 10, y: 3 }, 2],

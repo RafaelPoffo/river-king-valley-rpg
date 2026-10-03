@@ -3,6 +3,7 @@ import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
 import { LAND_VISITORS, WORLD_SPRITES } from "./data/worldCreatures.js";
+import { worldSizeFor } from "./overworldAtlas.js";
 import {
   worldCreatures, worldPopulationDay, day, seasonIndex, gameMode, getActiveDatabase,
   currentWeather, phase, currentMap, player, villagers, inGameMinutes,
@@ -14,7 +15,7 @@ export function creatureOccupies(creature, tileX, tileY) {
   return occupies(creature) || !!creature.target && occupies(creature.target);
 }
 
-function dailyRandom(key) {
+export function dailyRandom(key) {
   let seed = 2166136261;
   for (const character of key) seed = Math.imul(seed ^ character.charCodeAt(0), 16777619);
   return () => {
@@ -66,7 +67,7 @@ export function createDailyPopulation(key, landSpecies, waterSpecies, blocked = 
         id: `${key}:${index}`,
         speciesId: species.id,
         dexId: species.dexId,
-        decorative: !!species.dexId,
+        decorative: !!species.dexId && !aquatic,
         aquatic,
         biome,
         zone,
@@ -118,20 +119,23 @@ export function ensureWorldPopulation() {
   if (get(worldPopulationDay) === key) {
     if (get(gameMode) === "pokemon") {
       worldCreatures.update((creatures) => creatures.map((creature) => {
-        const previous = creature.aquatic
-          ? getActiveDatabase().find((candidate) => candidate.id === creature.speciesId)
-          : LAND_VISITORS.find((candidate) => candidate.id === creature.speciesId);
-        const species = WORLD_SPRITES[previous?.dexId] ? previous : creature.aquatic
-          ? getActiveDatabase().find((candidate) => candidate.dexId === "0129")
-          : LAND_VISITORS.find((candidate) => candidate.dexId === "0025");
-        if (creature.decorative && creature.size === 1 && creature.dexId === species.dexId && creature.state === "wild") return creature;
-        return { ...creature, speciesId: species.id, dexId: species.dexId, decorative: true, size: 1, state: "wild" };
+        const catalog = creature.aquatic ? getActiveDatabase() : LAND_VISITORS;
+        const previous = catalog.find((candidate) => candidate.id === creature.speciesId);
+        const species = WORLD_SPRITES[previous?.dexId]
+          ? previous
+          : catalog.find((candidate) => candidate.dexId === (creature.aquatic ? "0129" : "0025"));
+        const decorative = !creature.aquatic;
+        const size = Math.min(creature.size || 1, worldSizeFor(species.dexId));
+        if (creature.speciesId === species.id && creature.dexId === species.dexId &&
+          creature.decorative === decorative && creature.size === size) return creature;
+        return { ...creature, speciesId: species.id, dexId: species.dexId, decorative, size, state: "wild" };
       }));
     }
     return false;
   }
   const waterSpecies = getActiveDatabase().filter((species) =>
-    species.type === "fish" && species.sprite !== SPRITES.trash && species.rarity <= 3 &&
+    species.type === "fish" && species.sprite !== SPRITES.trash &&
+    (species.rarity <= 3 || worldSizeFor(species.dexId) > 1) &&
     (!species.stage || species.stage <= 2) && !species.requires &&
     (!species.weather || species.weather === get(currentWeather)) &&
     (!species.seasons || species.seasons.includes(get(seasonIndex))) &&
@@ -140,7 +144,7 @@ export function ensureWorldPopulation() {
     (get(gameMode) !== "pokemon" || WORLD_SPRITES[species.dexId])
   ).map((species) => ({
     ...species,
-    worldSize: species.dexId ? 1 : Math.max(species.weight || 0, species.maxW || 0) >= 30 ? 2 : 1,
+    worldSize: species.dexId ? worldSizeFor(species.dexId) : Math.max(species.weight || 0, species.maxW || 0) >= 30 ? 2 : 1,
   }));
   const landSpecies = get(gameMode) === "pokemon" ? LAND_VISITORS : [];
   worldCreatures.set(createDailyPopulation(key, landSpecies, waterSpecies, occupiedPositions()));

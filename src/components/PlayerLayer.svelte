@@ -2,7 +2,9 @@
   import { PHASES, LINE_IN_WATER } from "../game/phases.js";
   import { draw, SPRITES } from "../game/sprites.js";
   import { CHARACTER_SPRITES } from "../game/overworldAtlas.js";
-  import { TILE_SIZE } from "../game/constants.js";
+  import { TILE_SIZE, MAPS_DATA } from "../game/constants.js";
+  import { castTarget } from "../game/fishingEngine.js";
+  import { nearbyAquaticCreature } from "../game/worldCreatures.js";
   import {
     player,
     phase,
@@ -13,12 +15,23 @@
     activeFish,
     worldCreatures,
     worldCreatureEncounter,
+    aimPower,
+    currentMap,
+    fishingBiome,
+    deepSeaFishingActive,
   } from "../game/stores.js";
   import CreatureSprite from "./CreatureSprite.svelte";
   import OverworldSprite from "./OverworldSprite.svelte";
 
   $: moving = $phase === PHASES.PLAYING && (!Number.isInteger($player.x) || !Number.isInteger($player.y));
   $: showBobber = LINE_IN_WATER.has($phase);
+  $: aimZone = Math.floor($aimPower);
+  $: aimBiome = $deepSeaFishingActive ? "sea" : $fishingBiome;
+  $: aimTarget = $phase === PHASES.FISHING_AIM
+    ? castTarget($player, aimZone, aimBiome, MAPS_DATA[$currentMap])
+    : null;
+  $: aimHasCreature = !!aimTarget && $currentMap === "village" &&
+    ($worldCreatures, !!nearbyAquaticCreature(aimTarget, aimZone, aimBiome));
   $: encounter = $worldCreatures.find((creature) => creature.id === $worldCreatureEncounter);
   $: encounterSize = encounter?.size || 1;
   $: encounterDirection = Math.abs($shadowPos.y - $bobberPos.y) > Math.abs($shadowPos.x - $bobberPos.x)
@@ -32,6 +45,15 @@
 >
   <OverworldSprite sprite={CHARACTER_SPRITES.player} direction={$player.dir} {moving} label="Pescador" />
 </div>
+
+{#if aimTarget}
+  <div
+    class="tile pointer-events-none"
+    style="left: {aimTarget.x * TILE_SIZE}px; top: {aimTarget.y * TILE_SIZE}px; z-index: 16;"
+  >
+    <div class="aim-target {aimHasCreature ? 'aim-target-hot' : ''}"></div>
+  </div>
+{/if}
 
 {#if showBobber}
   <div

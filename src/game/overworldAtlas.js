@@ -10,6 +10,12 @@ const pokemon = (row, column) => ({
   y: 1300 + row * FRAME_STRIDE,
   directions: { down: [column, column + 1] },
 });
+// 32x32 still frames on atlas row 14, two strides wide each.
+const largePokemon = (column) => ({
+  y: 1300 + 14 * FRAME_STRIDE,
+  size: 32,
+  directions: { down: [column] },
+});
 
 export const CHARACTER_SPRITES = {
   player: character(0),
@@ -29,46 +35,48 @@ export const POKEMON_SPRITES = {
   "0015": pokemon(8, 4),
   "0019": pokemon(8, 6),
   "0023": pokemon(8, 0),
-  "0025": pokemon(9, 2),
-  "0035": pokemon(8, 8),
+  "0025": pokemon(8, 8),
+  "0035": pokemon(9, 2),
   "0039": pokemon(9, 0),
+  "0041": pokemon(9, 6),
   "0044": pokemon(9, 4),
-  "0046": pokemon(9, 6),
   "0050": pokemon(9, 8),
   "0079": pokemon(10, 0),
-  "0122": pokemon(10, 2),
-  "0086": pokemon(10, 4),
-  "0129": pokemon(10, 6),
-  "0131": pokemon(10, 8),
+  "0120": pokemon(10, 2),
+  "0129": pokemon(10, 4),
   "0072": pokemon(11, 0),
   "0066": pokemon(11, 2),
-  "0100": pokemon(11, 4),
-  "0120": pokemon(11, 6),
-  "0090": pokemon(11, 8),
+  "0092": pokemon(11, 6),
+  "0100": pokemon(11, 8),
   "0140": pokemon(12, 0),
   "0058": pokemon(12, 2),
   "0075": pokemon(12, 4),
-  "0092": pokemon(12, 6),
   "0147": pokemon(12, 8),
-  "0143": pokemon(13, 0),
   "0216": pokemon(13, 2),
   "0212": pokemon(13, 4),
-  "0116": pokemon(13, 6),
   "0201": pokemon(13, 8),
+  "0131": largePokemon(0),
+  "0095": largePokemon(2),
+  "0143": largePokemon(4),
 };
+
+export function worldSizeFor(dexId) {
+  return POKEMON_SPRITES[dexId]?.size === 32 ? 2 : 1;
+}
 
 export function atlasFrame(sprite, direction = "down", moving = false, step = 0) {
   const frames = sprite.directions[direction] || sprite.directions.down;
   const idle = frames.length === 3 ? 1 : 0;
   const sequence = frames.length === 3 ? [1, 0, 1, 2] : frames.map((_, index) => index);
   const index = moving ? sequence[step % sequence.length] : idle;
-  return { x: frames[index] * FRAME_STRIDE, y: sprite.y, width: FRAME_SIZE, height: FRAME_SIZE };
+  const size = sprite.size || FRAME_SIZE;
+  return { x: frames[index] * FRAME_STRIDE, y: sprite.y, width: size, height: size };
 }
 
-export function clearFrameBackground(pixels) {
+export function clearFrameBackground(pixels, size = FRAME_SIZE) {
   const result = new Uint8ClampedArray(pixels);
   const visited = new Set();
-  const corners = [0, 15, 240, 255];
+  const corners = [0, size - 1, size * (size - 1), size * size - 1];
   for (const corner of corners) {
     const color = Array.from(pixels.slice(corner * 4, corner * 4 + 3));
     const queue = [corner];
@@ -79,12 +87,12 @@ export function clearFrameBackground(pixels) {
       if (!color.every((value, channel) => pixels[offset + channel] === value)) continue;
       visited.add(position);
       result[offset + 3] = 0;
-      const column = position % FRAME_SIZE;
-      const row = Math.floor(position / FRAME_SIZE);
+      const column = position % size;
+      const row = Math.floor(position / size);
       if (column > 0) queue.push(position - 1);
-      if (column < FRAME_SIZE - 1) queue.push(position + 1);
-      if (row > 0) queue.push(position - FRAME_SIZE);
-      if (row < FRAME_SIZE - 1) queue.push(position + FRAME_SIZE);
+      if (column < size - 1) queue.push(position + 1);
+      if (row > 0) queue.push(position - size);
+      if (row < size - 1) queue.push(position + size);
     }
   }
   return result;
@@ -109,8 +117,9 @@ export function loadOverworldAtlas() {
           const key = `${x}:${sprite.y}`;
           if (cells.has(key)) continue;
           cells.add(key);
-          const frame = context.getImageData(x, sprite.y, FRAME_SIZE, FRAME_SIZE);
-          frame.data.set(clearFrameBackground(frame.data));
+          const size = sprite.size || FRAME_SIZE;
+          const frame = context.getImageData(x, sprite.y, size, size);
+          frame.data.set(clearFrameBackground(frame.data, size));
           context.putImageData(frame, x, sprite.y);
         }
       }

@@ -53,6 +53,26 @@
   box-shadow: 0 0 16px #ff0000;
 }
 
+.aim-target {
+  position: absolute;
+  inset: 6px;
+  border: 3px dashed #ffffff;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  animation: aim-spin 2.4s linear infinite;
+}
+
+.aim-target-hot {
+  border-color: #facc15;
+  box-shadow: 0 0 10px #facc15;
+}
+
+@keyframes aim-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes float {
   0%,
   100% {

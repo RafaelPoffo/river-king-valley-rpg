@@ -100,6 +100,17 @@ function updateAim(time) {
   loopIds.aim = requestAnimationFrame(updateAim);
 }
 
+export function castTarget(p, zone, biome, map) {
+  const distTiles = CAST_TILES[zone] ?? zone * 2;
+  const step = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] }[p.dir] || [0, 0];
+  const waterTop = biome === "river" ? 1 : 17;
+  const waterBottom = biome === "river" ? 4 : map.length - 2;
+  return {
+    x: Math.max(1, Math.min(map[0].length - 2, p.x + step[0] * distTiles)),
+    y: Math.max(waterTop, Math.min(waterBottom, p.y + step[1] * distTiles)),
+  };
+}
+
 export function throwLine() {
   if (loopIds.aim) cancelAnimationFrame(loopIds.aim);
   const power = get(aimPower);
@@ -117,30 +128,11 @@ export function throwLine() {
   castBaitBitten = false;
   if (castBaitId !== equippedBait) eqBaitId.set(castBaitId);
 
-  const p = get(player);
-  const distTiles = CAST_TILES[dist] ?? dist * 2;
-  const targetBobber = {
-    x:
-      p.dir === "left"
-        ? p.x - distTiles
-        : p.dir === "right"
-          ? p.x + distTiles
-          : p.x,
-    y:
-      p.dir === "up"
-        ? p.y - distTiles
-        : p.dir === "down"
-          ? p.y + distTiles
-          : p.y,
-  };
   const map = MAPS_DATA[get(currentMap)];
   const biome = get(deepSeaFishingActive) ? "sea" : get(fishingBiome);
   const waterTop = biome === "river" ? 1 : 17;
   const waterBottom = biome === "river" ? 4 : map.length - 2;
-  bobberPos.set({
-    x: Math.max(1, Math.min(map[0].length - 2, targetBobber.x)),
-    y: Math.max(waterTop, Math.min(waterBottom, targetBobber.y)),
-  });
+  bobberPos.set(castTarget(get(player), dist, biome, map));
 
   const isFastBite = Math.random() < 0.2;
   let waitTime = isFastBite
