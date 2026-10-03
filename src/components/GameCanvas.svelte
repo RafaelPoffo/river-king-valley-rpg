@@ -10,11 +10,9 @@
     isFading,
   } from "../game/stores.js";
   import MapLayer from "./MapLayer.svelte";
-  import SeaShadows from "./SeaShadows.svelte";
+  import WorldCreatureLayer from "./WorldCreatureLayer.svelte";
   import NpcLayer from "./NpcLayer.svelte";
   import PlayerLayer from "./PlayerLayer.svelte";
-
-  export let seaShadows = [];
 
   $: map = MAPS_DATA[$currentMap];
   $: mapWidth = (map?.[0]?.length || 1) * TILE_SIZE;
@@ -27,7 +25,7 @@
     style="transform: translate({-$cameraX}px, {-$cameraY}px); width: {mapWidth}px; height: {mapHeight}px;"
   >
     <MapLayer />
-    <SeaShadows {seaShadows} />
+    <WorldCreatureLayer />
     <NpcLayer />
     <PlayerLayer />
   </div>

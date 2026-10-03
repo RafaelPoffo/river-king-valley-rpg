@@ -5,7 +5,6 @@
     phase,
     seasonIndex,
     currentWeather,
-    currentMap,
     showAquariumModal,
     showTavernQuestModal,
     showCalendarModal,
@@ -13,6 +12,7 @@
   } from "../game/stores.js";
   import { checkSaveExists } from "../game/saveSystem.js";
   import { cleanupFishing } from "../game/fishingEngine.js";
+  import { startWorldCreatureLoop } from "../game/worldCreatures.js";
   import { attachKeyboard } from "../game/input.js";
   import { startClock } from "../game/clock.js";
   import { startAudio } from "../game/audio.js";
@@ -37,13 +37,7 @@
 
   export let open = true;
 
-  let seaShadows = [
-    { x: 8, y: 20, vx: 0.02, vy: 0.01, active: true },
-    { x: 25, y: 21, vx: -0.015, vy: 0.02, active: true },
-    { x: 15, y: 22, vx: 0.02, vy: -0.01, active: true },
-  ];
-
-  let ambientTimeout = null;
+  let stopWorldCreatures = null;
   let stopClock = null;
   let detachKeyboard = null;
   let stopAudio = null;
@@ -63,7 +57,7 @@
     fitToScreen();
     window.addEventListener("resize", fitToScreen);
     checkSaveExists();
-    startAmbientLoop();
+    stopWorldCreatures = startWorldCreatureLoop();
   });
 
   onDestroy(() => {
@@ -72,28 +66,9 @@
     stopAudio?.();
     detachGamepad?.();
     window.removeEventListener("resize", fitToScreen);
-    if (ambientTimeout) clearTimeout(ambientTimeout);
+    stopWorldCreatures?.();
     cleanupFishing();
   });
-
-  function startAmbientLoop() {
-    const triggerAmbient = () => {
-      if ($currentMap === "village") {
-        seaShadows.forEach((s) => {
-          if (!s.fleeing && s.active) {
-            s.x += s.vx * 2;
-            s.y += s.vy * 2;
-            if (s.x < 2 || s.x > 36) s.vx *= -1;
-            if (s.y < 18 || s.y > 23) s.vy *= -1;
-          }
-        });
-        seaShadows = [...seaShadows];
-      }
-      const nextTime = Math.random() * 3000 + 3000;
-      ambientTimeout = setTimeout(triggerAmbient, nextTime);
-    };
-    ambientTimeout = setTimeout(triggerAmbient, 4000);
-  }
 </script>
 
 {#if open}
@@ -137,7 +112,7 @@
         <MuseumModal />
       {:else}
         <!-- Active Playing Canvas -->
-        <GameCanvas {seaShadows} />
+        <GameCanvas />
 
         <!-- Fishing Mechanics UI Layer -->
         <FishingOverlay />

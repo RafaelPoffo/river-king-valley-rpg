@@ -8,11 +8,13 @@
   $: discount = ($friendship, hasPerk("carpenter"));
 </script>
 
+<!-- Limita a altura do container principal em 110vh -->
 <div
-  class="flex-1 bg-white text-black flex flex-col relative border-b-8 border-black z-50 select-none"
+  class="flex-1 bg-white text-black flex flex-col relative border-b-8 border-black z-50 select-none max-h-[110vh] h-full overflow-hidden"
 >
+  <!-- Cabeçalho fixo com shrink-0 -->
   <div
-    class="flex justify-between items-center bg-[#9ce6e6] border-b-4 border-black p-4"
+    class="flex justify-between items-center bg-[#9ce6e6] border-b-4 border-black p-4 shrink-0"
   >
     <h2 class="retro-font text-sm">
       OFICINA DO MARCENEIRO & MELHORIAS
@@ -25,7 +27,9 @@
       FECHAR [X]
     </button>
   </div>
-  <div class="flex-1 p-6 overflow-y-auto scrollbar-hide space-y-4">
+
+  <!-- min-h-0 libera a rolagem no overflow-y-auto e remove o scrollbar-hide -->
+  <div class="flex-1 p-6 overflow-y-auto min-h-0 space-y-4 bg-white">
     <h3 class="retro-font text-[10px] text-black">
       CONSTRUÇÕES DA VILA
     </h3>

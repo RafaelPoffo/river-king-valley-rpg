@@ -1,4 +1,5 @@
 import { SPRITES } from "../sprites.js";
+import { withBaitPreferences } from "./equipment.js";
 
 function pmdUrl(id) {
   return `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${id}/Normal.png`;
@@ -1310,4 +1311,7 @@ export const POKEMON_DB = [
     minW: 160.0,
     maxW: 210.0,
   },
-];
+].map((species) => withBaitPreferences({
+  ...species,
+  price: species.dexNum ? Math.max(5, Math.round(species.price / 10)) : species.price,
+}));

@@ -102,6 +102,9 @@ export const activeDish = writable(null);
 export const cameraX = writable(0);
 export const cameraY = writable(0);
 export const villagers = writable([...INITIAL_VILLAGERS]);
+export const worldCreatures = writable([]);
+export const worldPopulationDay = writable(null);
+export const worldCreatureEncounter = writable(null);
 
 // Collections & Quests
 export const inventory = writable([]);
@@ -127,6 +130,7 @@ export const bobberPos = writable({ x: 0, y: 0 });
 export const fishingBiome = writable("");
 export const shadowActive = writable(false);
 export const shadowPos = writable({ x: 0, y: 0 });
+export const shadowReaction = writable(null);
 export const minigameBar = writable(0);
 export const catchTargetCenter = writable(50);
 export const catchTargetWidth = writable(35);

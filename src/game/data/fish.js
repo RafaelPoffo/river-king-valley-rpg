@@ -1,4 +1,5 @@
 import { SPRITES } from "../sprites.js";
+import { withBaitPreferences } from "./equipment.js";
 
 export const FISH_DB = [
   // 10 Itens de Lixo do Mar (1 a 2 Estrelas)
@@ -1837,4 +1838,4 @@ export const FISH_DB = [
     minW: 50.0,
     maxW: 150.0,
   },
-];
+].map(withBaitPreferences);

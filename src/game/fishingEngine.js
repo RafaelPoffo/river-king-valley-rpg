@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
+import { BAITS, MAPS_DATA } from "./constants.js";
 import {
   gameMode,
   getActiveDatabase,
@@ -12,11 +13,11 @@ import {
   activeFish,
   shadowActive,
   shadowPos,
+  shadowReaction,
   minigameBar,
   catchTargetCenter,
   catchTargetWidth,
   currentToolData,
-  currentBaitData,
   eqBaitId,
   baitStock,
   upgrades,
@@ -33,18 +34,32 @@ import {
   fishingBiome,
   seasonIndex,
   eqNetId,
+  currentMap,
+  worldCreatureEncounter,
 } from "./stores.js";
 import { checkDailyQuestProgress } from "./quests.js";
 import { saveGame } from "./saveSystem.js";
 import { recordTournamentCatch } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import { dishEffect } from "./dishes.js";
+import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
 
-const STORM_PRIORITY = 0.2;
+const STORM_PRIORITY = 0.02;
+
+export function shadowEntry(bobber, biome, mapWidth, random = Math.random) {
+  const distance = 3;
+  const directions = [{ x: 0, y: biome === "river" ? -distance : distance }];
+  if (bobber.x >= distance + 1) directions.push({ x: -distance, y: 0 });
+  if (bobber.x <= mapWidth - 2 - distance) directions.push({ x: distance, y: 0 });
+  const direction = directions[Math.floor(random() * directions.length)];
+  return { x: bobber.x + direction.x, y: bobber.y + direction.y };
+}
 
 let aimDir = 1;
 let minigameDir = 1;
 let lastTime = 0;
+let castBaitId = null;
+let shadowMotion = null;
 const loopIds = {
   aim: null,
   wait: null,
@@ -90,6 +105,13 @@ export function throwLine() {
 
   phase.set(PHASES.FISHING_WAIT);
   shadowActive.set(false);
+  shadowReaction.set(null);
+  shadowMotion = null;
+  const equippedBait = get(eqBaitId);
+  castBaitId = equippedBait === "sem_isca" || (get(baitStock)[equippedBait] || 0) > 0
+    ? equippedBait
+    : "sem_isca";
+  if (castBaitId !== equippedBait) eqBaitId.set(castBaitId);
 
   const p = get(player);
   const distTiles = dist * 2;
@@ -107,7 +129,14 @@ export function throwLine() {
           ? p.y + distTiles
           : p.y,
   };
-  bobberPos.set(targetBobber);
+  const map = MAPS_DATA[get(currentMap)];
+  const biome = get(deepSeaFishingActive) ? "sea" : get(fishingBiome);
+  const waterTop = biome === "river" ? 1 : 17;
+  const waterBottom = biome === "river" ? 4 : map.length - 2;
+  bobberPos.set({
+    x: Math.max(1, Math.min(map[0].length - 2, targetBobber.x)),
+    y: Math.max(waterTop, Math.min(waterBottom, targetBobber.y)),
+  });
 
   const isFastBite = Math.random() < 0.2;
   let waitTime = isFastBite
@@ -117,36 +146,41 @@ export function throwLine() {
   const weather = get(currentWeather);
   if (weather === "rainy") waitTime *= 0.8;
   if (weather === "storm") waitTime *= 0.6;
+  const nearbyCreature = get(currentMap) === "village"
+    ? nearbyAquaticCreature(get(bobberPos), dist, biome)
+    : null;
+  if (nearbyCreature) waitTime = 600;
 
   clearTimeout(loopIds.wait);
   loopIds.wait = setTimeout(() => {
     if (get(phase) !== PHASES.FISHING_WAIT) return;
 
-    const currentBait = get(eqBaitId);
-    if (currentBait !== "sem_isca") {
-      baitStock.update((stock) => {
-        const next = { ...stock };
-        if ((next[currentBait] || 0) > 0) {
-          next[currentBait] -= 1;
-          if (next[currentBait] <= 0) eqBaitId.set("sem_isca");
-        }
-        return next;
-      });
-    }
-
-    const rolled = rollFishByZone(dist);
+    const encounter = nearbyCreature ? engageWorldCreature(nearbyCreature.id) : null;
+    const species = worldSpecies(encounter);
+    const rolled = species ? decorateCatch(species) : rollFishByZone(dist);
     if (!rolled) {
       resetAction("Não fisgou nada...");
       return;
     }
+    worldCreatureEncounter.set(encounter?.id || null);
     activeFish.set(rolled);
 
     phase.set(PHASES.FISHING_APPROACH);
     const bPos = get(bobberPos);
-    shadowPos.set({
-      x: bPos.x + (Math.random() > 0.5 ? 2 : -2),
-      y: bPos.y + (Math.random() > 0.5 ? 2 : -2),
-    });
+    const entry = encounter
+      ? { x: encounter.x + (encounter.size - 1) / 2, y: encounter.y + (encounter.size - 1) / 2 }
+      : shadowEntry(bPos, biome, map[0].length);
+    if (!encounter) entry.y = Math.max(waterTop - 0.5, Math.min(waterBottom + 0.5, entry.y));
+    shadowPos.set(entry);
+    shadowMotion = {
+      stage: "approach",
+      entry,
+      angle: Math.atan2(entry.y - bPos.y, entry.x - bPos.x),
+      elapsed: 0,
+      duration: 3 + Math.random() * 2,
+      radius: Math.max(0.15, Math.min(0.65, bPos.x - 0.5, map[0].length - 1.5 - bPos.x, bPos.y - waterTop + 0.5, waterBottom + 0.5 - bPos.y)),
+      chance: baitBiteChance(rolled, castBaitId),
+    };
     shadowActive.set(true);
     lastTime = performance.now();
     if (loopIds.approach) cancelAnimationFrame(loopIds.approach);
@@ -155,34 +189,88 @@ export function throwLine() {
 }
 
 function updateApproach(time) {
-  if (get(phase) !== PHASES.FISHING_APPROACH) return;
-  const delta = (time - lastTime) / 1000;
+  if (get(phase) !== PHASES.FISHING_APPROACH || !shadowMotion) return;
+  const delta = Math.min(0.1, Math.max(0, (time - lastTime) / 1000));
   lastTime = time;
 
   const bPos = get(bobberPos);
   const sPos = get(shadowPos);
-  const dx = bPos.x - sPos.x;
-  const dy = bPos.y - sPos.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
+  const motion = shadowMotion;
+  motion.elapsed += delta;
 
-  if (dist < 0.15) {
-    shadowActive.set(false);
-    phase.set(PHASES.FISHING_BITE);
-    const currentFish = get(activeFish);
-    const biteDuration =
-      Math.max(0.4, 1.2 - (currentFish?.rarity || 1) * 0.15) + dishEffect("biteBonus", 0);
-
-    clearTimeout(loopIds.escape);
-    loopIds.escape = setTimeout(() => {
-      resetAction("O peixe escapou! Você foi muito lento.");
-    }, biteDuration * 1000);
-  } else {
+  if (motion.stage === "orbit" || motion.stage === "react") {
+    motion.angle += delta * 0.8;
     shadowPos.set({
-      x: sPos.x + (dx / dist) * delta * 1.5,
-      y: sPos.y + (dy / dist) * delta * 1.5,
+      x: bPos.x + Math.cos(motion.angle) * motion.radius,
+      y: bPos.y + Math.sin(motion.angle) * motion.radius,
     });
-    loopIds.approach = requestAnimationFrame(updateApproach);
+    if (motion.stage === "orbit" && motion.elapsed >= motion.duration) {
+      motion.stage = "react";
+      motion.elapsed = 0;
+      shadowReaction.set(motion.chance > 0 ? "heart" : "reject");
+    } else if (motion.stage === "react" && motion.elapsed >= 1.2) {
+      if (Math.random() < motion.chance) {
+        beginBite();
+        return;
+      }
+      motion.stage = "leave";
+      motion.elapsed = 0;
+    }
+  } else {
+    const destination = motion.stage === "leave" ? motion.entry : {
+      x: bPos.x + Math.cos(motion.angle) * motion.radius,
+      y: bPos.y + Math.sin(motion.angle) * motion.radius,
+    };
+    const dx = destination.x - sPos.x;
+    const dy = destination.y - sPos.y;
+    const distance = Math.hypot(dx, dy);
+    const step = Math.min(distance, delta * (motion.stage === "leave" ? 1.2 : 0.9));
+    if (distance <= 0.05) {
+      if (motion.stage === "leave") {
+        resetAction(motion.chance === 0 ? "Não gostou da isca e foi embora." : "Analisou a isca, mas foi embora.");
+        return;
+      }
+      motion.stage = "orbit";
+      motion.elapsed = 0;
+    } else {
+      shadowPos.set({ x: sPos.x + dx / distance * step, y: sPos.y + dy / distance * step });
+    }
   }
+  loopIds.approach = requestAnimationFrame(updateApproach);
+}
+
+export function baitBiteChance(fish, baitId) {
+  if (isTrashSprite(fish) || fish.type === "treasure") return 1;
+  return fish.baitPreferences?.[baitId] || 0;
+}
+
+function beginBite() {
+  shadowActive.set(false);
+  shadowReaction.set(null);
+  phase.set(PHASES.FISHING_BITE);
+  const currentFish = get(activeFish);
+  const biteDuration = Math.max(0.4, 1.2 - (currentFish?.rarity || 1) * 0.15) + dishEffect("biteBonus", 0);
+  clearTimeout(loopIds.escape);
+  loopIds.escape = setTimeout(() => {
+    resetAction("O peixe escapou! Você foi muito lento.");
+  }, biteDuration * 1000);
+}
+
+function consumeCastBait() {
+  const baitId = castBaitId;
+  castBaitId = null;
+  if (!baitId || baitId === "sem_isca") return;
+  baitStock.update((stock) => ({ ...stock, [baitId]: Math.max(0, (stock[baitId] || 0) - 1) }));
+  if (get(eqBaitId) === baitId && !get(baitStock)[baitId]) eqBaitId.set("sem_isca");
+  saveGame();
+}
+
+function clearWorldEncounter() {
+  const id = get(worldCreatureEncounter);
+  if (!id) return;
+  removeWorldCreature(id);
+  worldCreatureEncounter.set(null);
+  saveGame();
 }
 
 function isTrashSprite(fish) {
@@ -275,7 +363,7 @@ export function rollFishByZone(zone) {
   const deepSea = get(deepSeaFishingActive);
   const biomeTarget = deepSea ? "deep_sea" : get(fishingBiome);
   const bait = get(eqBaitId);
-  const currentBait = get(currentBaitData);
+  const baitTier = BAITS.find((item) => item.id === bait)?.tier || 0;
   const curSeason = get(seasonIndex);
 
   const trashChance = bait === "sem_isca" ? 0.35 : 0.05;
@@ -324,89 +412,49 @@ export function rollFishByZone(zone) {
     }
   }
 
-  let rarityTarget = 1;
-  let roll = Math.random() * 100;
-  if (bait !== "sem_isca" && currentBait) {
-    roll -= currentBait.bonus;
-  }
-  roll -= dishEffect("rarityBonus", 0);
-
-  if (zone === 1) {
-    rarityTarget = roll < 75 ? 1 : roll < 95 ? 2 : 3;
-  } else if (zone === 2) {
-    rarityTarget = roll < 30 ? 1 : roll < 80 ? 2 : roll < 98 ? 3 : 4;
-  } else {
-    rarityTarget =
-      roll < 5
-        ? 1
-        : roll < 30
-          ? 2
-          : roll < 75
-            ? 3
-            : roll < 95
-              ? 4
-              : roll < 99
-                ? 5
-                : 6;
-  }
-
   let pool = [];
 
   if (isPokeMode) {
-    // No modo Pokémon:
-    // Zona 1 (Água Rasa): mais fácil pegar nível 1
-    // Zona 2 (Água Média): mais fácil pegar nível 2
-    // Zona 3 (Água Funda): mais fácil pegar nível 3 e Pokémon com preferDeep (ex: Gyarados, Lapras, Mantine)
-    let targetStage = 1;
-    const stageRoll = Math.random() * 100;
-    if (zone === 1) {
-      // 75% stage 1, 22% stage 2, 3% stage 3
-      targetStage = stageRoll < 75 ? 1 : stageRoll < 97 ? 2 : 3;
-    } else if (zone === 2) {
-      // 25% stage 1, 65% stage 2, 10% stage 3
-      targetStage = stageRoll < 25 ? 1 : stageRoll < 90 ? 2 : 3;
-    } else {
-      // Zona 3 (Água Funda): 5% stage 1, 35% stage 2, 60% stage 3
-      targetStage = stageRoll < 5 ? 1 : stageRoll < 40 ? 2 : 3;
-    }
-
     const rods = database.filter(isRodFish);
-    pool = rods.filter((f) => {
-      if (!matchesBiome(f, biomeTarget) || !matchesDist(f, zone)) return false;
-      if (!matchesTime(f, night) || !matchesSeason(f, curSeason)) return false;
-      if (zone === 3 && f.preferDeep) return true;
-      return f.stage === targetStage;
-    });
-
-    if (pool.length === 0) {
-      pool = rods.filter(
-        (f) =>
-          matchesBiome(f, biomeTarget) &&
-          matchesDist(f, zone) &&
-          matchesTime(f, night)
-      );
-    }
+    pool = rods.filter((fish) =>
+      matchesBiome(fish, biomeTarget) && matchesDist(fish, zone) &&
+      matchesTime(fish, night) && matchesSeason(fish, curSeason)
+    );
   } else {
     const rods = database.filter(isRodFish);
     const inReach = (f) => matchesBiome(f, biomeTarget) && matchesDist(f, zone);
     const openSea = (f) => deepSea && matchesBiome(f, "sea") && matchesDist(f, zone);
     pool = firstPool(rods, [
       (f) => stormRoll && inReach(f) && !!f.weather && matchesTime(f, night),
-      (f) =>
-        inReach(f) &&
-        f.rarity === rarityTarget &&
-        matchesSeason(f, curSeason) &&
-        matchesTime(f, night),
-      (f) => inReach(f) && matchesSeason(f, curSeason) && matchesTime(f, night),
-      (f) => inReach(f) && matchesTime(f, night),
-      (f) => openSea(f) && matchesSeason(f, curSeason) && matchesTime(f, night),
-      (f) => openSea(f) && matchesTime(f, night),
+      (f) => (inReach(f) || openSea(f)) && matchesSeason(f, curSeason) && matchesTime(f, night),
+      (f) => (inReach(f) || openSea(f)) && matchesTime(f, night),
     ]);
   }
 
   if (pool.length === 0) return null;
 
-  const fishBase = pool[Math.floor(Math.random() * pool.length)];
+  const weights = pool.map((fish) => {
+    const rarity = Math.max(1, Math.min(6, fish.rarity || 1));
+    const rareBonus = rarity >= 3
+      ? 1 + baitTier * 0.1 + Math.min(0.5, dishEffect("rarityBonus", 0) / 100)
+      : 1;
+    if (isPokeMode) {
+      const stageWeight = [0, 100, 8, 0.6][fish.stage || 1];
+      const rarityWeight = [0, 1, 0.75, 0.45, 0.2, 0.07, 0.003][rarity];
+      return stageWeight * rarityWeight * rareBonus;
+    }
+    return [0, 100, 20, 6, 1.2, 0.15, 0.015][rarity] *
+      Math.pow(1 + (zone - 1) * 0.3, rarity - 1) * rareBonus;
+  });
+  let roll = Math.random() * weights.reduce((total, weight) => total + weight, 0);
+  let fishBase = pool[pool.length - 1];
+  for (let index = 0; index < pool.length; index++) {
+    roll -= weights[index];
+    if (roll < 0) {
+      fishBase = pool[index];
+      break;
+    }
+  }
   return decorateCatch(fishBase);
 }
 
@@ -495,6 +543,8 @@ export function attemptCatch() {
   const width = get(catchTargetWidth);
 
   if (bar >= center - width / 2 && bar <= center + width / 2) {
+    clearWorldEncounter();
+    consumeCastBait();
     const finalFish = processCaughtFish(get(activeFish));
     addFishToInventory(finalFish);
   } else {
@@ -592,6 +642,11 @@ export function resetAction(msg) {
   clearTimeout(loopIds.wait);
   clearTimeout(loopIds.escape);
 
+  clearWorldEncounter();
+  if (get(activeFish)) consumeCastBait();
+  castBaitId = null;
+  shadowMotion = null;
+  shadowReaction.set(null);
   phase.set(PHASES.PLAYING);
   shadowActive.set(false);
   activeFish.set(null);
@@ -604,4 +659,10 @@ export function cleanupFishing() {
   if (loopIds.mini) cancelAnimationFrame(loopIds.mini);
   clearTimeout(loopIds.wait);
   clearTimeout(loopIds.escape);
+  clearWorldEncounter();
+  if (get(activeFish)) consumeCastBait();
+  castBaitId = null;
+  shadowMotion = null;
+  shadowActive.set(false);
+  shadowReaction.set(null);
 }

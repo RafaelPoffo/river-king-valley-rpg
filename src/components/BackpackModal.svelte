@@ -20,11 +20,13 @@
   } from "../game/gameActions.js";
 </script>
 
+<!-- Limita a altura máxima do container principal e impede o estouro externo -->
 <div
-  class="flex-1 bg-white text-black flex flex-col relative border-b-8 border-black z-50 select-none"
+  class="flex-1 bg-white text-black flex flex-col relative border-b-8 border-black z-50 select-none max-h-[120vh] h-full overflow-hidden"
 >
+  <!-- Cabeçalho fixo com shrink-0 -->
   <div
-    class="flex justify-between items-center bg-[#9ce6e6] border-b-4 border-black p-4"
+    class="flex justify-between items-center bg-[#9ce6e6] border-b-4 border-black p-4 shrink-0"
   >
     <h2 class="retro-font text-sm">
       INVENTÁRIO (MOCHILA {$inventory.length}/{$maxInventorySize}) E
@@ -37,7 +39,9 @@
       FECHAR [X]
     </button>
   </div>
-  <div class="flex-1 p-6 overflow-y-auto scrollbar-hide space-y-6">
+
+  <!-- min-h-0 permite que a área interna encolha e ative o scroll do overflow-y-auto -->
+  <div class="flex-1 p-6 overflow-y-auto min-h-0 space-y-6">
     <!-- Backpack Section -->
     <div>
       <h3 class="retro-font text-[10px] text-red-600 mb-2">
@@ -61,7 +65,7 @@
                 on:click|stopPropagation={() => removeFishFromInventory(i)}
                 title="Descartar item"
               >
-                🗑️
+                🗑️️
               </button>
               <button
                 type="button"

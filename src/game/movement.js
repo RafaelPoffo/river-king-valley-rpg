@@ -1,5 +1,6 @@
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
+import { worldCreatureBlocks } from "./worldCreatures.js";
 import {
   MAPS_DATA,
   TILE_SIZE,
@@ -194,7 +195,7 @@ function beginStep(dx, dy, dirStr) {
     return loc.map === cMap && loc.x === nx && loc.y === ny;
   });
 
-  if (npcOccupying || stallBlocks(cMap, nx, ny)) {
+  if (npcOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny)) {
     player.set({ x: originX, y: originY, dir: dirStr });
     return;
   }

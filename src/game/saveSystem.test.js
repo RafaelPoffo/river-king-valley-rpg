@@ -8,8 +8,9 @@ import {
   resetState,
   migrateSave,
 } from "./saveSystem.js";
-import { money, playerName, lastWormHarvestDay, gameMode, constructions, upgrades } from "./stores.js";
+import { money, playerName, lastWormHarvestDay, gameMode, constructions, upgrades, worldCreatures, worldPopulationDay } from "./stores.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES } from "./constants.js";
+import { ensureWorldPopulation, removeWorldCreature } from "./worldCreatures.js";
 
 describe("registro do save", () => {
   it("não tem chaves repetidas", () => {
@@ -46,11 +47,29 @@ describe("registro do save", () => {
     expect(get(gameMode)).toBe("pokemon");
   });
 
+  it("preserva a população diária e não ressuscita criaturas removidas ao carregar", () => {
+    resetState("pokemon");
+    ensureWorldPopulation();
+    const removedId = get(worldCreatures)[0].id;
+    removeWorldCreature(removedId);
+    const remaining = get(worldCreatures);
+    const populationDay = get(worldPopulationDay);
+    const saved = JSON.parse(JSON.stringify(serializeState()));
+    resetState("normal");
+    applyState(migrateSave(saved));
+    expect(get(worldCreatures)).toEqual(remaining);
+    expect(get(worldPopulationDay)).toBe(populationDay);
+    expect(ensureWorldPopulation()).toBe(false);
+    expect(get(worldCreatures).some((creature) => creature.id === removedId)).toBe(false);
+  });
+
   it("campo ausente no save volta ao valor inicial", () => {
     resetState("normal");
     money.set(42);
     applyState(migrateSave({ gameMode: "normal" }));
     expect(get(money)).toBe(500);
+    expect(get(worldCreatures)).toEqual([]);
+    expect(get(worldPopulationDay)).toBeNull();
   });
 });
 

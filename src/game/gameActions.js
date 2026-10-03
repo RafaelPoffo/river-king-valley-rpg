@@ -72,6 +72,7 @@ import {
   interiorSpawn,
 } from "./movement.js";
 import { saveGame } from "./saveSystem.js";
+import { ensureWorldPopulation } from "./worldCreatures.js";
 import { generateDailyQuest, checkDailyQuestProgress } from "./quests.js";
 import {
   startAim,
@@ -114,6 +115,7 @@ export function sleep() {
 
     currentMap.set("player_house");
     player.set(interiorSpawn("player_house", "up"));
+    ensureWorldPopulation();
     phase.set(PHASES.PLAYING);
     isFading.set(false);
 
@@ -536,7 +538,7 @@ export function interact() {
     }
 
     fishingBiome.set(
-      target.tile === "X" || (cMap === "village" && target.y >= 18)
+      target.tile === "X" || (cMap === "village" && target.y >= 16)
         ? "sea"
         : "river"
     );

@@ -11,6 +11,7 @@ Jogue em [river-king-valley-rpg.vercel.app](https://river-king-valley-rpg.vercel
 - **Vila com NPCs**: Capitão Thomas, Mestre Gema, Ana e Velho Joe, cada um com seu canto na vila e visitas à taverna à noite.
 - **Amizade**: converse e dê peixes de presente para ganhar corações. Cada morador libera uma vantagem.
 - **Pesca**: mira de distância limitada pelo alcance da vara, sombra se aproximando, fisgada e minigame de tensão na linha. Também dá para pescar com rede na margem.
+- **Criaturas pela vila**: de 2 a 8 visitantes por dia, com sprites de Mystery Dungeon, caminhada lenta e pausas. Criaturas pequenas ocupam um quadrado e grandes ocupam quatro, sem poder atravessá-las.
 - **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
 - **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
 - **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨).
@@ -63,26 +64,24 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 - Às 22h você desmaia de cansaço e acorda em casa às 6h do dia seguinte. Também dá para dormir antes, na cama.
 - Cada estação dura 15 dias. São quatro: Primavera, Verão, Outono e Inverno.
 - O clima do dia é sorteado ao dormir: 50% sol, 25% chuva, 25% tempestade. Com chuva, a espera pela fisgada cai 20%; com tempestade, cai 40%.
-- Alguns peixes só saem na tempestade (⛈️ no catálogo): a Enguia-Elétrica no rio, o Tubarão-da-Tempestade no mar e o Leviatã das Tormentas no alto-mar. Em dia de tempestade, 20% das fisgadas tentam primeiro um desses peixes.
+- Alguns peixes só saem na tempestade (⛈️ no catálogo): a Enguia-Elétrica no rio, o Tubarão-da-Tempestade no mar e o Leviatã das Tormentas no alto-mar. Em dia de tempestade, 2% dos encontros tentam primeiro um desses peixes.
 
 ### Como pescar
 
 1. Fique de frente para a água e aperte Espaço.
 2. **Mira:** a barra de força oscila. Aperte Espaço para lançar. A força define a zona: 1 (rasa), 2 (média) ou 3 (funda). A vara limita até onde você alcança.
 3. **Espera:** de 6 a 20 segundos. Aperte Espaço se quiser recolher a linha.
-4. **Aproximação:** a sombra do peixe nada até a boia.
+4. **Análise da isca:** no mar, a sombra vem da esquerda, direita ou de baixo; no rio, da esquerda, direita ou de cima. Paredes laterais bloqueiam a entrada por aquele lado. A sombra circula lentamente a boia por 3 a 5 segundos. Um coração rosa indica interesse: isca favorita dá 80% de chance de mordida e duas alternativas dão 50%. Uma isca incompatível mostra um X vermelho e o peixe vai embora.
 5. **Fisgada:** a boia afunda e você tem pouco tempo para apertar Espaço. Quanto mais raro o peixe, menor a janela (de 1,05 s até 0,4 s, mais o bônus do Ensopado do Mar).
 6. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é menor para peixes difíceis e maior com varas melhores e com o upgrade Braço Forte.
 
 **Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
 
-**Raridade por zona**, antes do bônus da isca:
+**Criaturas visíveis.** A população da vila se renova ao dormir, sem recarregar a página, e fica preservada no save durante aquele dia. Os visitantes terrestres priorizam Pokémon comuns das gerações 1 e 2. Peixes e Pokémon aquáticos aparecem nas faixas correspondentes às zonas 1, 2 e 3 (o rio comporta as zonas 1 e 2). Lance a boia até cerca de um quadrado da criatura, na zona correta, para iniciar rapidamente um encontro com aquela espécie. Ela se aproxima, analisa a isca e mostra coração ou X. Uma criatura rejeitada foge e desaparece; uma interessada pode morder e ser capturada no minigame. Capturas e fugas removem aquele exemplar até a renovação diária. Visitantes terrestres não são capturáveis pela vara.
 
-| Zona | Comum (1) | Incomum (2) | Raro (3) | Muito raro (4+) |
-|---|---|---|---|---|
-| 1 (rasa) | 75% | 20% | 5% | — |
-| 2 (média) | 30% | 50% | 18% | 2% |
-| 3 (funda) | 5% | 25% | 45% | 25% (inclui lendários) |
+Os sprites locais e seus créditos estão em [public/assets/world/README.md](public/assets/world/README.md). A política do SpriteCollab exige atribuição e uso não comercial das contribuições da comunidade.
+
+**Raridade por zona.** Os encontros usam pesos: comuns são mais frequentes, raros e lendários têm pesos progressivamente menores. A profundidade aumenta um pouco o peso dos raros, mas não garante encontros raros. Iscas caras e pratos dão bônus limitados. As chances finais dependem das espécies disponíveis naquele bioma, zona, horário e estação. No modo Pokémon, níveis 2 e 3 têm pesos muito menores que nível 1; preferência por água funda não ignora essa regra.
 
 **Lixo e tesouros.** Sem isca, 35% das fisgadas são lixo; com isca, só 5%. Nas zonas 2 e 3 do mar e do alto-mar há 5% de chance de tesouro, que vai direto para o museu.
 
@@ -93,7 +92,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Peixe raro ou lendário | 8% | 22% |
 | Peixe comum | 0% | 6% |
 
-O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. O peso é sorteado entre o mínimo e o máximo da espécie, e de vez em quando passa do seu recorde.
+O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. Os preços-base dos Pokémon foram reduzidos a um décimo dos valores anteriores para novas capturas, mantendo essa mesma fórmula. O peso é sorteado entre o mínimo e o máximo da espécie, e de vez em quando passa do seu recorde.
 
 **Rede.** Troque entre vara e rede no menu (Enter). A rede só funciona na margem (rio ou mar raso) e pega criaturas de rede e peixes pequenos na hora, sem minigame.
 
@@ -110,16 +109,16 @@ O preço de venda é `preço base × estrelas`, vezes 3 se for brilhante. O peso
 
 As redes custam ¥100 (Nv 1), ¥400 (Nv 2) e ¥1.500 (Nv 3). Quanto melhor a rede, mais fácil a captura.
 
-| Isca | Preço (5 unidades) | Bônus de raridade |
+| Isca | Preço (5 unidades) | Preferência |
 |---|---|---|
-| Minhoca Simples | ¥2 | +15 |
-| Massa de Pão | ¥5 | +25 |
-| Camarão Vivo | ¥15 | +45 |
-| Isca Metálica | ¥50 | +70 |
-| Sardinha Mar | ¥120 | +100 |
-| Isca Lendária | ¥500 | +150 |
+| Minhoca Simples | ¥2 | Favorita dos comuns (80%) |
+| Massa de Pão | ¥5 | Alternativa para comuns e intermediários (50%) |
+| Camarão Vivo | ¥15 | Favorita dos intermediários (80%); alternativa dos comuns (50%) |
+| Isca Metálica | ¥50 | Alternativa para intermediários e raros (50%) |
+| Sardinha Mar | ¥120 | Alternativa para raros (50%) |
+| Isca Lendária | ¥500 | Favorita dos raros (80%) |
 
-Cada lançamento que chega à fisgada gasta uma isca. Quando ela acaba, você volta a pescar sem isca.
+Troque a isca pelas setas do balão no canto superior esquerdo, sem abrir o menu. Cada espécie gosta de três iscas. Comuns preferem as baratas; raros e Pokémon de nível 3 preferem as caras. Uma captura, rejeição, fuga ou linha arrebentada gasta uma isca, uma única vez. Recolher antes de surgir uma sombra não gasta isca. Quando a última acaba, a seleção volta para Sem Isca, que não atrai espécies vivas.
 
 ### Mochila e venda
 

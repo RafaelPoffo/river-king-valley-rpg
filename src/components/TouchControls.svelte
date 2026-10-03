@@ -33,7 +33,7 @@
   }
 </script>
 
-<div class="absolute inset-x-0 top-0 h-[450px] pointer-events-none z-30 select-none touch-none">
+<div class="absolute inset-x-0 top-0 h-[450px] pointer-events-none z-[60] select-none touch-none">
   <div class="absolute bottom-4 left-4 grid grid-cols-3 grid-rows-3 gap-1 w-36 h-36 opacity-80">
     {#each DPAD as b}
       <button

@@ -15,8 +15,9 @@
   import { buyItem, sellFish, sellAll } from "../game/gameActions.js";
 </script>
 
+<!-- Limita a altura do container principal e previne transbordo de tela -->
 <div
-  class="flex-1 bg-white text-black flex flex-col relative border-b-8 border-black z-50 select-none"
+  class="flex-1 bg-white text-black flex flex-col relative border-b-8 border-black z-50 select-none max-h-[110vh] h-full overflow-hidden"
 >
   <button
     class="absolute top-4 right-4 bg-black text-white w-10 h-10 retro-font text-xs z-50 hover:bg-gray-800"
@@ -24,7 +25,9 @@
   >
     X
   </button>
-  <div class="flex border-b-4 border-black bg-[#9ce6e6]">
+  
+  <!-- Abas superiores com shrink-0 para não encolherem -->
+  <div class="flex border-b-4 border-black bg-[#9ce6e6] shrink-0">
     <button
       class={`flex-1 py-4 retro-font text-[9px] ${
         $shopTab === "buy_rod" ? "bg-black text-white" : "text-black"
@@ -50,7 +53,9 @@
       VENDER (¥{$money})
     </button>
   </div>
-  <div class="flex-1 overflow-y-auto p-4 scrollbar-hide bg-white">
+
+  <!-- min-h-0 habilita a rolagem interna do conteúdo das abas -->
+  <div class="flex-1 overflow-y-auto p-4 min-h-0 bg-white">
     {#if $shopTab === "buy_rod"}
       <div class="space-y-4">
         {#each TOOLS.rod.concat(TOOLS.net) as item}

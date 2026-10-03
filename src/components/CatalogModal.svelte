@@ -3,20 +3,21 @@
   import { draw, SPRITES } from "../game/sprites.js";
   import { phase, fishLog, gameMode, currentDatabase } from "../game/stores.js";
 
-  $: isPokeMode = $gameMode === "pokemon";
-  $: filteredFish = $currentDatabase.filter((f) => {
+  $: isPokeMode =$gameMode === "pokemon";
+  $: filteredFish =$currentDatabase.filter((f) => {
     if (isPokeMode) {
       // Filtrar apenas pokémon reais (excluir lixo do catálogo principal da pokedex)
       return f.stage !== undefined && !f.id.startsWith("poke_");
     }
     return f.rarity > 0;
   });
-  $: caughtCount = filteredFish.filter((f) => $fishLog[f.id]).length;
+  $: caughtCount = filteredFish.filter((f) =>$fishLog[f.id]).length;
 </script>
 
-<div class="flex-1 bg-white text-black flex flex-col relative z-50 select-none">
+<!-- Limita a altura do container principal e impede que ele estique sem limites -->
+<div class="flex-1 bg-white text-black flex flex-col relative z-50 select-none max-h-[110vh] h-full overflow-hidden">
   <div
-    class="flex justify-between items-center {isPokeMode ? 'bg-red-500 text-white' : 'bg-[#9ce6e6] text-black'} border-b-4 border-black p-4"
+    class="flex justify-between items-center {isPokeMode ? 'bg-red-500 text-white' : 'bg-[#9ce6e6] text-black'} border-b-4 border-black p-4 shrink-0"
   >
     <div class="flex items-center gap-2">
       <span class="text-lg">{isPokeMode ? '🔴' : '🐟'}</span>
@@ -31,8 +32,10 @@
       FECHAR [X]
     </button>
   </div>
+
+  <!-- min-h-0 permite que o flex child diminua de tamanho e habilite a rolagem interna -->
   <div
-    class="flex-1 p-4 grid grid-cols-3 gap-3 overflow-y-auto scrollbar-hide bg-white"
+    class="flex-1 p-4 grid grid-cols-3 gap-3 overflow-y-auto min-h-0 bg-white"
   >
     {#each filteredFish as fish, idx}
       {@const caught = $fishLog[fish.id]}

@@ -104,7 +104,7 @@ export const BAITS = [
     tier: 0,
     bonus: 0,
     price: 0,
-    desc: "Nenhuma isca (pesca difícil).",
+    desc: "Não atrai espécies vivas; ainda pode fisgar lixo e tesouros.",
   },
   {
     id: "minhoca",
@@ -112,7 +112,7 @@ export const BAITS = [
     tier: 1,
     bonus: 15,
     price: 2,
-    desc: "+15% raridade.",
+    desc: "Favorita dos comuns; 80% de mordida quando favorita.",
   },
   {
     id: "massa_pao",
@@ -120,7 +120,7 @@ export const BAITS = [
     tier: 2,
     bonus: 25,
     price: 5,
-    desc: "+25% raridade.",
+    desc: "Agrada comuns e intermediários; 50% de mordida.",
   },
   {
     id: "camarao_vivo",
@@ -128,7 +128,7 @@ export const BAITS = [
     tier: 3,
     bonus: 45,
     price: 15,
-    desc: "+45% raridade.",
+    desc: "Favorita dos intermediários; 80% de mordida.",
   },
   {
     id: "isca_metalica",
@@ -136,7 +136,7 @@ export const BAITS = [
     tier: 4,
     bonus: 70,
     price: 50,
-    desc: "+70% raridade.",
+    desc: "Agrada intermediários e raros; 50% de mordida.",
   },
   {
     id: "sardinha_alto_mar",
@@ -144,7 +144,7 @@ export const BAITS = [
     tier: 5,
     bonus: 100,
     price: 120,
-    desc: "+100% raridade.",
+    desc: "Agrada raros; 50% de mordida.",
   },
   {
     id: "isca_brilhante",
@@ -152,6 +152,18 @@ export const BAITS = [
     tier: 6,
     bonus: 150,
     price: 500,
-    desc: "Atrai raros.",
+    desc: "Favorita dos raros; 80% de mordida.",
   },
 ];
+
+export function withBaitPreferences(species) {
+  const rare = species.rarity >= 5 || species.stage === 3;
+  const intermediate = species.rarity >= 3 || species.stage === 2;
+  const firstTier = rare ? 4 : intermediate ? 2 : 1;
+  const favoriteTier = rare ? 6 : intermediate ? 3 : 1;
+  const baitPreferences = Object.fromEntries(
+    BAITS.filter((bait) => bait.tier >= firstTier && bait.tier < firstTier + 3)
+      .map((bait) => [bait.id, bait.tier === favoriteTier ? 0.8 : 0.5]),
+  );
+  return { ...species, baitPreferences };
+}

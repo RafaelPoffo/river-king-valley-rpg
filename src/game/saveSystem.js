@@ -38,10 +38,13 @@ import {
   currentMap,
   player,
   eveningWarned,
+  worldCreatures,
+  worldPopulationDay,
 } from "./stores.js";
 import { updateCamera } from "./movement.js";
 import { generateDailyQuest } from "./quests.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constants.js";
+import { ensureWorldPopulation } from "./worldCreatures.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
 export const SAVE_VERSION = 2;
@@ -79,6 +82,8 @@ export const PERSISTED_FIELDS = [
   { key: "museum", store: museum, initial: () => ({}) },
   { key: "dailyQuest", store: dailyQuest, initial: () => null },
   { key: "upgrades", store: upgrades, initial: () => clone(INITIAL_UPGRADES) },
+  { key: "worldCreatures", store: worldCreatures, initial: () => [] },
+  { key: "worldPopulationDay", store: worldPopulationDay, initial: () => null },
 ];
 
 // Each entry upgrades a save from version N to N + 1.
@@ -192,6 +197,7 @@ export function startGameSession() {
     currentMap.set("village");
     player.set({ ...PLAYER_START });
     eveningWarned.set(false);
+    ensureWorldPopulation();
     updateCamera();
     saveGame();
   }, 1000);

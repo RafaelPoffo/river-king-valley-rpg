@@ -8,8 +8,12 @@
     bobberPos,
     shadowActive,
     shadowPos,
+    shadowReaction,
     activeFish,
+    worldCreatures,
+    worldCreatureEncounter,
   } from "../game/stores.js";
+  import CreatureSprite from "./CreatureSprite.svelte";
 
   const SPRITE = {
     up: "/assets/crystal_player_up.png",
@@ -27,6 +31,11 @@
   $: fishing = isFishingPhase($phase);
   $: src = (fishing ? FISH_SPRITE : SPRITE)[$player.dir] || SPRITE.down;
   $: showBobber = LINE_IN_WATER.has($phase);
+  $: encounter = $worldCreatures.find((creature) => creature.id === $worldCreatureEncounter);
+  $: encounterSize = encounter?.size || 1;
+  $: encounterDirection = Math.abs($shadowPos.y - $bobberPos.y) > Math.abs($shadowPos.x - $bobberPos.x)
+    ? $shadowPos.y > $bobberPos.y ? "up" : "down"
+    : $shadowPos.x > $bobberPos.x ? "left" : "right";
 </script>
 
 <div
@@ -62,13 +71,27 @@
 
 {#if $shadowActive && $activeFish}
   <div
-    class="tile {$activeFish.rarity >= 5
+    class="absolute pointer-events-none {encounter ? '' : $activeFish.rarity >= 5
       ? 'shadow-large'
       : $activeFish.rarity >= 3
         ? 'shadow-medium'
         : 'shadow-small'}"
-    style="left: {$shadowPos.x * TILE_SIZE}px; top: {$shadowPos.y * TILE_SIZE}px; z-index: 10;"
+    style="left: {($shadowPos.x - (encounterSize - 1) / 2) * TILE_SIZE}px; top: {($shadowPos.y - (encounterSize - 1) / 2) * TILE_SIZE}px; width: {encounterSize * TILE_SIZE}px; height: {encounterSize * TILE_SIZE}px; z-index: 12;"
   >
-    {@html draw(SPRITES.shadow)}
+    {#if encounter}
+      <CreatureSprite species={$activeFish} size={encounterSize} direction={encounterDirection} moving />
+    {:else}
+      {@html draw(SPRITES.shadow)}
+    {/if}
   </div>
+  {#if $shadowReaction}
+    <span
+      class="absolute pointer-events-none text-[12px] font-bold leading-none"
+      style="left: {($shadowPos.x + (encounter ? (encounterSize + 1) / 2 + 0.05 : $activeFish.rarity >= 5 ? 1.75 : $activeFish.rarity >= 3 ? 1.35 : 1.05)) * TILE_SIZE}px; top: {($shadowPos.y + 0.25) * TILE_SIZE}px; z-index: 20; color: {$shadowReaction === 'heart' ? '#ec4899' : '#dc2626'};"
+      role="img"
+      aria-label={$shadowReaction === "heart" ? "Gostou da isca" : "Rejeitou a isca"}
+    >
+      {$shadowReaction === "heart" ? "♥" : "X"}
+    </span>
+  {/if}
 {/if}
