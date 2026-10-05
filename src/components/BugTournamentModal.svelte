@@ -4,6 +4,7 @@
   import { PHASES } from "../game/phases.js";
   import { saveGame } from "../game/saveSystem.js";
   import { competitorsForDay, prizeForCompetition, resolveBugDuel } from "../game/bugTournament.js";
+  import CreatureSprite from "./CreatureSprite.svelte";
 
   let step = "rank";
   let order = [];
@@ -167,11 +168,11 @@
             </div>
             {#if duel}
               {@const frame = duel.frames[frameIndex]}
-              <div class="absolute top-1/2 w-24 text-center transition-all duration-300" style={`left:${frame.leftX}%;transform:translate(-50%,-50%)`}>
-                {#if playerTeam[duelIndex]?.pixelSprite}<img class="mx-auto h-20 w-20 object-contain [image-rendering:pixelated]" src={playerTeam[duelIndex].pixelSprite} alt={playerTeam[duelIndex].name} />{:else}<span class="text-6xl">{playerTeam[duelIndex]?.emoji}</span>{/if}
+              <div class="absolute top-1/2 h-20 w-20 text-center transition-all duration-300" style={`left:${frame.leftX}%;transform:translate(-50%,-50%)`}>
+                {#if $gameMode === "pokemon"}<CreatureSprite species={playerTeam[duelIndex]} direction="right" moving />{:else}<span class="text-6xl">{playerTeam[duelIndex]?.emoji}</span>{/if}
               </div>
-              <div class="absolute top-1/2 w-24 text-center transition-all duration-300" style={`left:${frame.rightX}%;transform:translate(-50%,-50%)`}>
-                {#if opponent?.team[duelIndex]?.pixelSprite}<img class="mx-auto h-20 w-20 object-contain [image-rendering:pixelated]" src={opponent.team[duelIndex].pixelSprite} alt={opponent.team[duelIndex].name} />{:else}<span class="text-6xl">{opponent?.team[duelIndex]?.emoji}</span>{/if}
+              <div class="absolute top-1/2 h-20 w-20 text-center transition-all duration-300" style={`left:${frame.rightX}%;transform:translate(-50%,-50%)`}>
+                {#if $gameMode === "pokemon"}<CreatureSprite species={opponent?.team[duelIndex]} direction="left" moving />{:else}<span class="text-6xl">{opponent?.team[duelIndex]?.emoji}</span>{/if}
               </div>
             {/if}
           </div>

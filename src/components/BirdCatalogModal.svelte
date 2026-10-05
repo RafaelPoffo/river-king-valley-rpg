@@ -32,7 +32,7 @@
       <button class={`flex min-w-0 items-center gap-2 border-2 border-black p-2 text-left hover:bg-[#e9efd8] ${record ? "bg-white" : "bg-gray-100 text-gray-500"}`} on:click={() => (selected = { ...bird, index })}>
         <div class="flex h-12 w-12 shrink-0 items-center justify-center border border-black/20 bg-white p-1">
           {#if record}
-            {#if bird.portrait}<img class="max-h-full max-w-full object-contain" src={bird.portrait} alt={bird.name} />{:else}<img class="h-10 w-10 [image-rendering:pixelated]" src={bird.sprite} alt={bird.name} />{/if}
+            {#if bird.portrait}<img class="max-h-full max-w-full object-contain" src={bird.portrait} alt={bird.name} />{:else}<span class="text-3xl" role="img" aria-label={bird.name}>{bird.emoji}</span>{/if}
           {:else}
             <span class="text-xl">???</span>
           {/if}
@@ -56,7 +56,7 @@
         <div class="flex gap-4 p-4">
           <div class="flex h-28 w-28 shrink-0 items-center justify-center border border-black/20 bg-gray-50 p-2">
             {#if selectedRecord}
-              {#if selected.portrait}<img class="max-h-full max-w-full object-contain" src={selected.portrait} alt={selected.name} />{:else}<img class="h-20 w-20 [image-rendering:pixelated]" src={selected.sprite} alt={selected.name} />{/if}
+              {#if selected.portrait}<img class="max-h-full max-w-full object-contain" src={selected.portrait} alt={selected.name} />{:else}<span class="text-6xl" role="img" aria-label={selected.name}>{selected.emoji}</span>{/if}
             {:else}<span class="text-4xl text-gray-400">?</span>{/if}
           </div>
           <div class="min-w-0">

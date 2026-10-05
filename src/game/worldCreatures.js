@@ -1,4 +1,4 @@
-import { MAPS_DATA, PLAYER_START, FESTIVAL_STALL, INITIAL_VILLAGERS, AQUARIUM_FOOTPRINT, DOCK_BOUNDS, BOAT_BOUNDS, CAST_TILES, getNpcLocation, inBounds } from "./constants.js";
+import { MAPS_DATA, PLAYER_START, FESTIVAL_STALL, INITIAL_VILLAGERS, AQUARIUM_FOOTPRINT, DOCK_BOUNDS, BOAT_BOUNDS, CAST_TILES, getNpcLocation, inBounds, isForestAccess } from "./constants.js";
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
@@ -26,7 +26,18 @@ export function dailyRandom(key) {
   };
 }
 
+function overlapsForestAccess(creature) {
+  for (let offsetY = 0; offsetY < creature.size; offsetY++) {
+    for (let offsetX = 0; offsetX < creature.size; offsetX++) {
+      if (isForestAccess("village", creature.x + offsetX, creature.y + offsetY) ||
+        creature.target && isForestAccess("village", creature.target.x + offsetX, creature.target.y + offsetY)) return true;
+    }
+  }
+  return false;
+}
+
 export function canPlaceCreature(creature, creatures, blocked = []) {
+  if (overlapsForestAccess(creature)) return false;
   const rows = MAPS_DATA.village;
   for (let offsetY = 0; offsetY < creature.size; offsetY++) {
     for (let offsetX = 0; offsetX < creature.size; offsetX++) {
@@ -117,6 +128,9 @@ function occupiedPositions() {
 export function ensureWorldPopulation() {
   const key = `${get(gameMode)}:${get(seasonIndex)}:${get(day)}`;
   if (get(worldPopulationDay) === key) {
+    if (get(worldCreatures).some(overlapsForestAccess)) {
+      worldCreatures.update((creatures) => creatures.filter((creature) => !overlapsForestAccess(creature)));
+    }
     if (get(gameMode) === "pokemon") {
       worldCreatures.update((creatures) => creatures.map((creature) => {
         const catalog = creature.aquatic ? getActiveDatabase() : LAND_VISITORS;

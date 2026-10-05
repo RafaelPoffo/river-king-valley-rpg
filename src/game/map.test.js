@@ -9,10 +9,11 @@ import {
   CAST_TILES,
   DOCK_BOUNDS,
   getNpcLocation,
+  isForestAccess,
 } from "./constants.js";
 import { canWalkOn, houseForDoor, interiorSpawn, isInterior, mapTransition, setDirectionHeld, releaseMovement } from "./movement.js";
 import { creatureOccupies, canPlaceCreature, createDailyPopulation, ensureWorldPopulation, tickWorldCreatures, worldCreatureBlocks, creaturePosition, worldSpecies, removeWorldCreature, nearbyAquaticCreature, engageWorldCreature } from "./worldCreatures.js";
-import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, worldPopulationDay, insectInventory, wildInsects, dialogActions, currentMessage, showBirdWatching } from "./stores.js";
+import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, worldPopulationDay, insectInventory, insectPopulationDay, wildInsects, dialogActions, currentMessage, showBirdWatching } from "./stores.js";
 import { resetState } from "./saveSystem.js";
 import { interact, sleep } from "./gameActions.js";
 import { PHASES } from "./phases.js";
@@ -20,10 +21,50 @@ import { CHARACTER_SPRITES, POKEMON_SPRITES, atlasFrame, clearFrameBackground, w
 import { LAND_VISITORS } from "./data/worldCreatures.js";
 import { ambientShadows } from "./ambientShadows.js";
 import { castTarget } from "./fishingEngine.js";
-import { catchInsect, generateDailyInsects } from "./insectHunt.js";
+import { catchInsect, ensureDailyInsects, generateDailyInsects } from "./insectHunt.js";
 import { COMMON_BUGS, POKEMON_BUGS } from "./bugCatalog.js";
+import { TREE_FRAMES, TREE_ATLAS_SIZE, forestTrees, clearTreeBackground } from "./forestAtlas.js";
 
 describe("folha de sprites do overworld", () => {
+  it("remove fundos alternados de árvores retangulares sem apagar a copa", () => {
+    const width = 8;
+    const height = 12;
+    const pixels = new Uint8ClampedArray(width * height * 4);
+    for (let row = 0; row < height; row++) {
+      for (let column = 0; column < width; column++) {
+        const edge = column >= 2 && column <= 5 && row >= 3 && row <= 8 &&
+          (column === 2 || column === 5 || row === 3 || row === 8);
+        pixels.set(edge ? [56, 56, 56, 255] : (row + column) % 2 ? [241, 250, 254, 255] : [202, 217, 224, 255], (row * width + column) * 4);
+      }
+    }
+    const result = clearTreeBackground(pixels, width, height);
+    expect(result[3]).toBe(0);
+    expect(result[(11 * width + 7) * 4 + 3]).toBe(0);
+    expect(result[(5 * width + 3) * 4 + 3]).toBe(255);
+    expect(result[(3 * width + 2) * 4 + 3]).toBe(255);
+    expect(pixels[3]).toBe(255);
+  });
+
+  it("recorta árvores inteiras, com escala fixa e copas fora da entrada", () => {
+    for (const frame of Object.values(TREE_FRAMES)) {
+      expect(frame.x + frame.width).toBeLessThanOrEqual(TREE_ATLAS_SIZE);
+      expect(frame.y + frame.height).toBeLessThanOrEqual(TREE_ATLAS_SIZE);
+    }
+    for (let season = 0; season < 4; season++) {
+      const trees = forestTrees(season);
+      expect(trees.length).toBeGreaterThan(30);
+      for (const tree of trees) {
+        expect(tree.width / tree.height).toBe(tree.frame.width / tree.frame.height);
+        for (let tileY = Math.floor(tree.top / 40); tileY <= tree.y; tileY++) {
+          for (let tileX = Math.floor(tree.left / 40); tileX <= Math.ceil((tree.left + tree.width) / 40) - 1; tileX++) {
+            expect(isForestAccess("bug_forest", tileX, tileY)).toBe(false);
+          }
+        }
+      }
+    }
+    expect(forestTrees(0)).not.toEqual(forestTrees(2));
+  });
+
   it("recorta quadros de 16 pixels sem incluir as faixas e usa o centro em repouso", () => {
     expect(atlasFrame(CHARACTER_SPRITES.player, "up")).toEqual({ x: 68, y: 0, width: 16, height: 16 });
     expect([0, 1, 2, 3].map((step) => atlasFrame(CHARACTER_SPRITES.player, "down", true, step).x)).toEqual([17, 0, 17, 34]);
@@ -90,6 +131,14 @@ describe("população diária da vila", () => {
     expect(createDailyPopulation("pokemon:0:1", land, water)).not.toEqual(createDailyPopulation("pokemon:0:2", land, water));
   });
 
+  it("reserva a ponte, suas margens e o desembarque para todas as dimensões", () => {
+    expect(canPlaceCreature({ x: 5, y: 2, size: 1, aquatic: true }, [])).toBe(false);
+    expect(canPlaceCreature({ x: 6, y: 5, size: 1, aquatic: false }, [])).toBe(false);
+    expect(canPlaceCreature({ x: 3, y: 5, size: 2, aquatic: false }, [])).toBe(false);
+    expect(canPlaceCreature({ x: 9, y: 5, size: 1, aquatic: false, target: { x: 8, y: 5 } }, [])).toBe(false);
+    expect(canPlaceCreature({ x: 9, y: 5, size: 1, aquatic: false }, [])).toBe(true);
+  });
+
   it("criaturas grandes bloqueiam quatro quadrados e reservam o destino", () => {
     const creature = { x: 10, y: 13, size: 2, target: { x: 11, y: 13 } };
     for (const [x, y] of [[10, 13], [11, 13], [10, 14], [11, 14], [12, 13], [12, 14]]) {
@@ -154,6 +203,20 @@ describe("criaturas persistentes e movimento", () => {
     day.set(2);
     expect(ensureWorldPopulation()).toBe(true);
     expect(get(worldCreatures).some((creature) => creature.id === original[0].id)).toBe(false);
+  });
+
+  it("limpa criaturas de saves na passagem e impede passos em direção à ponte", () => {
+    worldPopulationDay.set("normal:0:1");
+    worldCreatures.set([
+      { id: "bridge", x: 5, y: 2, size: 1, aquatic: true },
+      { id: "landing", x: 6, y: 5, size: 1, aquatic: false },
+      { id: "approaching", x: 9, y: 5, size: 1, aquatic: false, target: { x: 8, y: 5 } },
+      { id: "outside", x: 9, y: 5, size: 1, aquatic: false, state: "wild", cooldown: 0 },
+    ]);
+    expect(ensureWorldPopulation()).toBe(false);
+    expect(get(worldCreatures).map((creature) => creature.id)).toEqual(["outside"]);
+    tickWorldCreatures(1, () => 0);
+    expect(get(worldCreatures)[0].target).toBeUndefined();
   });
 
   it("visitantes terrestres são decorativos e Pokémon da água podem ser pescados", () => {
@@ -354,6 +417,7 @@ describe("caça diária de insetos", () => {
         expect(population.length).toBeLessThanOrEqual(9);
         expect(population.reduce((total, insect) => total + insect.points, 0)).toBe(18);
         expect(population).toEqual(generateDailyInsects(`0:${today}`, mode));
+        expect(population.every((insect) => !isForestAccess("bug_forest", insect.x, insect.y))).toBe(true);
       }
     }
   });
@@ -366,7 +430,24 @@ describe("caça diária de insetos", () => {
       expect(pokemonBug.strength).toBe(commonBug.strength);
       expect(pokemonBug.points).toBe(commonBug.points);
       expect(pokemonBug.archetypeId).toBe(commonBug.archetypeId);
+      expect(POKEMON_SPRITES[pokemonBug.dexId]).toBeDefined();
+      expect(pokemonBug.pixelSprite).toBeUndefined();
     }
+  });
+
+  it("reposiciona insetos de saves antigos sem mudar o orçamento ou repovoar", () => {
+    gameMode.set("normal");
+    seasonIndex.set(0);
+    day.set(1);
+    insectPopulationDay.set("normal:0:1");
+    const insect = { ...generateDailyInsects("0:1")[0], x: 5, y: 22 };
+    wildInsects.set([insect]);
+    expect(ensureDailyInsects()).toBe(false);
+    const relocated = get(wildInsects);
+    expect(relocated).toHaveLength(1);
+    expect(relocated[0].id).toBe(insect.id);
+    expect(relocated[0].points).toBe(insect.points);
+    expect(isForestAccess("bug_forest", relocated[0].x, relocated[0].y)).toBe(false);
   });
 
   it("não permite que a mochila acumule mais que o orçamento secreto de um dia", () => {

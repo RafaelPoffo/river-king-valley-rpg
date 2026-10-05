@@ -1,13 +1,26 @@
 <script>
+  import { onMount } from "svelte";
   import { TILE_SIZE, MAPS_DATA, BUILDING_SIGNS } from "../game/constants.js";
   import {
     currentMap,
     constructions,
     deepSeaFishingActive,
+    seasonIndex,
   } from "../game/stores.js";
   import { getTileSvg } from "../game/tileRenderer.js";
+  import { forestTrees, loadForestAtlas, TREE_ATLAS_SIZE } from "../game/forestAtlas.js";
+
+  let treeSource = "";
+  onMount(() => {
+    let mounted = true;
+    loadForestAtlas().then((url) => {
+      if (mounted) treeSource = url;
+    }).catch((error) => console.error("Falha ao carregar árvores da floresta", error));
+    return () => { mounted = false; };
+  });
 
   $: rows = MAPS_DATA[$currentMap] || [];
+  $: trees = $currentMap === "bug_forest" ? forestTrees($seasonIndex) : [];
   $: tiles = rows.flatMap((row, y) =>
     [...row].map((char, x) => ({
       key: `${$currentMap}-${x}-${y}`,
@@ -32,6 +45,20 @@
   </div>
 {/each}
 
+{#each trees as tree (tree.key)}
+  <svg
+    class="forest-tree"
+    viewBox="0 0 {tree.frame.width} {tree.frame.height}"
+    style="left: {tree.left}px; top: {tree.top}px; width: {tree.width}px; height: {tree.height}px;"
+    aria-hidden="true"
+    data-tree-frame={tree.key}
+  >
+    {#if treeSource}
+      <image href={treeSource} x={-tree.frame.x} y={-tree.frame.y} width={TREE_ATLAS_SIZE} height={TREE_ATLAS_SIZE} />
+    {/if}
+  </svg>
+{/each}
+
 {#each signs as sign (sign.label)}
   <div
     class="building-sign retro-font"
@@ -42,6 +69,15 @@
 {/each}
 
 <style>
+  .forest-tree {
+    position: absolute;
+    z-index: 16;
+    overflow: hidden;
+    image-rendering: pixelated;
+    pointer-events: none;
+    filter: drop-shadow(2px 3px 0 rgba(20, 47, 32, 0.22));
+  }
+
   .building-sign {
     position: absolute;
     transform: translateX(-50%);

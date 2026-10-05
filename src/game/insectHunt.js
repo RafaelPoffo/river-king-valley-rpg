@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { MAPS_DATA } from "./constants.js";
+import { MAPS_DATA, isForestAccess } from "./constants.js";
 import { bugsForMode } from "./bugCatalog.js";
 import { day, gameMode, insectInventory, insectPopulationDay, seasonIndex, wildInsects } from "./stores.js";
 
@@ -56,7 +56,7 @@ function spawnTiles(random) {
   const tiles = [];
   for (let y = 2; y <= 22; y++) {
     for (let x = 2; x <= 17; x++) {
-      if (["G", "F"].includes(rows[y]?.[x])) tiles.push({ x, y });
+      if (["G", "F"].includes(rows[y]?.[x]) && !isForestAccess("bug_forest", x, y)) tiles.push({ x, y });
     }
   }
   return tiles.sort(() => random() - 0.5);
@@ -89,7 +89,19 @@ export function generateDailyInsects(key, mode = "normal") {
 
 export function ensureDailyInsects() {
   const key = `${get(gameMode)}:${get(seasonIndex)}:${get(day)}`;
-  if (get(insectPopulationDay) === key) return false;
+  if (get(insectPopulationDay) === key) {
+    if (get(wildInsects).some((insect) => isForestAccess("bug_forest", insect.x, insect.y))) {
+      const available = generateDailyInsects(`${get(seasonIndex)}:${get(day)}`, get(gameMode));
+      wildInsects.update((insects) => insects.map((insect) => {
+        if (!isForestAccess("bug_forest", insect.x, insect.y)) return insect;
+        const position = available.find((candidate) => !insects.some((other) => other.x === candidate.x && other.y === candidate.y));
+        if (!position) return null;
+        available.splice(available.indexOf(position), 1);
+        return { ...insect, x: position.x, y: position.y };
+      }).filter(Boolean));
+    }
+    return false;
+  }
   wildInsects.set(generateDailyInsects(`${get(seasonIndex)}:${get(day)}`, get(gameMode)));
   insectPopulationDay.set(key);
   return true;

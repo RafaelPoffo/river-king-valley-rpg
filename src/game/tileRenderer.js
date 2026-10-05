@@ -39,8 +39,10 @@ export function getTileSvg(char, x, y, constructions, mapName = "village") {
 
   switch (char) {
     case "T":
+      if (mapName === "bug_forest") return imgTile("/assets/crystal_grass.png", "Solo do bosque");
       return imgTile("/assets/Arvore.png", "Árvore Johto");
     case "G":
+      if (mapName === "bug_forest") return imgTile("/assets/crystal_grass.png", "Grama do bosque");
       return imgTile("/assets/Gramado.png", "Grama Johto");
     case "F":
       return imgTile("/assets/Flor1.png", "Flores Johto");
@@ -71,6 +73,7 @@ export function getTileSvg(char, x, y, constructions, mapName = "village") {
     case "0":
       return draw(SPRITES.void);
     case ".":
+      if (mapName === "bug_forest") return '<svg viewBox="0 0 16 16" width="100%" height="100%" shape-rendering="crispEdges" aria-hidden="true"><rect width="16" height="16" fill="#d4cf9b"/><path d="M2 3h2v1H2z M11 2h1v1h-1z M7 8h2v1H7z M3 13h1v1H3z M12 12h2v1h-2z" fill="#aaa775"/><path d="M4 5h2v1H4z M10 10h2v1h-2z" fill="#e6dfb4"/></svg>';
       return imgTile("/assets/crystal_real_path.png", "Caminho Johto");
     case "C":
       return imgTile("/assets/crystal_counter.png", "Balcão");

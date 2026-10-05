@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { get } from "svelte/store";
 import { birdLog, birdPopulationDay, birdwatchingLuck, dailyBirds, day, gameMode, seasonIndex } from "./stores.js";
 import { birdRarityMultiplier, birdsForMode, ensureDailyBirds, generateDailyBirds, observeBird } from "./birdWatching.js";
+import { POKEMON_SPRITES } from "./overworldAtlas.js";
 
 describe("observação de pássaros", () => {
   beforeEach(() => {
@@ -33,6 +34,11 @@ describe("observação de pássaros", () => {
     expect(birds.some((bird) => bird.name === "Pidgey")).toBe(true);
     expect(birds.some((bird) => bird.name === "Hoothoot")).toBe(true);
     expect(birds.every((bird) => bird.portrait && bird.dexId)).toBe(true);
+    expect(birds.every((bird) => POKEMON_SPRITES[bird.dexId] && !bird.sprite)).toBe(true);
+  });
+
+  it("usa emojis para aves do modo original sem imagens remotas", () => {
+    expect(birdsForMode("normal").every((bird) => bird.emoji && !bird.sprite && !bird.portrait)).toBe(true);
   });
 
   it("registra tamanho, recorde e concede bônus uma vez por ave observada", () => {

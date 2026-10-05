@@ -25,12 +25,17 @@ npm.cmd exec --yes --package=node@22 -- node node_modules/vite/bin/vite.js
 
 ## ✨ Recursos
 
-- **Dois modos de jogo**: Normal (peixes de rio, mar e alto-mar) e Pokémon (Pokémon de água das gerações 1 e 2).
+- **Dois modos de jogo**: Normal (peixes, insetos e aves reais) e Pokémon (Pokémon de água, insetos e aves das gerações 1 e 2).
 - **Tempo, estações e clima**: dias de 6h às 22h, quatro estações de 15 dias, sol, chuva e tempestade. O relógio para dentro das casas.
 - **Vila com NPCs**: Capitão Thomas, Mestre Gema, Ana e Velho Joe, cada um com seu canto na vila e visitas à taverna à noite.
 - **Amizade**: converse e dê peixes de presente para ganhar corações. Cada morador libera uma vantagem.
 - **Pesca**: mira de distância limitada pelo alcance da vara, sombra se aproximando, fisgada e minigame de tensão na linha. Também dá para pescar com rede na margem.
-- **Criaturas pela vila**: de 2 a 8 visitantes por dia, com caminhada lenta e pausas. Os Pokemon do mapa usam o atlas local de 16x16, ocupam um quadrado e sao decorativos, sem encontros ou captura direta. Os peixes do modo Normal mantem seu comportamento.
+- **Criaturas pela vila**: de 2 a 8 visitantes por dia, com caminhada lenta e pausas. Pokémon terrestres são decorativos; criaturas na água podem ser pescadas. Os sprites vêm do atlas local, com quadros de 16×16 ou 32×32 para espécies grandes.
+- **Floresta conectada à vila**: ponte ao norte, trilhas de terra, clareiras e árvores locais com variações por estação. A ponte e seus acessos ficam livres de criaturas e de copas de árvores.
+- **Caça de insetos**: de 3 a 9 insetos por dia, 65 espécies no modo Normal e 22 Pokémon no outro modo, com mochila própria e perfis de batalha.
+- **Campeonato da clareira**: escolha e ordene três insetos para enfrentar Joe Bug e os rivais em duelos animados na mesa. Há uma final no último dia de cada estação.
+- **Observação de pássaros**: explore o panorama com binóculos, registre tamanhos e recordes de 8 aves comuns ou 17 Pokémon e acumule sorte para a pesca e as batalhas de insetos.
+- **Pixelart local**: jogador, moradores, concorrentes da floresta e Pokémon das cenas usam recortes de `sprites.png`; árvores da floresta usam `arvores.png`. Insetos e aves do modo Normal usam emojis. Somente os portraits Pokémon dos menus e registros são carregados online.
 - **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
 - **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
 - **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨). Clique numa espécie para ver habitat, iscas preferidas, peso, força e preço.
@@ -56,6 +61,8 @@ npm.cmd exec --yes --package=node@22 -- node node_modules/vite/bin/vite.js
 
 A música e os efeitos também podem ser ligados e desligados no menu de pausa. Essa escolha fica no navegador, não no save.
 
+Na observação de pássaros, use as **setas** para mover os binóculos, **Espaço** para observar uma ave ou confirmar seu registro e **Esc** para sair. Na preparação do campeonato de insetos, use os botões de subir e descer para ordenar o trio e **Participar** para começar; os duelos são automáticos.
+
 ## 📖 Guia do jogo
 
 ### Começo de jogo
@@ -75,6 +82,50 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Terreno do aquário | Vazio até o Aquário Municipal ser construído. |
 | Praça | A barraca do festival aparece em dia de festa. |
 | Rio, margem e mar | Onde se pesca. O mar fica no sul da vila. |
+| Ponte ao norte | Entrada e saída da floresta, com uma faixa de respiro sem criaturas. |
+
+### Floresta e clareira
+
+Atravesse a ponte ao norte da vila para entrar na floresta. As trilhas conectam a entrada, a área de caça, o banco de observação ao norte e a clareira do campeonato a leste. A passagem central entre as duas partes do bosque continua acessível.
+
+O mapa usa grama, trilhas de terra e grupos de árvores com copas inteiras, em vez de repetir a árvore da praia em cada quadrado. As árvores são recortes de 32×64 ou 64×64 pixels de [public/assets/arvores.png](public/assets/arvores.png), renderizados em 40×80 ou 80×80 pixels, sem suavização e sem deformar as proporções. Os tipos e as cores mudam conforme a estação. O fundo alternado da imagem é removido apenas nas regiões externas ligadas às bordas, preservando os pixels internos da árvore.
+
+A ponte, as margens próximas e o desembarque têm uma área reservada nos dois mapas. Criaturas novas não nascem ali, Pokémon em movimento não podem entrar nessa faixa e espécies grandes também respeitam a reserva. Ao carregar populações antigas, criaturas da vila que ocupem a passagem são removidas, e insetos da floresta são reposicionados sem mudar sua espécie ou seu valor. As copas das árvores também ficam fora do corredor de entrada.
+
+### Caça de insetos
+
+Todo dia aparecem de **3 a 9 insetos** na área de caça da floresta. O sorteio depende do modo, da estação e do dia: voltar ao mapa ou recarregar o mesmo save não refaz a população. A renovação acontece ao dormir.
+
+- Fique de frente para um inseto e aperte **Espaço** para conhecer seu perfil. Confirme com Espaço para guardá-lo ou use X para deixá-lo no bosque. Não é necessário equipar uma rede.
+- Os insetos ficam numa seção própria da mochila, separada dos peixes. A capacidade considera o valor interno das espécies, não apenas a quantidade; quando ela estiver cheia, solte um inseto pelo botão de sua ficha para abrir espaço.
+- O modo Normal tem **65 espécies**, representadas por emojis. O modo Pokémon tem **22 espécies de Kanto e Johto**, com pixelarts locais no mapa e portraits nas fichas.
+- Os perfis incluem Impacto, Casca, Ágil, Tático, Versátil, Sorte, Embalo, Trapaça, Âncora e Azarão. Cada um modifica o comportamento do inseto nas disputas; os valores internos de força e orçamento não aparecem na interface.
+
+### Campeonato de insetos
+
+Fale com **Joe Bug**, na clareira a leste, depois de capturar pelo menos três insetos. Na preparação, reorganize a mochila: somente os três primeiros entram no time, na ordem escolhida. Os demais ficam de fora das lutas.
+
+Cada confronto é uma **melhor de três**: os insetos se enfrentam um a um na mesa, e quem vence dois duelos avança. A animação mostra as investidas e os empurrões. Os perfis das espécies, as jogadas sorteadas e o bônus da observação de aves influenciam o resultado. As equipes e os rivais são definidos pelo modo, pela estação e pelo dia.
+
+| Campeonato | Participantes, incluindo você | Prêmio do campeão |
+|---|---|---|
+| Diário pequeno | 3 | ¥100 a ¥500 |
+| Diário maior | 4 a 6 | ¥500 a ¥1.000 |
+| Final da estação, no dia 15 | 9 | ¥2.000 |
+
+O campeão precisa vencer todos os confrontos. Ao terminar o campeonato, ganhando ou perdendo, Joe Bug liberta **todos os insetos carregados**, inclusive os que ficaram fora do trio. O resultado e o prêmio são salvos. Essa competição é independente dos torneios de pesca dos festivais.
+
+No modo Pokémon, os concorrentes da clareira usam personagens do atlas local, e os insetos na mesa usam o mesmo renderizador de pixelart do mapa. Os portraits continuam nos cantos da batalha e na preparação. No modo Normal, os insetos e os avatares dos concorrentes mantêm os emojis.
+
+### Observação de pássaros
+
+Interaja com o **banco ao norte da floresta** e confirme para abrir os binóculos. O panorama tem **4.000×800 pixels**, com de **1 a 8 aves da mesma espécie** sorteadas para aquele dia. Espécies comuns aparecem com mais frequência, e cada ave tem posição e tamanho próprios.
+
+Mova os binóculos com as setas e aperte Espaço quando uma ave estiver no campo de visão. Cada indivíduo pode ser observado uma vez por dia. O registro mostra nome, descrição, tamanho, quantidade de observações, maior e menor tamanho registrados e estrelas de raridade. O **Catálogo de Pássaros** ou a **Pokédex de Aves** fica no menu de pausa.
+
+O modo Normal possui **8 espécies** com emojis, incluindo pomba, pardal, coruja e arara. O modo Pokémon possui **17 espécies** de Kanto e Johto, incluindo Pidgey, Hoothoot, as aves lendárias e Lugia. Durante a observação, todas as aves Pokémon usam recortes locais; os portraits online aparecem somente no registro e no catálogo.
+
+Cada observação aumenta a **sorte**, de acordo com as estrelas da ave, até o nível **5**. Essa sorte aumenta proporcionalmente a chance de peixes raros, sem alterar a dos comuns, e oferece uma pequena vantagem nos duelos de insetos. O catálogo, os recordes, a sorte e os indivíduos já observados ficam preservados no save.
 
 ### Tempo e clima
 
@@ -101,7 +152,9 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 
 **Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio, no mar (longe do cais e do barco) e em volta do barco no alto-mar. São só decoração, sorteadas por dia, e não têm relação com a pesca.
 
-**Atlas do overworld.** Jogador, moradores e Pokemon do mapa usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16x16 (e os três de 32x32 da linha 14) com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direcoes e uma sequencia de caminhada/parado; Pokemon usam seus pares de animacao. Para adicionar sprites, cadastre suas coordenadas e especie, sem alterar as imagens do catalogo ou da captura. Saves antigos sao adaptados sem repovoar o dia. Os antigos arquivos de overworld em `public/assets/world/` nao sao mais usados pelo mapa; seus creditos permanecem nessa pasta.
+**Atlas do overworld.** Jogador, moradores, concorrentes da clareira e Pokémon das cenas usam [public/assets/sprites.png](public/assets/sprites.png), inclusive os insetos na mesa de batalha e as aves nos binóculos. O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16×16 (e os três de 32×32 da linha 14) com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direções e uma sequência de caminhada/parado; Pokémon usam seus pares de animação. Espécies sem um quadro exclusivo compartilham representações por família, priorizando lagartas, borboletas, vespas e mantis para insetos e quadros de aves para pássaros. A paleta original da imagem é preservada. Não há imports de sprites Pokémon online nas cenas: apenas os portraits de menus, fichas e registros continuam usando URLs externas. Os antigos arquivos de overworld em `public/assets/world/` não são mais usados pelo mapa; seus créditos permanecem nessa pasta.
+
+**Atlas da floresta.** [src/game/forestAtlas.js](src/game/forestAtlas.js) cadastra as coordenadas das árvores, prepara a transparência, define variantes sazonais e calcula as posições e dimensões das copas. A camada do mapa usa esses recortes sem alterar a árvore da vila ou da praia. A reserva de acesso está em `FOREST_ACCESS_BOUNDS` e `isForestAccess`, em [src/game/data/world.js](src/game/data/world.js), e é compartilhada pela geração de insetos, pelo posicionamento e movimento de criaturas e pela distribuição visual das árvores.
 
 **Raridade por zona.** Os encontros usam pesos: comuns são mais frequentes, raros e lendários têm pesos progressivamente menores. A profundidade aumenta um pouco o peso dos raros, mas não garante encontros raros. Iscas caras e pratos dão bônus limitados. As chances finais dependem das espécies disponíveis naquele bioma, zona, horário e estação. No modo Pokémon, níveis 2 e 3 têm pesos muito menores que nível 1; preferência por água funda não ignora essa regra.
 
@@ -277,6 +330,8 @@ Nos dias 5 e 15, a barraca da praça dá ¥200 de brinde uma vez por dia.
 
 Funciona como o modo Normal, com Pokémon de água das gerações 1 e 2 no lugar dos peixes. A zona define o estágio de evolução mais provável: na rasa saem mais formas básicas, na funda mais evoluções finais e Pokémon de águas profundas, como Gyarados e Lapras. Tentacruel, Lanturn, Octillery, Mantine, Kingdra e Lugia só aparecem no alto-mar. O catálogo vira a Pokédex.
 
+Na floresta, o modo também troca os insetos e pássaros por Pokémon. Os perfis de força, capacidade e comportamento dos insetos permanecem equivalentes entre as duas versões; a troca de modo não altera essas regras. A Pokédex de Aves é separada da Pokédex de pesca. Os nomes e portraits identificam as espécies, enquanto as cenas usam exclusivamente os recortes disponíveis no atlas local.
+
 ## 🚀 Como executar
 
 ```bash
@@ -299,7 +354,7 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 
 | Arquivo | O que garante |
 |---|---|
-| `map.test.js` | Mapas retangulares, todo chão alcançável, toda porta, móvel, barraca e cais com acesso, NPCs em chão livre. Os NPCs e a barraca contam como obstáculo. Visitantes terrestres decorativos, Pokémon da água pescáveis, sprites 2×2, sombras de ambiente só na água e mira caindo na água. |
+| `map.test.js` | Mapas retangulares, chão e interações alcançáveis, NPCs e barraca como obstáculos, ponte e acessos livres, reposicionamento de insetos de saves antigos, população diária com orçamento preservado, perfis equivalentes entre modos, recortes locais de personagens e árvores, transparência sem apagar pixels internos, variantes sazonais, visitantes decorativos, criaturas aquáticas pescáveis, sprites 2×2, sombras de ambiente e mira. |
 | `fishingEngine.test.js` | Em todas as combinações de bioma, zona, horário e estação: peixe só sai no horário, bioma e distância certos, lixo só da lista de lixo, preço final certo e o upgrade de sorte funcionando. Usa números aleatórios com semente fixa. |
 | `saveSystem.test.js` | Salvar e carregar sem perder nada, jogo novo zerando o progresso e mantendo o nome, migração de saves antigos. |
 | `phases.test.js` | Todo `PHASES.X` usado no código existe e os grupos de fases são coerentes. |
@@ -313,6 +368,10 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 | `dishes.test.js` | Ingredientes certos (os mais baratos primeiro), cobrança, efeito só no dia do prato e recusa sem gastar nada. |
 | `boat.test.js` | Píer liberando só a passarela curta e docas estendendo o cais, barco fora do caminho de quem anda, criaturas e sombras longe do cais, convés do alto-mar todo alcançável, linha caindo na água dos quatro lados, docas exigindo o píer, migração do save, ida e volta com o capitão, partida recusada depois das 16h, rede virando vara e Pokémon próprios do alto-mar. |
 | `controls.test.js` | Som certo para cada fase da pesca e botões e analógico do gamepad virando teclas. |
+| `bugTournament.test.js` | Joe Bug e rivais com trios válidos nos dois modos, final sazonal, duelos determinísticos, influência da sorte e faixas de prêmios. |
+| `birdWatching.test.js` | População diária determinística, posições no panorama, catálogo Pokémon com quadros locais e portraits, emojis no modo Normal, registros de tamanho, bônus único por indivíduo e sorte limitada a cinco. |
+
+**Pendência conhecida:** o teste de sombras aquáticas em `map.test.js` ainda falha na verificação de que todo o trajeto fica na água. Essa pendência é independente da reformulação da floresta; os testes focados de atlas, acesso, insetos, campeonato e observação de aves passam.
 
 ## 🗂️ Estrutura
 
@@ -321,7 +380,11 @@ src/
 ├── App.svelte, main.js, app.css
 ├── components/            # telas e camadas visuais
 │   ├── GameContainer.svelte   # liga teclado, gamepad, relógio e som; troca de telas
-│   ├── GameCanvas.svelte      # junta MapLayer, AmbientShadows, BoatLayer, NpcLayer e PlayerLayer
+│   ├── GameCanvas.svelte      # junta mapa, sombras, barco, NPCs, jogador e criaturas
+│   ├── OverworldSprite.svelte, CreatureSprite.svelte  # recortes do atlas local
+│   ├── WorldCreatureLayer.svelte, BugLayer.svelte, BugCompetitorLayer.svelte
+│   ├── BirdWatchingModal.svelte, BirdCatalogModal.svelte
+│   ├── BugTournamentModal.svelte  # preparação e batalhas na mesa
 │   ├── HUD.svelte, FishingOverlay.svelte
 │   ├── HudSelector.svelte     # seletor com setas (isca, vara e rede)
 │   ├── TouchControls.svelte   # direcional e botões na tela (só em telas de toque)
@@ -348,6 +411,13 @@ src/
     ├── fishingEngine.js       # sorteio de peixe e etapas da pesca
     ├── fight.js               # força do peixe contra a vara e chance de arrebentar
     ├── ambientShadows.js      # sombras decorativas de peixe, sorteadas por dia
+    ├── worldCreatures.js      # população diária, ocupação e movimento das criaturas
+    ├── overworldAtlas.js      # quadros locais de personagens, insetos e aves
+    ├── forestAtlas.js         # recortes, transparência e distribuição sazonal de árvores
+    ├── bugCatalog.js          # espécies e perfis dos insetos nos dois modos
+    ├── insectHunt.js          # população de insetos, capacidade e captura
+    ├── bugTournament.js       # rivais, duelos e prêmios da clareira
+    ├── birdWatching.js        # avistamentos, catálogo, recordes e bônus de sorte
     ├── tournament.js          # torneios dos festivais
     ├── collections.js         # marcos e prêmios do museu e do aquário
     ├── friendship.js          # corações, presentes e vantagens dos moradores
@@ -365,6 +435,8 @@ src/
 **Fases.** O store `phase` decide o que está na tela e o que o teclado faz. Os valores ficam em `PHASES` (`phases.js`). Nunca compare com texto solto: use `PHASES.PLAYING`, `PHASES.FISHING_BITE` etc. Os grupos `CLOSABLE_SCREENS`, `LINE_IN_WATER` e `CANCELABLE_FISHING` dizem quais telas o Esc fecha e em quais fases a linha está na água.
 
 **Save.** `PERSISTED_FIELDS` em `saveSystem.js` é a lista única do que é salvo. Salvar, carregar e começar um jogo novo percorrem essa lista. Cada save grava `version`. Ao carregar, `migrateSave` aplica em ordem as migrações de `MIGRATIONS` até chegar em `SAVE_VERSION`.
+
+**Populações e atividades da floresta.** Criaturas da vila, insetos e aves possuem uma chave diária por modo, estação e dia. O save preserva essas populações, a mochila de insetos, os indivíduos observados, o catálogo de aves e a sorte. Os geradores usam sementes determinísticas; carregar ou voltar ao mapa não repovoa o dia. As rotinas de carregamento também aplicam a reserva da ponte às populações antigas.
 
 **Movimento.** O mapa é uma grade de tiles de 40px. `canWalkOn` (`movement.js`) é a regra de onde dá para andar, usada pelo jogo e pelos testes. As portas ficam em `HOUSE_DOORS`, e `isInterior` sai delas.
 
@@ -390,12 +462,22 @@ O nome precisa existir em `FESTIVALS`. Depois, crie a entrada em `TOURNAMENTS` (
 **Mudar um mapa ou criar um interior**
 Edite `data/world.js`. Um interior novo precisa de uma letra em `HOUSE_DOORS` e de uma saída `-`. O teste de mapa avisa se alguma área ficou sem acesso.
 
+**Adicionar um inseto ou uma ave**
+Cadastre a espécie em `bugCatalog.js` ou `birdWatching.js`, no catálogo do modo correspondente. Insetos precisam de um perfil e de valores compatíveis com o orçamento diário e os trios dos rivais. Para Pokémon, adicione também o quadro em `overworldAtlas.js` e mantenha URLs externas somente em `portrait`. Para espécies do modo Normal, use `emoji`. Rode os testes de mapa, campeonato e observação.
+
+**Adicionar uma árvore da floresta**
+Inclua o recorte em `TREE_FRAMES`, em `forestAtlas.js`, respeitando as dimensões de `arvores.png`, e escolha as estações em `SEASON_TREES`. Mantenha a proporção original, a transparência externa e a reserva da ponte. Os testes de atlas verificam limites, escala e copas fora do corredor.
+
 ## 🗺️ Próximos passos
 
 **Feito**
 - [x] Relógio (`clock.js`) e teclado (`input.js`) fora do `GameContainer.svelte`.
 - [x] Svelte 5, Vite 8 e Vitest 5: `npm audit` sem vulnerabilidades.
 - [x] Pratos da Ana, amizade com os moradores, prêmios de coleção, peixes de tempestade, missão do Velho Joe com lendário, peixes diurnos do alto-mar, som e música, gamepad e toque.
+- [x] Floresta conectada por ponte, caça diária de insetos, campeonato com Joe Bug e final sazonal, binóculos, catálogo de aves e bônus de sorte.
+- [x] Reformulação visual da floresta com árvores locais inteiras, transparência, variações sazonais, trilhas e clareiras.
+- [x] Sprites locais para NPCs e Pokémon das cenas, aves dos binóculos e insetos da mesa; portraits online separados e emojis no modo Normal.
+- [x] Reserva da ponte e dos acessos para spawn, movimento, criaturas grandes, copas e populações de saves antigos.
 
 **Ideias**
 - [ ] Migrar os componentes para a sintaxe de runes do Svelte 5. Hoje eles rodam no modo de compatibilidade.

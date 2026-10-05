@@ -40,6 +40,16 @@ export function inBounds(x, y, box) {
   return x >= box.x1 && x <= box.x2 && y >= box.y1 && y <= box.y2;
 }
 
+export const FOREST_ACCESS_BOUNDS = {
+  village: { x1: 4, x2: 8, y1: 0, y2: 7 },
+  bug_forest: { x1: 4, x2: 8, y1: 19, y2: 24 },
+};
+
+export function isForestAccess(mapName, x, y) {
+  const bounds = FOREST_ACCESS_BOUNDS[mapName];
+  return !!bounds && inBounds(x, y, bounds);
+}
+
 function createBugForest() {
   const width = 40;
   const height = 25;
@@ -78,6 +88,24 @@ function createBugForest() {
   for (const [x, y] of [[2, 5], [12, 4], [7, 13], [15, 18], [32, 8], [34, 16]]) {
     rows[y][x] = "F";
   }
+
+  for (let y = 14; y <= 23; y++) rows[y][6] = ".";
+  for (let x = 6; x <= 11; x++) rows[14][x] = ".";
+  for (let y = 12; y <= 14; y++) rows[y][11] = ".";
+  for (let x = 11; x <= 19; x++) rows[12][x] = ".";
+  for (let y = 2; y <= 12; y++) rows[y][8] = ".";
+  rows[2][7] = ".";
+  rows[2][10] = ".";
+  for (let x = 26; x <= 32; x++) {
+    for (let y = 10; y <= 14; y++) {
+      if (!["+", "h"].includes(rows[y][x])) rows[y][x] = ".";
+    }
+  }
+  for (const [x, y] of [[3, 6], [4, 6], [13, 5], [14, 5], [16, 8], [17, 8],
+    [2, 15], [3, 15], [12, 19], [13, 19], [23, 4], [24, 4], [36, 7], [37, 7],
+    [22, 20], [23, 20], [35, 20], [36, 20]]) rows[y][x] = "T";
+  for (const [x, y] of [[5, 7], [10, 6], [13, 13], [16, 17], [24, 8], [34, 9],
+    [24, 18], [31, 18], [34, 22]]) rows[y][x] = "F";
 
   return rows.map((row) => row.join(""));
 }

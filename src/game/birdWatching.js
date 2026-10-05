@@ -1,61 +1,25 @@
 import { get } from "svelte/store";
 import { birdLog, birdPopulationDay, birdwatchingLuck, dailyBirds, day, gameMode, seasonIndex } from "./stores.js";
 
-const PIXEL_BIRD = [
-  "......1111......",
-  ".....122211.....",
-  "....12222211....",
-  "...1222222211...",
-  "..122222222211..",
-  ".12222222222221.",
-  ".11122222222221.",
-  "...112222222211.",
-  "....11222222111.",
-  ".....11222221111",
-  "......1111111111",
-  ".......11...111.",
-  "......111...11..",
-  ".....11.....11..",
-  "....11......11..",
-  "................",
-];
-
-const birdPalette = (body, wing) => ({
-  "1": "#263b35",
-  "2": body,
-  "3": wing,
-});
-
-function createBirdSprite(body, wing) {
-  const palette = birdPalette(body, wing);
-  const pixels = PIXEL_BIRD.map((row, y) => [...row].map((pixel, x) => {
-    if (pixel === ".") return "";
-    const fill = pixel === "1" ? palette["1"] : (x + y) % 5 === 0 ? palette["3"] : palette["2"];
-    return `<rect x="${x}" y="${y}" width="1" height="1" fill="${fill}"/>`;
-  }).join("")).join("");
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" shape-rendering="crispEdges">${pixels}</svg>`;
-  return `data:image/svg+xml,${encodeURIComponent(svg)}`;
-}
-
-const localBird = (id, name, rarity, body, wing, description) => ({
+const localBird = (id, name, rarity, emoji, description) => ({
   id,
   name,
   rarity,
   description,
-  sprite: createBirdSprite(body, wing),
+  emoji,
   portrait: null,
   sizeRange: [12, 38],
 });
 
 export const COMMON_BIRDS = [
-  localBird("pomba", "Pomba", 1, "#aeb5b0", "#75817c", "Uma visitante comum que pousa tranquilamente entre as folhas."),
-  localBird("pardal", "Pardal", 1, "#b98a55", "#765335", "Pequeno e inquieto, costuma aparecer em bandos."),
-  localBird("sabia", "Sabiá-laranjeira", 2, "#9b6546", "#d98b3e", "Seu canto melodioso ecoa por toda a floresta."),
-  localBird("bem_te_vi", "Bem-te-vi", 2, "#d8bd37", "#4c7560", "Curioso e atento, observa o bosque de um galho alto."),
-  localBird("coruja", "Coruja-do-mato", 3, "#916b4b", "#d1b489", "Uma presença silenciosa, mais fácil de notar ao entardecer."),
-  localBird("tucano", "Tucano-de-bico-verde", 3, "#273e36", "#d88b35", "Seu bico colorido se destaca entre a copa das árvores."),
-  localBird("arara", "Arara-vermelha", 4, "#cb3e32", "#e2c64b", "Uma ave vistosa que cruza a clareira em raras ocasiões."),
-  localBird("aguia", "Águia-real", 5, "#76573e", "#d3bd93", "Uma visitante excepcional que plana muito acima do bosque."),
+  localBird("pomba", "Pomba", 1, "🕊️", "Uma visitante comum que pousa tranquilamente entre as folhas."),
+  localBird("pardal", "Pardal", 1, "🐦", "Pequeno e inquieto, costuma aparecer em bandos."),
+  localBird("sabia", "Sabiá-laranjeira", 2, "🐦", "Seu canto melodioso ecoa por toda a floresta."),
+  localBird("bem_te_vi", "Bem-te-vi", 2, "🐦", "Curioso e atento, observa o bosque de um galho alto."),
+  localBird("coruja", "Coruja-do-mato", 3, "🦉", "Uma presença silenciosa, mais fácil de notar ao entardecer."),
+  localBird("tucano", "Tucano-de-bico-verde", 3, "🐦", "Seu bico colorido se destaca entre a copa das árvores."),
+  localBird("arara", "Arara-vermelha", 4, "🦜", "Uma ave vistosa que cruza a clareira em raras ocasiões."),
+  localBird("aguia", "Águia-real", 5, "🦅", "Uma visitante excepcional que plana muito acima do bosque."),
 ];
 
 const pokemonRows = [
@@ -79,7 +43,6 @@ const pokemonRows = [
 ];
 
 const pmdPortrait = (dexId) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${dexId}/Normal.png`;
-const pixelSprite = (dexId) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${Number(dexId)}.gif`;
 
 export const POKEMON_BIRDS = pokemonRows.map(([dexId, name, rarity, description]) => ({
   id: `bird_${dexId}`,
@@ -87,7 +50,6 @@ export const POKEMON_BIRDS = pokemonRows.map(([dexId, name, rarity, description]
   name,
   rarity,
   description,
-  sprite: pixelSprite(dexId),
   portrait: pmdPortrait(dexId),
   sizeRange: [20, 110],
 }));

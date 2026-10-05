@@ -2,6 +2,8 @@
   import { TILE_SIZE } from "../game/constants.js";
   import { currentMap, day, gameMode, seasonIndex } from "../game/stores.js";
   import { BUG_COMPETITOR_SEATS, competitorsForDay } from "../game/bugTournament.js";
+  import { CHARACTER_SPRITES } from "../game/overworldAtlas.js";
+  import OverworldSprite from "./OverworldSprite.svelte";
 </script>
 
 {#if $currentMap === "bug_forest"}
@@ -12,7 +14,11 @@
       style="left: {seat.x * TILE_SIZE}px; top: {seat.y * TILE_SIZE}px; width: {TILE_SIZE}px; height: {TILE_SIZE}px; z-index: 22;"
       title={`${competitor.name} - ${competitor.persona}`}
     >
-      <span class="flex h-8 w-8 items-center justify-center border border-[#624329] bg-[#f2e5cb] text-xl shadow">{competitor.avatar}</span>
+      {#if $gameMode === "pokemon"}
+        <OverworldSprite sprite={CHARACTER_SPRITES[competitor.id] || CHARACTER_SPRITES.veteran} label={competitor.name} />
+      {:else}
+        <span class="text-2xl drop-shadow">{competitor.avatar}</span>
+      {/if}
     </div>
   {/each}
 {/if}

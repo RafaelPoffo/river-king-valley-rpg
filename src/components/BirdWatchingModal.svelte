@@ -4,6 +4,7 @@
   import { PHASES } from "../game/phases.js";
   import { birdSpecies, observeBird } from "../game/birdWatching.js";
   import { saveGame } from "../game/saveSystem.js";
+  import CreatureSprite from "./CreatureSprite.svelte";
 
   const PANORAMA_WIDTH = 4000;
   const PANORAMA_HEIGHT = 800;
@@ -78,13 +79,17 @@
           <div class="panorama" style={`width:${PANORAMA_WIDTH}px;height:${PANORAMA_HEIGHT}px;transform:translate(${-cameraX}px,${-cameraY}px)`}>
             {#each $dailyBirds as sighting (sighting.id)}
               {@const species = birdSpecies(sighting, $gameMode)}
-              <img
+              <div
                 class:observed={sighting.observed}
                 class="bird-sprite"
-                src={species?.sprite}
-                alt={species?.name || "Ave distante"}
                 style={`left:${sighting.x}px;top:${sighting.y}px;width:${Math.max(26, Math.round(sighting.size * 0.8))}px;height:${Math.max(26, Math.round(sighting.size * 0.8))}px;`}
-              />
+              >
+                {#if $gameMode === "pokemon"}
+                  <CreatureSprite {species} moving />
+                {:else}
+                  <span class="bird-emoji" role="img" aria-label={species?.name || "Ave distante"}>{species?.emoji}</span>
+                {/if}
+              </div>
             {/each}
           </div>
         </div>
@@ -108,7 +113,7 @@
               {#if observation.species.portrait}
                 <img class="max-h-full max-w-full object-contain" src={observation.species.portrait} alt={observation.species.name} />
               {:else}
-                <img class="h-16 w-16 [image-rendering:pixelated]" src={observation.species.sprite} alt={observation.species.name} />
+                <span class="text-6xl" role="img" aria-label={observation.species.name}>{observation.species.emoji}</span>
               {/if}
             </div>
             <div class="min-w-0 flex-1">
@@ -172,6 +177,16 @@
 
   .bird-sprite.observed {
     opacity: 0.45;
+  }
+
+  .bird-emoji {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 26px;
+    line-height: 1;
   }
 
   .bridge {

@@ -1,7 +1,8 @@
 <script>
   import { TILE_SIZE } from "../game/constants.js";
-  import { currentMap, wildInsects } from "../game/stores.js";
+  import { currentMap, gameMode, wildInsects } from "../game/stores.js";
   import { insectSpecies } from "../game/insectHunt.js";
+  import CreatureSprite from "./CreatureSprite.svelte";
 </script>
 
 {#if $currentMap === "bug_forest"}
@@ -12,8 +13,8 @@
       style="left: {insect.x * TILE_SIZE}px; top: {insect.y * TILE_SIZE}px; width: {TILE_SIZE}px; height: {TILE_SIZE}px; z-index: 18;"
       title={species?.name || "Inseto"}
     >
-      {#if species?.pixelSprite}
-        <img class="h-9 w-9 object-contain [image-rendering:pixelated]" src={species.pixelSprite} alt={species.name} />
+      {#if $gameMode === "pokemon" && species?.dexId}
+        <CreatureSprite {species} moving />
       {:else}
         <span class="text-2xl drop-shadow">{species?.emoji || "🐛"}</span>
       {/if}

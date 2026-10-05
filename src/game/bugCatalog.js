@@ -85,7 +85,6 @@ const pokemonRows = [
 ];
 
 const pmdPortrait = (dexId) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${dexId}/Normal.png`;
-const pixelSprite = (dexId) => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${Number(dexId)}.gif`;
 const commonProfileIndexes = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
   55, 41, 42, 43,
@@ -102,7 +101,6 @@ export const POKEMON_BUGS = pokemonRows.map(([dexId, name], index) => {
     points: commonProfile.points,
     archetypeId: commonProfile.archetypeId,
     portrait: pmdPortrait(dexId),
-    pixelSprite: pixelSprite(dexId),
   };
 });
 
