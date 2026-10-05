@@ -80,12 +80,16 @@ export function getTileSvg(char, x, y, constructions, mapName = "village") {
       return imgTile("/assets/crystal_wall_int.png", "Parede Interna");
     case "=":
       return imgTile("/assets/crystal_floor_wood.png", "Piso Madeira");
+    case "J":
+      return imgTile("/assets/crystal_floor_wood.png", "Ponte de madeira");
     case "_":
       return imgTile("/assets/crystal_bed.png", "Cama do Jogador");
     case "+":
       return imgTile("/assets/crystal_table.png", "Mesa");
     case "h":
       return imgTile("/assets/crystal_chair.png", "Cadeira");
+    case "N":
+      return imgTile("/assets/crystal_chair.png", "Banco de observação de pássaros");
     case "Q":
     case "A":
       return imgTile("/assets/crystal_sign.png", "Placa de Avisos");

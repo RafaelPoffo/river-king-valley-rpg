@@ -40,13 +40,55 @@ export function inBounds(x, y, box) {
   return x >= box.x1 && x <= box.x2 && y >= box.y1 && y <= box.y2;
 }
 
+function createBugForest() {
+  const width = 40;
+  const height = 25;
+  const rows = Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) =>
+      x === 0 || x === width - 1 || y === 0 || y === height - 1 ? "T" : "G"
+    )
+  );
+
+  for (const [x, y] of [
+    [6, 24], [6, 23], [6, 22], [6, 21], [6, 20], [6, 19],
+    [17, 12], [18, 12], [20, 12], [21, 12], [22, 12], [23, 12], [24, 12], [25, 12], [26, 12],
+    [27, 12], [28, 12], [29, 12], [30, 12], [31, 12], [32, 12],
+    [33, 12], [34, 12], [35, 12], [36, 12], [37, 12], [38, 12],
+  ]) rows[y][x] = ".";
+
+  rows[24][6] = "J";
+  rows[2][9] = "N";
+  rows[12][29] = "+";
+  rows[10][29] = "G";
+  rows[11][28] = "h";
+  rows[11][30] = "h";
+
+  for (const [x, y] of [
+    [3, 4], [9, 3], [14, 6], [4, 9], [11, 11], [17, 15], [3, 18],
+    [9, 20], [15, 22], [23, 7], [25, 5], [35, 5], [37, 8], [22, 17],
+    [36, 18], [33, 21], [25, 21], [19, 4], [19, 5], [19, 6], [19, 7],
+    [19, 8], [19, 9], [19, 10], [19, 11], [19, 13], [19, 14], [19, 15],
+    [19, 16], [19, 17], [19, 18], [19, 19], [19, 20], [19, 21],
+  ]) rows[y][x] = "T";
+
+  for (let y = 1; y < height - 1; y++) {
+    if (y !== 12) rows[y][19] = "T";
+  }
+
+  for (const [x, y] of [[2, 5], [12, 4], [7, 13], [15, 18], [32, 8], [34, 16]]) {
+    rows[y][x] = "F";
+  }
+
+  return rows.map((row) => row.join(""));
+}
+
 export const MAPS_DATA = {
   village: [
-    "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
-    "T~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
-    "T~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
-    "T~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
-    "T~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
+    "TTTTTTJTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    "T~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
+    "T~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
+    "T~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
+    "T~~~~~J~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
     "TGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGT",
     "TGGGHHHHHGGGHHHHHGGGHHHHHGGGGGHHHHHGGGGT",
     "TGGGWWPWWGGGWWEWWGGGWWBWWGGGGGWWKWWGGGGT",
@@ -68,6 +110,7 @@ export const MAPS_DATA = {
     "T~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~T",
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
   ],
+  bug_forest: createBugForest(),
   deep_sea: [
     "XXXXXXXXXXXXXXXXXXXXXXXX",
     "XXXXXXXXXXXXXXXXXXXXXXXX",

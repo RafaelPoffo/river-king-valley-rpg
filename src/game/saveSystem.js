@@ -40,11 +40,20 @@ import {
   eveningWarned,
   worldCreatures,
   worldPopulationDay,
+  insectInventory,
+  wildInsects,
+  insectPopulationDay,
+  dailyBirds,
+  birdPopulationDay,
+  birdLog,
+  birdwatchingLuck,
 } from "./stores.js";
 import { updateCamera } from "./movement.js";
 import { generateDailyQuest } from "./quests.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constants.js";
 import { ensureWorldPopulation } from "./worldCreatures.js";
+import { ensureDailyInsects } from "./insectHunt.js";
+import { ensureDailyBirds } from "./birdWatching.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
 export const SAVE_VERSION = 3;
@@ -84,6 +93,13 @@ export const PERSISTED_FIELDS = [
   { key: "upgrades", store: upgrades, initial: () => clone(INITIAL_UPGRADES) },
   { key: "worldCreatures", store: worldCreatures, initial: () => [] },
   { key: "worldPopulationDay", store: worldPopulationDay, initial: () => null },
+  { key: "insectInventory", store: insectInventory, initial: () => [] },
+  { key: "wildInsects", store: wildInsects, initial: () => [] },
+  { key: "insectPopulationDay", store: insectPopulationDay, initial: () => null },
+  { key: "dailyBirds", store: dailyBirds, initial: () => [] },
+  { key: "birdPopulationDay", store: birdPopulationDay, initial: () => null },
+  { key: "birdLog", store: birdLog, initial: () => ({}) },
+  { key: "birdwatchingLuck", store: birdwatchingLuck, initial: () => 0 },
 ];
 
 // Each entry upgrades a save from version N to N + 1.
@@ -211,6 +227,8 @@ export function startGameSession() {
     player.set({ ...PLAYER_START });
     eveningWarned.set(false);
     ensureWorldPopulation();
+    ensureDailyInsects();
+    ensureDailyBirds();
     updateCamera();
     saveGame();
   }, 1000);

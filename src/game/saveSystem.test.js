@@ -8,7 +8,7 @@ import {
   resetState,
   migrateSave,
 } from "./saveSystem.js";
-import { money, playerName, lastWormHarvestDay, gameMode, constructions, upgrades, worldCreatures, worldPopulationDay } from "./stores.js";
+import { money, playerName, lastWormHarvestDay, gameMode, constructions, upgrades, worldCreatures, worldPopulationDay, insectInventory, wildInsects, insectPopulationDay, birdLog, dailyBirds, birdPopulationDay, birdwatchingLuck } from "./stores.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES } from "./constants.js";
 import { ensureWorldPopulation, removeWorldCreature } from "./worldCreatures.js";
 
@@ -61,6 +61,38 @@ describe("registro do save", () => {
     expect(get(worldPopulationDay)).toBe(populationDay);
     expect(ensureWorldPopulation()).toBe(false);
     expect(get(worldCreatures).some((creature) => creature.id === removedId)).toBe(false);
+  });
+
+  it("preserva insetos capturados e a população selvagem diária", () => {
+    resetState("pokemon");
+    insectInventory.set([{ id: "pokemon_bug_0010", caughtId: "day:1", type: "insect" }]);
+    wildInsects.set([{ id: "day:2", speciesId: "pokemon_bug_0011", points: 4, x: 4, y: 5 }]);
+    insectPopulationDay.set("pokemon:0:1");
+    const saved = JSON.parse(JSON.stringify(serializeState()));
+
+    resetState("normal");
+    applyState(migrateSave(saved));
+
+    expect(get(insectInventory)).toEqual(saved.insectInventory);
+    expect(get(wildInsects)).toEqual(saved.wildInsects);
+    expect(get(insectPopulationDay)).toBe("pokemon:0:1");
+  });
+
+  it("preserva o catálogo de aves, a revoada diária e a sorte no save", () => {
+    resetState("pokemon");
+    birdLog.set({ bird_0016: { count: 2, recordSize: 33, smallestSize: 20, maxStars: 1 } });
+    dailyBirds.set([{ id: "pokemon:0:1", speciesId: "bird_0016", x: 250, y: 170, size: 33, observed: true }]);
+    birdPopulationDay.set("pokemon:0:1");
+    birdwatchingLuck.set(3);
+    const saved = JSON.parse(JSON.stringify(serializeState()));
+
+    resetState("normal");
+    applyState(migrateSave(saved));
+
+    expect(get(birdLog)).toEqual(saved.birdLog);
+    expect(get(dailyBirds)).toEqual(saved.dailyBirds);
+    expect(get(birdPopulationDay)).toBe("pokemon:0:1");
+    expect(get(birdwatchingLuck)).toBe(3);
   });
 
   it("campo ausente no save volta ao valor inicial", () => {

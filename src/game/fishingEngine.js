@@ -4,6 +4,7 @@ import { SPRITES } from "./sprites.js";
 import { BAITS, MAPS_DATA, CAST_TILES, DEEP_SEA_DECK } from "./constants.js";
 import {
   gameMode,
+  birdwatchingLuck,
   getActiveDatabase,
   phase,
   player,
@@ -44,6 +45,7 @@ import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import { dishEffect } from "./dishes.js";
 import { canBreakLine, lineBreakChance } from "./fight.js";
 import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
+import { birdRarityMultiplier } from "./birdWatching.js";
 
 const STORM_PRIORITY = 0.02;
 const BAIT_BITE_BONUS = 0.1;
@@ -389,6 +391,7 @@ export function rollFishByZone(zone) {
   const bait = get(eqBaitId);
   const baitTier = BAITS.find((item) => item.id === bait)?.tier || 0;
   const curSeason = get(seasonIndex);
+  const birdLuck = get(birdwatchingLuck);
 
   const trashChance = bait === "sem_isca" ? 0.35 : 0.05;
   if (Math.random() < trashChance) {
@@ -462,13 +465,16 @@ export function rollFishByZone(zone) {
     const rareBonus = rarity >= 3
       ? 1 + baitTier * 0.1 + Math.min(0.5, dishEffect("rarityBonus", 0) / 100)
       : 1;
+    let weight;
     if (isPokeMode) {
       const stageWeight = [0, 100, 8, 0.6][fish.stage || 1];
       const rarityWeight = [0, 1, 0.75, 0.45, 0.2, 0.07, 0.003][rarity];
-      return stageWeight * rarityWeight * rareBonus;
+      weight = stageWeight * rarityWeight * rareBonus;
+    } else {
+      weight = [0, 100, 20, 6, 1.2, 0.15, 0.015][rarity] *
+        Math.pow(1 + (zone - 1) * 0.3, rarity - 1) * rareBonus;
     }
-    return [0, 100, 20, 6, 1.2, 0.15, 0.015][rarity] *
-      Math.pow(1 + (zone - 1) * 0.3, rarity - 1) * rareBonus;
+    return weight * birdRarityMultiplier(birdLuck, rarity);
   });
   let roll = Math.random() * weights.reduce((total, weight) => total + weight, 0);
   let fishBase = pool[pool.length - 1];

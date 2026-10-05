@@ -10,16 +10,18 @@ import {
   DOCK_BOUNDS,
   getNpcLocation,
 } from "./constants.js";
-import { canWalkOn, houseForDoor, interiorSpawn, isInterior, setDirectionHeld, releaseMovement } from "./movement.js";
+import { canWalkOn, houseForDoor, interiorSpawn, isInterior, mapTransition, setDirectionHeld, releaseMovement } from "./movement.js";
 import { creatureOccupies, canPlaceCreature, createDailyPopulation, ensureWorldPopulation, tickWorldCreatures, worldCreatureBlocks, creaturePosition, worldSpecies, removeWorldCreature, nearbyAquaticCreature, engageWorldCreature } from "./worldCreatures.js";
-import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, worldPopulationDay } from "./stores.js";
+import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, worldPopulationDay, insectInventory, wildInsects, dialogActions, currentMessage, showBirdWatching } from "./stores.js";
 import { resetState } from "./saveSystem.js";
-import { sleep } from "./gameActions.js";
+import { interact, sleep } from "./gameActions.js";
 import { PHASES } from "./phases.js";
 import { CHARACTER_SPRITES, POKEMON_SPRITES, atlasFrame, clearFrameBackground, worldSizeFor } from "./overworldAtlas.js";
 import { LAND_VISITORS } from "./data/worldCreatures.js";
 import { ambientShadows } from "./ambientShadows.js";
 import { castTarget } from "./fishingEngine.js";
+import { catchInsect, generateDailyInsects } from "./insectHunt.js";
+import { COMMON_BUGS, POKEMON_BUGS } from "./bugCatalog.js";
 
 describe("folha de sprites do overworld", () => {
   it("recorta quadros de 16 pixels sem incluir as faixas e usa o centro em repouso", () => {
@@ -305,6 +307,76 @@ describe("formato dos mapas", () => {
       const house = houseForDoor(tile);
       if (house) expect(MAPS_DATA[house], `porta ${tile}`).toBeDefined();
     });
+  });
+
+  it("a ponte conecta a vila à clareira no mapa contínuo da floresta", () => {
+    const constr = constructionsWith("none");
+    const village = reachable("village", { x: 6, y: 5 }, new Set(), constr);
+    const forest = reachable("bug_forest", { x: 6, y: 23 }, new Set(), constr);
+    expect(MAPS_DATA.village[0][6]).toBe("J");
+    expect(MAPS_DATA.bug_forest[24][6]).toBe("J");
+    expect(mapTransition("village", "J", 6, 4)).toBeNull();
+    expect(mapTransition("village", "J", 6, 0).map).toBe("bug_forest");
+    expect(mapTransition("bug_forest", "J", 6, 24).map).toBe("village");
+    expect(village.has(key(6, 0))).toBe(true);
+    expect(forest.has(key(29, 11))).toBe(true);
+    expect(MAPS_DATA.bug_forest.slice(1, 24).every((row, index) => row[19] === (index + 1 === 12 ? "." : "T"))).toBe(true);
+  });
+
+  it("o banco de observação fica acessível na parte norte da floresta", () => {
+    const seen = reachable("bug_forest", { x: 6, y: 23 }, new Set(), constructionsWith("none"));
+    expect(MAPS_DATA.bug_forest[2][9]).toBe("N");
+    expect(hasReachableNeighbor(seen, 9, 2)).toBe(true);
+  });
+
+  it("o banco confirma a observação e inicia a fase binocular", () => {
+    gameMode.set("normal");
+    currentMap.set("bug_forest");
+    phase.set(PHASES.PLAYING);
+    player.set({ x: 9, y: 3, dir: "up" });
+    interact();
+    expect(get(phase)).toBe(PHASES.DIALOG);
+    expect(get(currentMessage)).toContain("Deseja observar os pássaros?");
+    get(dialogActions)[" "]();
+    expect(get(phase)).toBe(PHASES.BIRD_WATCHING);
+    expect(get(showBirdWatching)).toBe(true);
+    phase.set(PHASES.PLAYING);
+    showBirdWatching.set(false);
+  });
+});
+
+describe("caça diária de insetos", () => {
+  it("gera população determinística que soma exatamente 18 pontos nos dois modos", () => {
+    for (const mode of ["normal", "pokemon"]) {
+      for (let today = 1; today <= 15; today++) {
+        const population = generateDailyInsects(`0:${today}`, mode);
+        expect(population.length).toBeGreaterThanOrEqual(3);
+        expect(population.length).toBeLessThanOrEqual(9);
+        expect(population.reduce((total, insect) => total + insect.points, 0)).toBe(18);
+        expect(population).toEqual(generateDailyInsects(`0:${today}`, mode));
+      }
+    }
+  });
+
+  it("mantém força, orçamento e arquétipo iguais entre as skins Pokémon e comuns", () => {
+    expect(POKEMON_BUGS).toHaveLength(22);
+    for (let index = 0; index < POKEMON_BUGS.length; index++) {
+      const pokemonBug = POKEMON_BUGS[index];
+      const commonBug = COMMON_BUGS[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 55, 41, 42, 43][index]];
+      expect(pokemonBug.strength).toBe(commonBug.strength);
+      expect(pokemonBug.points).toBe(commonBug.points);
+      expect(pokemonBug.archetypeId).toBe(commonBug.archetypeId);
+    }
+  });
+
+  it("não permite que a mochila acumule mais que o orçamento secreto de um dia", () => {
+    gameMode.set("normal");
+    const bug = generateDailyInsects("0:1", "normal")[0];
+    wildInsects.set([bug]);
+    insectInventory.set([{ id: "already-carried", points: 18 }]);
+    expect(catchInsect(bug.id)).toBeNull();
+    expect(get(wildInsects)).toHaveLength(1);
+    expect(get(insectInventory)).toHaveLength(1);
   });
 });
 

@@ -39,6 +39,11 @@ import {
   eqRodId,
   eqNetId,
   eqBaitId,
+  gameMode,
+  wildInsects,
+  insectInventory,
+  showBugTournament,
+  showBirdWatching,
 } from "./stores.js";
 import {
   SEASONS,
@@ -80,6 +85,10 @@ import {
 import { saveGame } from "./saveSystem.js";
 import { ensureWorldPopulation } from "./worldCreatures.js";
 import { generateDailyQuest, checkDailyQuestProgress } from "./quests.js";
+import { catchInsect, ensureDailyInsects, insectSpecies } from "./insectHunt.js";
+import { BUG_ARCHETYPE_LINES, BUG_ARCHETYPES } from "./bugCatalog.js";
+import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
+import { ensureDailyBirds } from "./birdWatching.js";
 import {
   startAim,
   useNetAtShore,
@@ -123,6 +132,8 @@ export function sleep() {
     currentMap.set("player_house");
     player.set(interiorSpawn("player_house", "up"));
     ensureWorldPopulation();
+    ensureDailyInsects();
+    ensureDailyBirds();
     phase.set(PHASES.PLAYING);
     isFading.set(false);
 
@@ -301,6 +312,11 @@ export function removeFishFromInventory(index) {
   saveGame();
 }
 
+export function releaseInsect(index) {
+  insectInventory.update((insects) => insects.filter((_, itemIndex) => itemIndex !== index));
+  saveGame();
+}
+
 export function selectBackpackItem(index) {
   const selected = get(selectedBackpackIndex);
   if (selected === null) {
@@ -435,6 +451,35 @@ const PERK_MESSAGES = {
   old_joe: "🎉 Joe quer te contar a lenda do Rei do Rio! Fale com ele de novo.",
 };
 
+function openBugTournamentDialog() {
+  const captured = get(insectInventory);
+  phase.set(PHASES.DIALOG);
+  if (captured.length < 3) {
+    currentMessage.set('Joe Bug: "Procure pelo menos 3 insetos para o campeonato."');
+    dialogActions.set({ " ": closeDialog });
+    return;
+  }
+
+  const names = captured.map((bug) => bug.name).join(", ");
+  currentMessage.set(`Joe Bug: "Deseja participar do campeonato com os insetos: ${names}?" [SPACE] Sim / [X] Não`);
+  dialogActions.set({
+    " ": () => {
+      showBugTournament.set(true);
+      phase.set(PHASES.BUG_TOURNAMENT);
+      showRPGMessage("");
+    },
+    X: closeDialog,
+  });
+}
+
+export function bugCompetitorAt(x, y) {
+  if (get(currentMap) !== "bug_forest") return null;
+  return competitorsForDay(get(seasonIndex), get(day), get(gameMode)).find((competitor, index) => {
+    const seat = BUG_COMPETITOR_SEATS[index];
+    return seat.x === x && seat.y === y;
+  }) || null;
+}
+
 function openTournamentStall() {
   const { name, rule, entry, rivals } = todaysTournament();
   phase.set(PHASES.DIALOG);
@@ -495,6 +540,42 @@ export function interact() {
     const loc = getNpcLocation(n, mins, curDay);
     return loc.map === cMap && loc.x === target.x && loc.y === target.y;
   });
+
+  const bugCompetitor = bugCompetitorAt(target.x, target.y);
+  if (bugCompetitor) {
+    if (bugCompetitor.id === "joe_bug") openBugTournamentDialog();
+    else {
+      phase.set(PHASES.DIALOG);
+      currentMessage.set(`${bugCompetitor.name} (${bugCompetitor.persona}): "${bugCompetitor.dialogue}" [SPACE] Tchau`);
+      dialogActions.set({ " ": closeDialog });
+    }
+    return;
+  }
+
+  if (cMap === "bug_forest") {
+    const wildBug = get(wildInsects).find((insect) => insect.x === target.x && insect.y === target.y);
+    if (wildBug) {
+      const species = insectSpecies(wildBug);
+      const profile = BUG_ARCHETYPES[species.archetypeId];
+      phase.set(PHASES.DIALOG);
+      currentMessage.set(`${species.emoji} ${species.name}. ${profile.name}: ${BUG_ARCHETYPE_LINES[species.archetypeId]} [SPACE] Adicionar à mochila / [X] Deixar na floresta`);
+      dialogActions.set({
+        " ": () => {
+          const captured = catchInsect(wildBug.id);
+          if (!captured) {
+            currentMessage.set("Sua mochila está cheia de insetos. Solte um para capturar outro. [SPACE] Voltar");
+            dialogActions.set({ " ": closeDialog });
+            return;
+          }
+          if (captured) saveGame();
+          closeDialog();
+          showRPGMessage(`${captured.name} agora está na sua mochila.`);
+        },
+        X: closeDialog,
+      });
+      return;
+    }
+  }
 
   if (clickedNpc) {
     const loc = getNpcLocation(clickedNpc, mins, curDay);
@@ -605,6 +686,17 @@ export function interact() {
     harvestWorms();
   } else if (target.tile === "U") {
     showRPGMessage("Tábuas e madeira de lei.");
+  } else if (target.tile === "N" && cMap === "bug_forest") {
+    ensureDailyBirds();
+    phase.set(PHASES.DIALOG);
+    currentMessage.set('Deseja observar os pássaros? [SPACE] Sim / [X] Não');
+    dialogActions.set({
+      " ": () => {
+        showBirdWatching.set(true);
+        phase.set(PHASES.BIRD_WATCHING);
+      },
+      X: closeDialog,
+    });
   } else if (target.tile === "_") {
     if (cMap === "player_house") {
       phase.set(PHASES.DIALOG);

@@ -105,6 +105,14 @@ export const villagers = writable([...INITIAL_VILLAGERS]);
 export const worldCreatures = writable([]);
 export const worldPopulationDay = writable(null);
 export const worldCreatureEncounter = writable(null);
+export const insectInventory = writable([]);
+export const wildInsects = writable([]);
+export const insectPopulationDay = writable(null);
+export const showBugTournament = writable(false);
+export const dailyBirds = writable([]);
+export const birdPopulationDay = writable(null);
+export const birdLog = writable({});
+export const birdwatchingLuck = writable(0);
 
 // Collections & Quests
 export const inventory = writable([]);
@@ -147,3 +155,4 @@ export const showAquariumModal = writable(false);
 export const showTavernQuestModal = writable(false);
 export const showCalendarModal = writable(false);
 export const showKitchenModal = writable(false);
+export const showBirdWatching = writable(false);

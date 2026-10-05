@@ -15,6 +15,8 @@
   import WorldCreatureLayer from "./WorldCreatureLayer.svelte";
   import NpcLayer from "./NpcLayer.svelte";
   import PlayerLayer from "./PlayerLayer.svelte";
+  import BugLayer from "./BugLayer.svelte";
+  import BugCompetitorLayer from "./BugCompetitorLayer.svelte";
 
   $: map = MAPS_DATA[$currentMap];
   $: mapWidth = (map?.[0]?.length || 1) * TILE_SIZE;
@@ -30,6 +32,8 @@
     <AmbientShadows />
     <BoatLayer />
     <WorldCreatureLayer />
+    <BugLayer />
+    <BugCompetitorLayer />
     <NpcLayer />
     <PlayerLayer />
   </div>

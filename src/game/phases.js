@@ -3,6 +3,9 @@ export const PHASES = Object.freeze({
   FADE: "fade",
   PLAYING: "playing",
   DIALOG: "dialog",
+  BUG_TOURNAMENT: "bug_tournament",
+  BIRD_WATCHING: "bird_watching",
+  BIRD_LOG: "bird_log",
   SAILING: "sailing",
   PAUSE_MENU: "pause_menu",
   SHOP: "shop",
@@ -25,6 +28,7 @@ export const CLOSABLE_SCREENS = new Set([
   PHASES.CARPENTER,
   PHASES.PAUSE_MENU,
   PHASES.MUSEUM,
+  PHASES.BIRD_LOG,
 ]);
 
 export const LINE_IN_WATER = new Set([

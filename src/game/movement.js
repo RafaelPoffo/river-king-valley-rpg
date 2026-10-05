@@ -21,11 +21,14 @@ import {
   cameraY,
   lastEnteringHouse,
   villagers,
+  gameMode,
+  seasonIndex,
   inGameMinutes,
   day,
   constructions,
   currentFestival,
 } from "./stores.js";
+import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
 
 const STEP_MS = 165;
 const VECTORS = {
@@ -101,7 +104,17 @@ export function houseForDoor(tile) {
   return HOUSE_DOORS[tile] || null;
 }
 
-const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S", "b"]);
+export function mapTransition(mapName, tile, x, y) {
+  if (mapName === "village" && tile === "J" && x === 6 && y === 0) {
+    return { map: "bug_forest", spawn: { x: 6, y: 23, dir: "down" } };
+  }
+  if (mapName === "bug_forest" && tile === "J") {
+    return { map: "village", spawn: { x: 6, y: 0, dir: "down" } };
+  }
+  return null;
+}
+
+const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S", "b", "J"]);
 
 export function canWalkOn(tile, x, y, constr) {
   if (WALKABLE_TILES.has(tile)) return true;
@@ -188,13 +201,17 @@ function beginStep(dx, dy, dirStr) {
   const mins = get(inGameMinutes);
   const curDay = get(day);
   const constr = get(constructions);
+  const transition = mapTransition(cMap, tile, nx, ny);
 
   const npcOccupying = get(villagers).find((n) => {
     const loc = getNpcLocation(n, mins, curDay);
     return loc.map === cMap && loc.x === nx && loc.y === ny;
   });
+  const bugCompetitorOccupying = cMap === "bug_forest" && competitorsForDay(
+    get(seasonIndex), curDay, get(gameMode)
+  ).some((competitor, index) => BUG_COMPETITOR_SEATS[index].x === nx && BUG_COMPETITOR_SEATS[index].y === ny);
 
-  if (npcOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny)) {
+  if (npcOccupying || bugCompetitorOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny)) {
     player.set({ x: originX, y: originY, dir: dirStr });
     return;
   }
@@ -202,6 +219,12 @@ function beginStep(dx, dy, dirStr) {
   let afterMove = null;
   if (HOUSE_DOORS[tile]) {
     afterMove = () => enterHouse(HOUSE_DOORS[tile], originX, originY);
+  } else if (transition) {
+    afterMove = () => {
+      currentMap.set(transition.map);
+      player.set({ ...transition.spawn });
+      updateCamera();
+    };
   } else if (tile === "-") {
     afterMove = () => exitHouse();
   } else if (!canWalkOn(tile, nx, ny, constr)) {

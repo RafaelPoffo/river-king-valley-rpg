@@ -34,6 +34,9 @@
   import MuseumModal from "./MuseumModal.svelte";
   import KitchenModal from "./KitchenModal.svelte";
   import TouchControls from "./TouchControls.svelte";
+  import BugTournamentModal from "./BugTournamentModal.svelte";
+  import BirdWatchingModal from "./BirdWatchingModal.svelte";
+  import BirdCatalogModal from "./BirdCatalogModal.svelte";
 
   export let open = true;
 
@@ -110,6 +113,8 @@
         <ShopModal />
       {:else if $phase === PHASES.MUSEUM}
         <MuseumModal />
+      {:else if $phase === PHASES.BIRD_LOG}
+        <BirdCatalogModal />
       {:else}
         <!-- Active Playing Canvas -->
         <GameCanvas />
@@ -141,6 +146,9 @@
         {#if $showKitchenModal}
           <KitchenModal />
         {/if}
+
+        <BugTournamentModal />
+        <BirdWatchingModal />
 
         <InventoryFullModal />
 

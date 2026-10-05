@@ -29,6 +29,12 @@
       {$gameMode === "pokemon" ? "🔴 POKÉDEX" : "📖 CATÁLOGO DE PEIXES"}
     </button>
     <button
+      class="text-left retro-font text-[9px] hover:bg-[#d6e2bd] p-2 border-2 border-transparent focus:border-black"
+      on:click={() => phase.set(PHASES.BIRD_LOG)}
+    >
+      🪶 {$gameMode === "pokemon" ? "POKÉDEX DE AVES" : "CATÁLOGO DE PÁSSAROS"}
+    </button>
+    <button
       class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black"
       on:click={() => phase.set(PHASES.MUSEUM)}
     >

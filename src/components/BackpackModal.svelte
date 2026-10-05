@@ -12,11 +12,13 @@
     ownedBaits,
     baitStock,
     eqBaitId,
+    insectInventory,
   } from "../game/stores.js";
   import {
     removeFishFromInventory,
     selectBackpackItem,
     equipItem,
+    releaseInsect,
   } from "../game/gameActions.js";
 </script>
 
@@ -42,6 +44,29 @@
 
   <!-- min-h-0 permite que a área interna encolha e ative o scroll do overflow-y-auto -->
   <div class="flex-1 p-6 overflow-y-auto min-h-0 space-y-6">
+    <div>
+      <div class="mb-2 flex items-center justify-between">
+        <h3 class="retro-font text-[10px] text-emerald-700">INSETOS DA FLORESTA ({$insectInventory.length})</h3>
+      </div>
+      {#if $insectInventory.length}
+        <div class="grid grid-cols-4 gap-2 sm:grid-cols-6">
+          {#each $insectInventory as insect, index (insect.caughtId)}
+            <div class="relative flex min-h-[82px] flex-col items-center justify-center border-2 border-[#50724d] bg-emerald-50 p-2">
+              <button class="absolute right-1 top-1 h-5 w-5 border border-red-800 bg-red-700 text-xs text-white" title="Soltar inseto" aria-label={`Soltar ${insect.name}`} on:click={() => releaseInsect(index)}>×</button>
+              {#if insect.portrait}
+                <img class="h-8 w-8 object-contain [image-rendering:pixelated]" src={insect.portrait} alt={insect.name} />
+              {:else}
+                <span class="text-2xl">{insect.emoji}</span>
+              {/if}
+              <span class="mt-1 w-full truncate text-center text-[8px]">{insect.name}</span>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <p class="border border-dashed border-emerald-700/50 p-3 text-center text-xs text-gray-500">Nenhum inseto capturado.</p>
+      {/if}
+    </div>
+
     <!-- Backpack Section -->
     <div>
       <h3 class="retro-font text-[10px] text-red-600 mb-2">
