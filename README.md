@@ -4,6 +4,25 @@ Jogo de RPG e pesca em estilo retrô (Game Boy), feito com **Svelte 5**, **Vite 
 
 Jogue em [river-king-valley-rpg.vercel.app](https://river-king-valley-rpg.vercel.app).
 
+## Desenvolvimento local
+
+Use Node.js 22 LTS atualizado (22.12.0 ou superior).
+
+```sh
+npm install --include=optional
+npm run dev
+```
+
+No PowerShell, se `npm.ps1` for bloqueado pela politica de execucao, use `npm.cmd` no lugar de `npm`; nao e necessario mudar a politica de seguranca.
+
+Se aparecer `Cannot find native binding`, confirme a versao com `node --version` e execute a instalacao novamente com um Node compativel. O modulo nativo do Rolldown tambem exige essa versao minima e pode ser omitido quando o Node esta desatualizado.
+
+Para iniciar sem atualizar o Node global no Windows:
+
+```powershell
+npm.cmd exec --yes --package=node@22 -- node node_modules/vite/bin/vite.js
+```
+
 ## ✨ Recursos
 
 - **Dois modos de jogo**: Normal (peixes de rio, mar e alto-mar) e Pokémon (Pokémon de água das gerações 1 e 2).
