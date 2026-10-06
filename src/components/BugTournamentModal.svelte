@@ -4,7 +4,8 @@
   import { PHASES } from "../game/phases.js";
   import { saveGame } from "../game/saveSystem.js";
   import { competitorsForDay, prizeForCompetition, resolveBugDuel } from "../game/bugTournament.js";
-  import CreatureSprite from "./CreatureSprite.svelte";
+  import { CHARACTER_SPRITES, insectSpriteFor } from "../game/overworldAtlas.js";
+  import OverworldSprite from "./OverworldSprite.svelte";
 
   let step = "rank";
   let order = [];
@@ -16,6 +17,7 @@
   let playerWins = 0;
   let opponentWins = 0;
   let duel = null;
+  let duelResult = null;
   let frameIndex = 0;
   let champion = false;
   let prize = 0;
@@ -58,6 +60,7 @@
   function startDuel() {
     const key = `${$seasonIndex}:${$day}:${opponentIndex}:${duelIndex}`;
     duel = resolveBugDuel(playerTeam[duelIndex], opponent.team[duelIndex], key, $birdwatchingLuck);
+    duelResult = null;
     frameIndex = 0;
     animateFrame();
   }
@@ -68,16 +71,16 @@
       timeoutId = window.setTimeout(() => {
         frameIndex += 1;
         animateFrame();
-      }, 420);
+      }, 620);
       return;
     }
-    timeoutId = window.setTimeout(resolveDuel, 700);
+    duelResult = duel.winner === playerTeam[duelIndex] ? "player" : "opponent";
+    timeoutId = window.setTimeout(resolveDuel, 1300);
   }
 
   function resolveDuel() {
     if (duel.winner === playerTeam[duelIndex]) playerWins += 1;
     else opponentWins += 1;
-    duel = null;
     if (playerWins === 2) {
       opponentIndex += 1;
       if (opponentIndex >= opponents.length) finishTournament(true);
@@ -112,6 +115,12 @@
     playerTeam = [];
     opponents = [];
     duel = null;
+    duelResult = null;
+  }
+
+  function fighterStyle(position, flipped) {
+    const fade = Math.max(0, 1 - Math.max(0, (position - 100) / 14, -position / 14));
+    return `left:${position}%;opacity:${fade};transform:translate(-50%,-50%) rotate(${flipped ? 180 : 0}deg);transition:left 650ms ease-in-out,transform 500ms ease,opacity 650ms ease`;
   }
 
   onDestroy(() => {
@@ -138,11 +147,7 @@
             {@const insect = bag.find((item) => item.caughtId === caughtId)}
             <div class="mb-2 flex items-center gap-3 border border-[#b99d79] bg-white px-3 py-2">
               <span class="w-10 shrink-0 font-black">{index < 3 ? `${index + 1}º` : "Fora"}</span>
-              {#if insect?.portrait}
-                <img class="h-9 w-9 object-contain [image-rendering:pixelated]" src={insect.portrait} alt="" />
-              {:else}
-                <span class="flex h-9 w-9 items-center justify-center text-2xl">{insect?.emoji}</span>
-              {/if}
+              <span class="h-9 w-9"><OverworldSprite sprite={insectSpriteFor(insect?.caughtId || insect?.id, insect?.dexId)} label={insect?.name || "Inseto"} /></span>
               <span class="min-w-0 flex-1 truncate font-bold">{insect?.name}</span>
               <button class="h-8 w-8 border border-[#8b6845] bg-[#f6ebd9] text-lg disabled:opacity-30" aria-label={`Mover ${insect?.name} para cima`} disabled={index === 0} on:click={() => moveInsect(index, -1)}>↑</button>
               <button class="h-8 w-8 border border-[#8b6845] bg-[#f6ebd9] text-lg disabled:opacity-30" aria-label={`Mover ${insect?.name} para baixo`} disabled={index === order.length - 1} on:click={() => moveInsect(index, 1)}>↓</button>
@@ -160,26 +165,28 @@
             <div class="shrink-0 text-right"><strong class="block">{playerTeam[duelIndex]?.name}</strong><span class="text-xs">contra {opponent?.team[duelIndex]?.name}</span></div>
           </div>
           <div class="relative flex min-h-0 flex-1 items-center overflow-hidden border-[10px] border-[#795535] bg-[#b98b5d] shadow-[inset_0_0_0_4px_#dfc096]">
-            <div class="absolute left-3 top-3 z-10 h-11 w-11 overflow-hidden border-2 border-[#52361f] bg-white">
-              {#if playerTeam[duelIndex]?.portrait}<img class="h-full w-full object-contain" src={playerTeam[duelIndex].portrait} alt={playerTeam[duelIndex].name} />{:else}<span class="flex h-full items-center justify-center text-2xl">{playerTeam[duelIndex]?.emoji}</span>{/if}
+            <div class="absolute left-3 top-3 z-10 h-11 w-11 overflow-hidden border-2 border-[#52361f] bg-white p-1">
+              <OverworldSprite sprite={CHARACTER_SPRITES.player} label="Jogador" />
             </div>
-            <div class="absolute right-3 top-3 z-10 h-11 w-11 overflow-hidden border-2 border-[#52361f] bg-white">
-              {#if opponent?.team[duelIndex]?.portrait}<img class="h-full w-full object-contain" src={opponent.team[duelIndex].portrait} alt={opponent.team[duelIndex].name} />{:else}<span class="flex h-full items-center justify-center text-2xl">{opponent?.team[duelIndex]?.emoji}</span>{/if}
+            <div class="absolute right-3 top-3 z-10 h-11 w-11 overflow-hidden border-2 border-[#52361f] bg-white p-1">
+              <OverworldSprite sprite={CHARACTER_SPRITES[opponent?.id] || CHARACTER_SPRITES.veteran} label={opponent?.name || "Rival"} />
             </div>
             {#if duel}
               {@const frame = duel.frames[frameIndex]}
-              <div class="absolute top-1/2 h-20 w-20 text-center transition-all duration-300" style={`left:${frame.leftX}%;transform:translate(-50%,-50%)`}>
-                {#if $gameMode === "pokemon"}<CreatureSprite species={playerTeam[duelIndex]} direction="right" moving />{:else}<span class="text-6xl">{playerTeam[duelIndex]?.emoji}</span>{/if}
+              <div class="absolute top-1/2 h-20 w-20 text-center" style={fighterStyle(frame.leftX, frame.leftFlipped)}>
+                <OverworldSprite sprite={insectSpriteFor(playerTeam[duelIndex]?.caughtId || playerTeam[duelIndex]?.id, playerTeam[duelIndex]?.dexId)} direction="right" moving label={playerTeam[duelIndex]?.name} />
               </div>
-              <div class="absolute top-1/2 h-20 w-20 text-center transition-all duration-300" style={`left:${frame.rightX}%;transform:translate(-50%,-50%)`}>
-                {#if $gameMode === "pokemon"}<CreatureSprite species={opponent?.team[duelIndex]} direction="left" moving />{:else}<span class="text-6xl">{opponent?.team[duelIndex]?.emoji}</span>{/if}
+              <div class="absolute top-1/2 h-20 w-20 text-center" style={fighterStyle(frame.rightX, frame.rightFlipped)}>
+                <OverworldSprite sprite={insectSpriteFor(opponent?.team[duelIndex]?.id, opponent?.team[duelIndex]?.dexId)} direction="left" moving label={opponent?.team[duelIndex]?.name} />
               </div>
             {/if}
           </div>
           <div class="mt-3 flex items-center justify-between gap-3 text-sm">
-            <div class="flex items-center gap-2">{#each playerTeam as bug, index}<span class:opacity-40={index < duelIndex} title={bug.name}>{bug.emoji}</span>{/each}</div>
-            <span class="truncate text-center">A disputa segue na mesa</span>
-            <div class="flex items-center gap-2">{#each opponent?.team || [] as bug, index}<span class:opacity-40={index < duelIndex} title={bug.name}>{bug.emoji}</span>{/each}</div>
+            <div class="flex items-center gap-2">{#each playerTeam as bug, index}<span class="h-5 w-5" class:opacity-40={index < duelIndex} title={bug.name}><OverworldSprite sprite={insectSpriteFor(bug.caughtId || bug.id, bug.dexId)} label={bug.name} /></span>{/each}</div>
+            <span class="truncate text-center font-bold" aria-live="polite">
+              {#if duelResult === "player"}{playerTeam[duelIndex]?.name} venceu a rodada!{:else if duelResult === "opponent"}{opponent?.team[duelIndex]?.name} venceu a rodada!{:else}A disputa segue na mesa{/if}
+            </span>
+            <div class="flex items-center gap-2">{#each opponent?.team || [] as bug, index}<span class="h-5 w-5" class:opacity-40={index < duelIndex} title={bug.name}><OverworldSprite sprite={insectSpriteFor(bug.id, bug.dexId)} label={bug.name} /></span>{/each}</div>
           </div>
         </div>
       {:else}

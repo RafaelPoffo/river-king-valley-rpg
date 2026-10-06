@@ -101,23 +101,26 @@ export function resolveBugDuel(left, right, key, playerLuck = 0) {
       const push = Math.max(1, Math.ceil(difference / 2) + 3 + impact);
       if (winner === left) {
         leftX = Math.min(60, leftX + 2);
-        rightX = Math.min(98, rightX + push);
+        rightX = Math.min(118, rightX + push);
       } else {
         rightX = Math.max(40, rightX - 2);
-        leftX = Math.max(2, leftX - push);
+        leftX = Math.max(-18, leftX - push);
       }
     }
-    frames.push({ leftX, rightX });
-    if (leftX <= 2 || rightX >= 98) break;
+    frames.push({ leftX, rightX, leftFlipped: false, rightFlipped: false });
+    if (leftX <= 0 || rightX >= 100) break;
   }
 
   let winner;
-  if (leftX <= 2) winner = right;
-  else if (rightX >= 98) winner = left;
+  if (leftX <= 0) winner = right;
+  else if (rightX >= 100) winner = left;
   else if (leftScore !== rightScore) winner = leftScore > rightScore ? left : right;
   else winner = left.strength === right.strength
     ? (random() < 0.5 ? left : right)
     : left.strength > right.strength ? left : right;
+  const finalFrame = frames[frames.length - 1];
+  finalFrame.leftFlipped = winner !== left;
+  finalFrame.rightFlipped = winner !== right;
   return { winner, frames };
 }
 

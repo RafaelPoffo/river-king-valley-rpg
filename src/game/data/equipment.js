@@ -160,6 +160,14 @@ export const BAITS = [
     price: 500,
     desc: "Favorita dos raros; 80% de mordida.",
   },
+  {
+    id: "megabit",
+    name: "Megabit",
+    tier: 7,
+    bonus: 0,
+    price: 0,
+    desc: "Isca temporária de teste: garante Porigon no rio com vara.",
+  },
 ];
 
 export function withBaitPreferences(species) {

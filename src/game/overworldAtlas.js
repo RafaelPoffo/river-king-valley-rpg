@@ -102,6 +102,22 @@ export const POKEMON_SPRITES = {
   "0143": largePokemon(4),
 };
 
+const GENERIC_INSECT_SPRITES = [
+  POKEMON_SPRITES["0010"],
+  POKEMON_SPRITES["0013"],
+  POKEMON_SPRITES["0012"],
+  POKEMON_SPRITES["0015"],
+];
+
+export function insectSpriteFor(seed, dexId) {
+  if (dexId && POKEMON_SPRITES[dexId]) return POKEMON_SPRITES[dexId];
+  let hash = 2166136261;
+  for (const character of String(seed ?? "")) {
+    hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
+  }
+  return GENERIC_INSECT_SPRITES[(hash >>> 0) % GENERIC_INSECT_SPRITES.length];
+}
+
 export function worldSizeFor(dexId) {
   return POKEMON_SPRITES[dexId]?.size === 32 ? 2 : 1;
 }

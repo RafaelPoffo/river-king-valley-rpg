@@ -14,11 +14,7 @@
       style="left: {seat.x * TILE_SIZE}px; top: {seat.y * TILE_SIZE}px; width: {TILE_SIZE}px; height: {TILE_SIZE}px; z-index: 22;"
       title={`${competitor.name} - ${competitor.persona}`}
     >
-      {#if $gameMode === "pokemon"}
-        <OverworldSprite sprite={CHARACTER_SPRITES[competitor.id] || CHARACTER_SPRITES.veteran} label={competitor.name} />
-      {:else}
-        <span class="text-2xl drop-shadow">{competitor.avatar}</span>
-      {/if}
+      <OverworldSprite sprite={CHARACTER_SPRITES[competitor.id] || CHARACTER_SPRITES.veteran} label={competitor.name} />
     </div>
   {/each}
 {/if}

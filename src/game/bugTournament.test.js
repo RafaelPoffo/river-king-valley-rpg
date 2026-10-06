@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { competitorsForDay, prizeForCompetition, resolveBugDuel } from "./bugTournament.js";
+import { insectSpriteFor, POKEMON_SPRITES } from "./overworldAtlas.js";
 
 describe("campeonato de insetos", () => {
   it("mantém Joe Bug e três insetos em cada rival nas duas versões", () => {
@@ -26,7 +27,27 @@ describe("campeonato de insetos", () => {
     expect(first).toEqual(resolveBugDuel(left, right, "day-one-match-one"));
     expect([left, right]).toContain(first.winner);
     expect(first.frames.length).toBeGreaterThan(0);
-    expect(first.frames.every((frame) => frame.leftX >= 2 && frame.rightX <= 98)).toBe(true);
+    expect(first.frames.every((frame) => frame.leftX >= -18 && frame.rightX <= 118)).toBe(true);
+    expect(first.frames.every((frame) => typeof frame.leftFlipped === "boolean" && typeof frame.rightFlipped === "boolean")).toBe(true);
+  });
+
+  it("vira apenas o derrotado no frame final do duelo", () => {
+    const left = { strength: 3, archetypeId: "bruiser" };
+    const right = { strength: 2, archetypeId: "guardian" };
+    const duels = Array.from({ length: 20 }, (_, index) => resolveBugDuel(left, right, `final-flip-${index}`));
+
+    for (const duel of duels) {
+      expect(duel.frames.slice(0, -1).every((frame) => !frame.leftFlipped && !frame.rightFlipped)).toBe(true);
+      const finalFrame = duel.frames.at(-1);
+      expect(finalFrame.leftFlipped).toBe(duel.winner !== left);
+      expect(finalFrame.rightFlipped).toBe(duel.winner !== right);
+    }
+  });
+
+  it("usa sprites do atlas para insetos e mantém uma escolha estável no overworld", () => {
+    expect(insectSpriteFor("wild:1")).toBe(insectSpriteFor("wild:1"));
+    expect(insectSpriteFor("wild:1")).toBeDefined();
+    expect(insectSpriteFor("pokemon:1", "0010")).toBe(POKEMON_SPRITES["0010"]);
   });
 
   it("aplica a sorte de observação como vantagem pequena nas batalhas", () => {

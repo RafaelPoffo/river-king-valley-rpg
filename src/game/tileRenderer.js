@@ -92,7 +92,7 @@ export function getTileSvg(char, x, y, constructions, mapName = "village") {
     case "h":
       return imgTile("/assets/crystal_chair.png", "Cadeira");
     case "N":
-      return imgTile("/assets/crystal_chair.png", "Banco de observação de pássaros");
+      return '<svg viewBox="0 0 40 40" width="100%" height="100%" shape-rendering="crispEdges" role="img" aria-label="Banco de observação de pássaros"><ellipse cx="20" cy="33" rx="15" ry="3" fill="#847c59"/><path d="M8 8h4v12H8zm20 0h4v12h-4z" fill="#59391f"/><path d="M7 7h26v4H7zM7 13h26v4H7z" fill="#a86e38"/><path d="M9 8h22v1H9zm0 6h22v1H9z" fill="#d39a58"/><path d="M6 19h28v5H6z" fill="#704522"/><path d="M8 20h24v2H8z" fill="#c48749"/><path d="M9 24h3v9H9zm19 0h3v9h-3z" fill="#59391f"/><path d="M8 32h5v2H8zm18 0h5v2h-5z" fill="#392719"/></svg>';
     case "Q":
     case "A":
       return imgTile("/assets/crystal_sign.png", "Placa de Avisos");

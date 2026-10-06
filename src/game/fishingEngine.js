@@ -21,6 +21,7 @@ import {
   currentToolData,
   eqBaitId,
   baitStock,
+  currentToolType,
   upgrades,
   inventory,
   maxInventorySize,
@@ -167,7 +168,9 @@ export function throwLine() {
   const weather = get(currentWeather);
   if (weather === "rainy") waitTime *= 0.8;
   if (weather === "storm") waitTime *= 0.6;
-  const nearbyCreature = get(currentMap) === "village"
+  const forcePorigon = castBaitId === "megabit" && get(gameMode) === "pokemon" &&
+    biome === "river" && get(currentToolType) === "rod";
+  const nearbyCreature = get(currentMap) === "village" && !forcePorigon
     ? nearbyAquaticCreature(get(bobberPos), dist, biome)
     : null;
   if (nearbyCreature) waitTime = 600;
@@ -261,6 +264,7 @@ function updateApproach(time) {
 }
 
 export function baitBiteChance(fish, baitId) {
+  if (fish.id === "porigon" && baitId === "megabit") return 1;
   if (isTrashSprite(fish) || fish.type === "treasure") return 1;
   const preference = fish.baitPreferences?.[baitId] || 0;
   return preference > 0 ? Math.min(1, preference + BAIT_BITE_BONUS) : 0;
@@ -392,6 +396,13 @@ export function rollFishByZone(zone) {
   const baitTier = BAITS.find((item) => item.id === bait)?.tier || 0;
   const curSeason = get(seasonIndex);
   const birdLuck = get(birdwatchingLuck);
+
+  if (isPokeMode && biomeTarget === "river" && bait === "megabit" && get(currentToolType) === "rod") {
+    const porigon = database.find((fish) => fish.id === "porigon");
+    if (porigon) {
+      return { ...decorateCatch(porigon), stars: 1, isShiny: false, priceFinal: porigon.price };
+    }
+  }
 
   const trashChance = bait === "sem_isca" ? 0.35 : 0.05;
   if (Math.random() < trashChance) {

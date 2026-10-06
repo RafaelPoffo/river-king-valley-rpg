@@ -69,10 +69,8 @@ export function updateCamera() {
   const mapArr = MAPS_DATA[cMap];
   if (!mapArr) return;
 
-  const cx = p.x * TILE_SIZE - VIEW_WIDTH / 2 + TILE_SIZE / 2;
-  const cy = p.y * TILE_SIZE - VIEW_HEIGHT / 2 + TILE_SIZE / 2;
-  cameraX.set(Math.max(0, Math.min(cx, mapArr[0].length * TILE_SIZE - VIEW_WIDTH)));
-  cameraY.set(Math.max(0, Math.min(cy, mapArr.length * TILE_SIZE - VIEW_HEIGHT)));
+  cameraX.set(p.x * TILE_SIZE - VIEW_WIDTH / 2 + TILE_SIZE / 2);
+  cameraY.set(p.y * TILE_SIZE - VIEW_HEIGHT / 2 + TILE_SIZE / 2);
 }
 
 export function interiorSpawn(mapName, dir = "up") {

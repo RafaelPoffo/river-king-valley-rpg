@@ -8,19 +8,19 @@
 
   const PANORAMA_WIDTH = 4000;
   const PANORAMA_HEIGHT = 800;
-  const VIEW_WIDTH = 200;
-  const VIEW_HEIGHT = 100;
+  const VIEW_WIDTH = 250;
+  const VIEW_HEIGHT = 125;
 
-  let cameraX = 1900;
-  let cameraY = 350;
+  let cameraX = 1875;
+  let cameraY = 338;
   let observation = null;
   let message = "";
 
   function closeWatching() {
     showBirdWatching.set(false);
     phase.set(PHASES.PLAYING);
-    cameraX = 1900;
-    cameraY = 350;
+    cameraX = 1875;
+    cameraY = 338;
     observation = null;
   }
 
@@ -51,10 +51,10 @@
     }
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
-      cameraX = Math.max(0, Math.min(PANORAMA_WIDTH - VIEW_WIDTH, cameraX + (event.key === "ArrowLeft" ? -48 : 48)));
+      cameraX = Math.max(0, Math.min(PANORAMA_WIDTH - VIEW_WIDTH, cameraX + (event.key === "ArrowLeft" ? -60 : 60)));
     } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
       event.preventDefault();
-      cameraY = Math.max(0, Math.min(PANORAMA_HEIGHT - VIEW_HEIGHT, cameraY + (event.key === "ArrowUp" ? -32 : 32)));
+      cameraY = Math.max(0, Math.min(PANORAMA_HEIGHT - VIEW_HEIGHT, cameraY + (event.key === "ArrowUp" ? -40 : 40)));
     } else if (event.key === " " || event.key === "Spacebar") {
       event.preventDefault();
       seeBird();
@@ -76,7 +76,7 @@
     <div class="binoculars" aria-label="Visão dos binóculos">
       {#each [0, 1] as lens}
         <div class="lens">
-          <div class="panorama" style={`width:${PANORAMA_WIDTH}px;height:${PANORAMA_HEIGHT}px;transform:translate(${-cameraX}px,${-cameraY}px)`}>
+          <div class="panorama" style={`width:${PANORAMA_WIDTH}px;height:${PANORAMA_HEIGHT}px;transform:translate(${-cameraX - lens * VIEW_WIDTH / 2}px,${-cameraY}px)`}>
             {#each $dailyBirds as sighting (sighting.id)}
               {@const species = birdSpecies(sighting, $gameMode)}
               <div
@@ -138,16 +138,16 @@
   .binoculars {
     position: relative;
     display: flex;
-    width: 200px;
-    height: 100px;
+    width: 250px;
+    height: 125px;
     filter: drop-shadow(0 0 24px #000);
   }
 
   .lens {
     position: relative;
     z-index: 2;
-    width: 100px;
-    height: 100px;
+    width: 125px;
+    height: 125px;
     overflow: hidden;
     border: 3px solid #111;
     border-radius: 50%;
@@ -163,8 +163,9 @@
     background-image: url("/assets/birdWatching.jpg");
     background-repeat: repeat-x;
     background-position: center center;
-    background-size: auto 200%;
-    transition: transform 140ms ease-out;
+    background-size: auto 266.667%;
+    background-position: center 40%;
+    transition: transform 180ms ease-out;
   }
 
   .bird-sprite {
@@ -192,10 +193,10 @@
   .bridge {
     position: absolute;
     z-index: 3;
-    top: 39px;
-    left: 94px;
+    top: 49px;
+    left: 119px;
     width: 12px;
-    height: 22px;
+    height: 27px;
     background: #080a09;
     pointer-events: none;
   }

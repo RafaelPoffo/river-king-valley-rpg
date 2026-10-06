@@ -3,6 +3,9 @@ import { get } from "svelte/store";
 import {
   MAPS_DATA,
   PLAYER_START,
+  TILE_SIZE,
+  VIEW_WIDTH,
+  VIEW_HEIGHT,
   FESTIVAL_STALL,
   INITIAL_VILLAGERS,
   INITIAL_CONSTRUCTIONS,
@@ -11,9 +14,9 @@ import {
   getNpcLocation,
   isForestAccess,
 } from "./constants.js";
-import { canWalkOn, houseForDoor, interiorSpawn, isInterior, mapTransition, setDirectionHeld, releaseMovement } from "./movement.js";
+import { canWalkOn, houseForDoor, interiorSpawn, isInterior, mapTransition, setDirectionHeld, releaseMovement, updateCamera } from "./movement.js";
 import { creatureOccupies, canPlaceCreature, createDailyPopulation, ensureWorldPopulation, tickWorldCreatures, worldCreatureBlocks, creaturePosition, worldSpecies, removeWorldCreature, nearbyAquaticCreature, engageWorldCreature } from "./worldCreatures.js";
-import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, worldPopulationDay, insectInventory, insectPopulationDay, wildInsects, dialogActions, currentMessage, showBirdWatching } from "./stores.js";
+import { phase, player, currentMap, gameMode, day, seasonIndex, worldCreatures, worldPopulationDay, insectInventory, insectPopulationDay, wildInsects, dialogActions, currentMessage, showBirdWatching, cameraX, cameraY } from "./stores.js";
 import { resetState } from "./saveSystem.js";
 import { interact, sleep } from "./gameActions.js";
 import { PHASES } from "./phases.js";
@@ -163,6 +166,21 @@ describe("criaturas persistentes e movimento", () => {
     vi.unstubAllGlobals();
     worldCreatures.set([]);
     worldPopulationDay.set(null);
+  });
+
+  it("mantém o personagem no centro da câmera inclusive nas bordas do mapa", () => {
+    const map = MAPS_DATA.village;
+    const positions = [
+      { x: 0, y: 0 },
+      { x: map[0].length - 1, y: map.length - 1 },
+    ];
+
+    for (const position of positions) {
+      player.set({ ...PLAYER_START, ...position });
+      updateCamera();
+      expect(position.x * TILE_SIZE + TILE_SIZE / 2 - get(cameraX)).toBe(VIEW_WIDTH / 2);
+      expect(position.y * TILE_SIZE + TILE_SIZE / 2 - get(cameraY)).toBe(VIEW_HEIGHT / 2);
+    }
   });
 
   it("todos os dias e estações geram 2 a 8 criaturas não muito raras nos dois modos", () => {
@@ -389,6 +407,7 @@ describe("formato dos mapas", () => {
   it("o banco de observação fica acessível na parte norte da floresta", () => {
     const seen = reachable("bug_forest", { x: 6, y: 23 }, new Set(), constructionsWith("none"));
     expect(MAPS_DATA.bug_forest[2][9]).toBe("N");
+    expect(MAPS_DATA.bug_forest[3][9]).toBe("G");
     expect(hasReachableNeighbor(seen, 9, 2)).toBe(true);
   });
 

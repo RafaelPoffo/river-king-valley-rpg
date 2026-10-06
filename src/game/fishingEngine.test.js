@@ -31,6 +31,7 @@ import {
   inventory,
   worldCreatures,
   worldCreatureEncounter,
+  currentToolType,
 } from "./stores.js";
 
 const DAY = 10 * 60;
@@ -122,8 +123,22 @@ describe("preferências das iscas e preços", () => {
   it("Pokémon comuns têm preços comparáveis aos peixes e evoluções valem menos", () => {
     expect(POKEMON_DB.find((fish) => fish.id === "squirtle").price).toBe(18);
     const pokemon = POKEMON_DB.filter((fish) => fish.dexNum);
-    expect(pokemon.filter((fish) => fish.stage === 1).every((fish) => fish.price <= 50)).toBe(true);
-    expect(pokemon.every((fish) => fish.price <= 800)).toBe(true);
+    expect(pokemon.filter((fish) => fish.stage === 1 && fish.id !== "porigon").every((fish) => fish.price <= 50)).toBe(true);
+    expect(pokemon.filter((fish) => fish.id !== "porigon").every((fish) => fish.price <= 800)).toBe(true);
+    expect(POKEMON_DB.find((fish) => fish.id === "porigon").price).toBe(2000);
+  });
+
+  it("Megabit é gratuita e garante Porigon por 2000 no rio com vara", () => {
+    expect(BAITS.find((bait) => bait.id === "megabit").price).toBe(0);
+    currentToolType.set("rod");
+    setScene({ mode: "pokemon", biome: "river", bait: "megabit" });
+
+    for (const zone of [1, 2, 3]) {
+      const fish = rollFishByZone(zone);
+      expect(fish.id).toBe("porigon");
+      expect(fish.priceFinal).toBe(2000);
+      expect(baitBiteChance(fish, "megabit")).toBe(1);
+    }
   });
 });
 
@@ -194,6 +209,19 @@ describe("análise da isca e consumo", () => {
     }]);
     return species;
   }
+
+  it("Megabit garante Porigon e ignora encontros próximos no rio", () => {
+    visibleFish();
+    setScene({ mode: "pokemon", biome: "river" });
+    currentToolType.set("rod");
+    baitStock.set({ ...get(baitStock), megabit: 5 });
+
+    cast("megabit");
+
+    expect(get(activeFish).id).toBe("porigon");
+    expect(get(worldCreatureEncounter)).toBe(null);
+    expect(get(worldCreatures)[0].state).toBe("wild");
+  });
 
   it("lançar perto de uma criatura inicia o encontro com aquela espécie", () => {
     const species = visibleFish();
