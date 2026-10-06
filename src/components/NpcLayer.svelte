@@ -13,19 +13,20 @@
     villagers,
     inGameMinutes,
     day,
+    seasonIndex,
     currentFestival,
   } from "../game/stores.js";
 </script>
 
 {#each $villagers as npc}
-  {@const loc = getNpcLocation(npc, $inGameMinutes, $day)}
+  {@const loc = getNpcLocation(npc, $inGameMinutes, $day, $seasonIndex)}
   {#if loc.map === $currentMap}
     <div
       class="tile"
       style="left: {loc.x * TILE_SIZE}px; top: {loc.y * TILE_SIZE}px; z-index: 20;"
       title={npc.name}
     >
-      <OverworldSprite sprite={CHARACTER_SPRITES[npc.id] || CHARACTER_SPRITES.veteran} label={npc.name} />
+      <OverworldSprite sprite={CHARACTER_SPRITES[npc.id] || CHARACTER_SPRITES.veteran} direction={npc.cardTheme && $currentMap === "game_house" && loc.y === 5 ? "down" : npc.cardTheme && $currentMap === "game_house" ? "up" : "down"} label={npc.name} />
     </div>
   {/if}
 {/each}

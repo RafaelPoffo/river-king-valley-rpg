@@ -435,6 +435,7 @@ describe("caça diária de insetos", () => {
         expect(population.length).toBeGreaterThanOrEqual(3);
         expect(population.length).toBeLessThanOrEqual(9);
         expect(population.reduce((total, insect) => total + insect.points, 0)).toBe(18);
+        if (mode === "pokemon") expect(new Set(population.map((insect) => POKEMON_BUGS.find((bug) => bug.id === insect.speciesId).dexId)).size).toBe(population.length);
         expect(population).toEqual(generateDailyInsects(`0:${today}`, mode));
         expect(population.every((insect) => !isForestAccess("bug_forest", insect.x, insect.y))).toBe(true);
       }
@@ -442,16 +443,17 @@ describe("caça diária de insetos", () => {
   });
 
   it("mantém força, orçamento e arquétipo iguais entre as skins Pokémon e comuns", () => {
-    expect(POKEMON_BUGS).toHaveLength(22);
-    for (let index = 0; index < POKEMON_BUGS.length; index++) {
+    expect(POKEMON_BUGS.length).toBeGreaterThan(65);
+    for (let index = 0; index < 65; index++) {
       const pokemonBug = POKEMON_BUGS[index];
-      const commonBug = COMMON_BUGS[[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 55, 41, 42, 43][index]];
+      const commonBug = COMMON_BUGS[index < 22 ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 55, 41, 42, 43][index] : index];
       expect(pokemonBug.strength).toBe(commonBug.strength);
       expect(pokemonBug.points).toBe(commonBug.points);
       expect(pokemonBug.archetypeId).toBe(commonBug.archetypeId);
       expect(POKEMON_SPRITES[pokemonBug.dexId]).toBeDefined();
       expect(pokemonBug.pixelSprite).toBeUndefined();
     }
+    expect(POKEMON_BUGS.every((bug) => COMMON_BUGS.some((profile) => profile.points === bug.points && profile.strength === bug.strength))).toBe(true);
   });
 
   it("reposiciona insetos de saves antigos sem mudar o orçamento ou repovoar", () => {
@@ -575,6 +577,7 @@ describe("NPCs", () => {
     for (const npc of INITIAL_VILLAGERS) {
       for (const [mins, dayNum] of [[10 * 60, 1], [NIGHT, TAVERN_NIGHT_DAY]]) {
         const loc = getNpcLocation(npc, mins, dayNum);
+        if (loc.map === "away") continue;
         const tile = tileAt(MAPS_DATA[loc.map], loc.x, loc.y);
         expect(canWalkOn(tile, loc.x, loc.y, constr), `${npc.id} em ${loc.map}`).toBe(true);
       }

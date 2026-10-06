@@ -13,6 +13,7 @@
     maxInventorySize,
   } from "../game/stores.js";
   import { buyItem, sellFish, sellAll } from "../game/gameActions.js";
+  import { gardenBonus } from "../game/garden.js";
 </script>
 
 <!-- Limita a altura do container principal e previne transbordo de tela -->
@@ -137,7 +138,7 @@
               class="bg-white text-black border-2 border-black retro-font text-[8px] px-2 py-1 active:bg-gray-200"
               on:click={() => sellFish(i)}
             >
-              +{fish.priceFinal}¥
+              +{Math.round(fish.priceFinal * (1 + gardenBonus("sale")))}¥
             </button>
           </div>
         {/each}

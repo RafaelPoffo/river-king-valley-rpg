@@ -6,6 +6,9 @@ export const PHASES = Object.freeze({
   BUG_TOURNAMENT: "bug_tournament",
   BIRD_WATCHING: "bird_watching",
   BIRD_LOG: "bird_log",
+  CARD_COLLECTION: "card_collection",
+  CARD_SHOP: "card_shop",
+  CARD_DUEL: "card_duel",
   SAILING: "sailing",
   PAUSE_MENU: "pause_menu",
   SHOP: "shop",
@@ -29,6 +32,8 @@ export const CLOSABLE_SCREENS = new Set([
   PHASES.PAUSE_MENU,
   PHASES.MUSEUM,
   PHASES.BIRD_LOG,
+  PHASES.CARD_COLLECTION,
+  PHASES.CARD_SHOP,
 ]);
 
 export const LINE_IN_WATER = new Set([

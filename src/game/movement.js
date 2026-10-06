@@ -27,6 +27,7 @@ import {
   day,
   constructions,
   currentFestival,
+  garden,
 } from "./stores.js";
 import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
 
@@ -90,6 +91,7 @@ const HOUSE_DOORS = {
   K: "carpenter_shop",
   D: "hut_old",
   R: "tavern",
+  V: "game_house",
 };
 
 const INTERIOR_MAPS = new Set(Object.values(HOUSE_DOORS));
@@ -112,7 +114,7 @@ export function mapTransition(mapName, tile, x, y) {
   return null;
 }
 
-const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S", "b", "J"]);
+const WALKABLE_TILES = new Set(["G", ".", "=", "F", "S", "b", "J", "h"]);
 
 export function canWalkOn(tile, x, y, constr) {
   if (WALKABLE_TILES.has(tile)) return true;
@@ -202,14 +204,15 @@ function beginStep(dx, dy, dirStr) {
   const transition = mapTransition(cMap, tile, nx, ny);
 
   const npcOccupying = get(villagers).find((n) => {
-    const loc = getNpcLocation(n, mins, curDay);
+    const loc = getNpcLocation(n, mins, curDay, get(seasonIndex));
     return loc.map === cMap && loc.x === nx && loc.y === ny;
   });
   const bugCompetitorOccupying = cMap === "bug_forest" && competitorsForDay(
     get(seasonIndex), curDay, get(gameMode)
   ).some((competitor, index) => BUG_COMPETITOR_SEATS[index].x === nx && BUG_COMPETITOR_SEATS[index].y === ny);
 
-  if (npcOccupying || bugCompetitorOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny)) {
+  const gardenOccupying = cMap === "bug_forest" && get(garden).some((tree) => tree.x === nx && tree.y === ny);
+  if (npcOccupying || bugCompetitorOccupying || gardenOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny)) {
     player.set({ x: originX, y: originY, dir: dirStr });
     return;
   }

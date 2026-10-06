@@ -15,6 +15,8 @@ import {
   getActiveDatabase,
 } from "./stores.js";
 import { grant, describeReward } from "./collections.js";
+import { grantSeed } from "./garden.js";
+import { grantRareCard } from "./cards.js";
 import { saveGame } from "./saveSystem.js";
 
 export const LEGEND_STAGE = JOE_QUEST_STAGES.findIndex((s) => s.goal.kind === "legend");
@@ -64,6 +66,8 @@ export function advanceJoeQuest() {
   const status = questStatus();
   if (status.done || !status.met) return null;
   grant(status.def.reward);
+  grantSeed();
+  grantRareCard("quest");
   joeQuest.set(status.stage + 1);
   if (status.stage + 1 === LEGEND_STAGE) unlockLegend();
   return status.def;

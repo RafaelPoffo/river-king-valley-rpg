@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
 import { FRIENDSHIP, TASTE_LABELS, INITIAL_VILLAGERS } from "./constants.js";
 import { SPRITES } from "./sprites.js";
-import { friendship, inventory, seasonIndex, day, getActiveDatabase } from "./stores.js";
+import { friendship, inventory, seasonIndex, day, getActiveDatabase, claimedRewards } from "./stores.js";
+import { grantSeed } from "./garden.js";
 import { dayKey } from "./tournament.js";
 
 const TASTES = {
@@ -90,7 +91,15 @@ export function giveGift(npc, index) {
   saveEntry(npc.id, { ...entry, points: addPoints(entry, value), giftDay: today() });
   inventory.set(inv.filter((_, i) => i !== index));
   const unlockedPerk = before < FRIENDSHIP.perkHearts[npc.id] && hasPerk(npc.id);
-  return { fish, loved: value === FRIENDSHIP.lovedGift, unlockedPerk };
+  const milestone = Math.floor(heartsOf(npc.id) / 3);
+  let seed = null;
+  for (let level = 1; level <= milestone; level++) {
+    const rewardKey = `friend-seed:${npc.id}:${level}`;
+    if (get(claimedRewards).includes(rewardKey)) continue;
+    seed = grantSeed();
+    claimedRewards.update((keys) => [...keys, rewardKey]);
+  }
+  return { fish, loved: value === FRIENDSHIP.lovedGift, unlockedPerk, seed };
 }
 
 export function friendPrice(cost) {

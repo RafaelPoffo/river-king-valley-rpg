@@ -1,0 +1,6 @@
+Pokemon Crystal front-facing sprites, first animation frame.
+Source: https://github.com/pret/pokecrystal/tree/master/gfx/pokemon
+Extraction: node scripts/crystal-assets.mjs
+Requested sprite sheets (server returned HTTP 403 during import):
+https://www.spriters-resource.com/game_boy_gbc/pokemoncrystal/asset/9204/
+https://www.spriters-resource.com/game_boy_gbc/pokemoncrystal/asset/9210/

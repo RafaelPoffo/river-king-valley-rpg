@@ -4,7 +4,6 @@
   import { PHASES } from "../game/phases.js";
   import { birdSpecies, observeBird } from "../game/birdWatching.js";
   import { saveGame } from "../game/saveSystem.js";
-  import CreatureSprite from "./CreatureSprite.svelte";
 
   const PANORAMA_WIDTH = 4000;
   const PANORAMA_HEIGHT = 800;
@@ -69,7 +68,7 @@
   <div class="absolute inset-0 z-[110] flex flex-col items-center justify-center overflow-hidden bg-black text-white" role="presentation">
     <div class="absolute left-4 top-4 z-20 flex items-center gap-3 border border-white/30 bg-black/75 px-3 py-2 font-mono text-[10px]">
       <span>OBSERVAÇÃO</span>
-      <span class="text-emerald-300">SORTE {$birdwatchingLuck}/5</span>
+      <span class="text-emerald-300">SORTE {$birdwatchingLuck}/10</span>
       <span class="text-white/65">AVES {$dailyBirds.filter((bird) => bird.observed).length}/{$dailyBirds.length}</span>
     </div>
 
@@ -85,7 +84,7 @@
                 style={`left:${sighting.x}px;top:${sighting.y}px;width:${Math.max(26, Math.round(sighting.size * 0.8))}px;height:${Math.max(26, Math.round(sighting.size * 0.8))}px;`}
               >
                 {#if $gameMode === "pokemon"}
-                  <CreatureSprite {species} moving />
+                  <img src={species?.portrait} alt={species?.name} class="h-full w-full object-contain" style="image-rendering:pixelated" />
                 {:else}
                   <span class="bird-emoji" role="img" aria-label={species?.name || "Ave distante"}>{species?.emoji}</span>
                 {/if}

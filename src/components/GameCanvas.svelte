@@ -17,6 +17,7 @@
   import PlayerLayer from "./PlayerLayer.svelte";
   import BugLayer from "./BugLayer.svelte";
   import BugCompetitorLayer from "./BugCompetitorLayer.svelte";
+  import GardenLayer from "./GardenLayer.svelte";
 
   $: map = MAPS_DATA[$currentMap];
   $: mapWidth = (map?.[0]?.length || 1) * TILE_SIZE;
@@ -34,6 +35,7 @@
     <WorldCreatureLayer />
     <BugLayer />
     <BugCompetitorLayer />
+    <GardenLayer />
     <NpcLayer />
     <PlayerLayer />
   </div>

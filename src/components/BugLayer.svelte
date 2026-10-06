@@ -5,11 +5,8 @@
   import { insectSpriteFor } from "../game/overworldAtlas.js";
   import OverworldSprite from "./OverworldSprite.svelte";
 
-  const disguiseNames = ["Pidgey", "Sentret", "Hoothoot", "Rattata", "Ledyba", "Spearow"];
   function displayName(insect, species) {
-    if ($gameMode !== "pokemon") return species?.name || "Inseto";
-    const index = [...insect.id].reduce((sum, character) => sum + character.charCodeAt(0), 0);
-    return disguiseNames[index % disguiseNames.length];
+    return species?.name || "Inseto";
   }
 </script>
 
@@ -21,7 +18,7 @@
       style="left: {insect.x * TILE_SIZE}px; top: {insect.y * TILE_SIZE}px; width: {TILE_SIZE}px; height: {TILE_SIZE}px; z-index: 18;"
       title={displayName(insect, species)}
     >
-      <OverworldSprite sprite={insectSpriteFor(insect.id, $gameMode === "pokemon" ? species?.dexId : null)} label={displayName(insect, species)} moving />
+      <OverworldSprite sprite={insectSpriteFor(insect.id, null, true)} label={displayName(insect, species)} moving />
     </div>
   {/each}
 {/if}

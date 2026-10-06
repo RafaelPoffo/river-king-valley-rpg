@@ -17,12 +17,14 @@
     eqRodId,
     eqNetId,
     currentToolType,
+    eqSeedId, seedStock, gardenBuffs,
   } from "../game/stores.js";
   import { todaysDish } from "../game/dishes.js";
   import { BAITS, SEASONS, TOOLS, WEATHER_NAMES } from "../game/constants.js";
   import { equipItem, equipTool } from "../game/gameActions.js";
   import HudSelector from "./HudSelector.svelte";
   import { SPRITES } from "../game/sprites.js";
+  import { FRUITS } from "../game/garden.js";
 
   const baitSprites = {
     sem_isca: ["...0....", "...0....", "...0....", "...0....", "...0..0.", "...0..0.", "....00..", "........"],
@@ -52,9 +54,10 @@
   $: tools = [
     ...TOOLS.rod.filter((tool) => $ownedRods.includes(tool.id)).map((tool) => ({ ...tool, kind: "rod" })),
     ...TOOLS.net.filter((tool) => $ownedNets.includes(tool.id)).map((tool) => ({ ...tool, kind: "net" })),
+    ...FRUITS.filter((fruit) => ($seedStock[fruit.id] || 0) > 0).map((fruit) => ({ ...fruit, name: fruit.seedName, kind: "seed" })),
   ];
   $: toolIndex = tools.findIndex((tool) =>
-    tool.kind === $currentToolType && tool.id === ($currentToolType === "rod" ? $eqRodId : $eqNetId),
+    tool.kind === $currentToolType && tool.id === ($currentToolType === "rod" ? $eqRodId : $currentToolType === "seed" ? $eqSeedId : $eqNetId),
   );
   $: currentTool = tools[toolIndex];
 
@@ -87,9 +90,9 @@
     {#if currentTool}
       <HudSelector
         label="Equipamento"
-        sprite={currentTool.kind === "rod" ? SPRITES.rod : SPRITES.net}
+        sprite={currentTool.kind === "rod" ? SPRITES.rod : currentTool.kind === "seed" ? "/assets/garden_seed.png" : SPRITES.net}
         title={currentTool.name}
-        detail={currentTool.kind === "rod" ? `Força: ${currentTool.strength}` : "Só criaturas de rede"}
+        detail={currentTool.kind === "rod" ? `Força: ${currentTool.strength}` : currentTool.kind === "seed" ? `Qtd: ${$seedStock[currentTool.id]}` : "Só criaturas de rede"}
         previousLabel="Equipamento anterior"
         nextLabel="Próximo equipamento"
         canPrevious={toolIndex > 0}
@@ -117,6 +120,7 @@
   {#if dish}
     <div class="retro-font text-[7px] text-orange-700">🍲 {dish.name}</div>
   {/if}
+  {#each $gardenBuffs as fruit}<div class="text-[9px] text-green-800">{fruit.name}: {fruit.bonus}</div>{/each}
   <div class="retro-font text-[8px] text-[#4a9090] mt-1 font-bold">
     ¥ {$money}
   </div>

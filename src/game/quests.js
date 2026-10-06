@@ -1,5 +1,7 @@
 import { get } from "svelte/store";
 import { getActiveDatabase, dailyQuest, money, currentMessage } from "./stores.js";
+import { grantSeed } from "./garden.js";
+import { grantRareCard } from "./cards.js";
 
 export function generateDailyQuest() {
   const database = getActiveDatabase();
@@ -31,10 +33,15 @@ export function checkDailyQuestProgress(fishObj) {
     if (updated.current >= updated.targetCount) {
       updated.completed = true;
       money.update((m) => m + updated.reward);
+      const seed = grantSeed();
+      const card = grantRareCard("quest");
+      updated.extraReward = `${seed.seedName}${card ? ` e carta ${card.name}` : ""}`;
       currentMessage.set(
         `Missão Concluída! Você recebeu ¥${updated.reward}!`
       );
     }
     dailyQuest.set(updated);
+    if (updated.completed) return `Voce recebeu ${updated.reward}, ${updated.extraReward}.`;
   }
+  return null;
 }

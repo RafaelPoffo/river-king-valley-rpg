@@ -37,6 +37,7 @@
   import BugTournamentModal from "./BugTournamentModal.svelte";
   import BirdWatchingModal from "./BirdWatchingModal.svelte";
   import BirdCatalogModal from "./BirdCatalogModal.svelte";
+  import CardsModal from "./CardsModal.svelte";
 
   export let open = true;
 
@@ -149,6 +150,7 @@
 
         <BugTournamentModal />
         <BirdWatchingModal />
+        {#if [PHASES.CARD_COLLECTION, PHASES.CARD_SHOP, PHASES.CARD_DUEL].includes($phase)}<CardsModal />{/if}
 
         <InventoryFullModal />
 

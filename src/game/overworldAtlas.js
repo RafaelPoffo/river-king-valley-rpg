@@ -23,6 +23,12 @@ export const CHARACTER_SPRITES = {
   carpenter: character(24),
   anna: character(29),
   old_joe: character(32),
+  bird_guide: character(16),
+  bug_guide: character(3),
+  garden_guide: character(29),
+  fishing_guide: character(8),
+  card_seller: character(24),
+  ...Object.fromEntries(["aves", "fada", "rei", "mago", "lich", "orc", "dragao", "fera", "demonio", "pirata", "gelo", "ninja", "inseto", "espirito"].map((id, index) => [`card_${id}`, character([3, 8, 16, 20, 22, 24, 28, 29, 32, 35, 38, 40, 43, 46][index])])),
   joe_bug: character(20),
   rival_0: character(29),
   rival_1: character(3),
@@ -103,14 +109,14 @@ export const POKEMON_SPRITES = {
 };
 
 const GENERIC_INSECT_SPRITES = [
-  POKEMON_SPRITES["0010"],
   POKEMON_SPRITES["0013"],
+  pokemon(8, 0),
   POKEMON_SPRITES["0012"],
   POKEMON_SPRITES["0015"],
 ];
 
-export function insectSpriteFor(seed, dexId) {
-  if (dexId && POKEMON_SPRITES[dexId]) return POKEMON_SPRITES[dexId];
+export function insectSpriteFor(seed, dexId, overworld = false) {
+  if (!overworld && dexId && POKEMON_SPRITES[dexId]) return POKEMON_SPRITES[dexId];
   let hash = 2166136261;
   for (const character of String(seed ?? "")) {
     hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);
@@ -169,7 +175,7 @@ export function loadOverworldAtlas() {
       const context = canvas.getContext("2d");
       context.drawImage(image, 0, 0);
       const cells = new Set();
-      for (const sprite of [...Object.values(CHARACTER_SPRITES), ...Object.values(POKEMON_SPRITES)]) {
+      for (const sprite of [...Object.values(CHARACTER_SPRITES), ...Object.values(POKEMON_SPRITES), ...GENERIC_INSECT_SPRITES]) {
         for (const column of new Set(Object.values(sprite.directions).flat())) {
           const x = column * FRAME_STRIDE;
           const key = `${x}:${sprite.y}`;

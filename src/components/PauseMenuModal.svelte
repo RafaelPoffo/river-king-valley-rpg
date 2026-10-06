@@ -40,6 +40,7 @@
     >
       MUSEU
     </button>
+    <button class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black" on:click={() => phase.set(PHASES.CARD_COLLECTION)}>CARTAS & DECKS</button>
     <button
       class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black bg-gray-100 mt-2"
       on:click={toggleTool}

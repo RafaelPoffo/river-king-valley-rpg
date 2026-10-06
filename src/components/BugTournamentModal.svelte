@@ -6,6 +6,9 @@
   import { competitorsForDay, prizeForCompetition, resolveBugDuel } from "../game/bugTournament.js";
   import { CHARACTER_SPRITES, insectSpriteFor } from "../game/overworldAtlas.js";
   import OverworldSprite from "./OverworldSprite.svelte";
+  import { grantSeed } from "../game/garden.js";
+  import { grantRareCard, addCards } from "../game/cards.js";
+  import { cardById } from "../game/cardCatalog.js";
 
   let step = "rank";
   let order = [];
@@ -22,6 +25,7 @@
   let champion = false;
   let prize = 0;
   let timeoutId = null;
+  let bonusPrize = "";
 
   $: bag = $insectInventory;
   $: if (step === "rank" && order.length !== bag.length) {
@@ -45,6 +49,7 @@
     opponentIndex = 0;
     champion = false;
     prize = 0;
+    bonusPrize = "";
     beginMatch();
   }
 
@@ -100,6 +105,10 @@
     if (won) {
       prize = prizeForCompetition(opponents.length + 1, isSeasonFinal);
       money.update((amount) => amount + prize);
+      const seed = grantSeed();
+      const card = isSeasonFinal ? cardById("rare:forest_guardian") : grantRareCard("bugs");
+      if (isSeasonFinal) addCards([card.id]);
+      bonusPrize = `${seed.seedName}${card ? ` + ${card.name}` : ""}`;
     }
     insectInventory.set([]);
     saveGame();
@@ -172,6 +181,7 @@
               <OverworldSprite sprite={CHARACTER_SPRITES[opponent?.id] || CHARACTER_SPRITES.veteran} label={opponent?.name || "Rival"} />
             </div>
             {#if duel}
+              {#key duel}
               {@const frame = duel.frames[frameIndex]}
               <div class="absolute top-1/2 h-20 w-20 text-center" style={fighterStyle(frame.leftX, frame.leftFlipped)}>
                 <OverworldSprite sprite={insectSpriteFor(playerTeam[duelIndex]?.caughtId || playerTeam[duelIndex]?.id, playerTeam[duelIndex]?.dexId)} direction="right" moving label={playerTeam[duelIndex]?.name} />
@@ -179,6 +189,7 @@
               <div class="absolute top-1/2 h-20 w-20 text-center" style={fighterStyle(frame.rightX, frame.rightFlipped)}>
                 <OverworldSprite sprite={insectSpriteFor(opponent?.team[duelIndex]?.id, opponent?.team[duelIndex]?.dexId)} direction="left" moving label={opponent?.team[duelIndex]?.name} />
               </div>
+              {/key}
             {/if}
           </div>
           <div class="mt-3 flex items-center justify-between gap-3 text-sm">
@@ -194,7 +205,7 @@
           <p class="text-6xl">{champion ? "🏆" : "🪲"}</p>
           <h3 class="mt-3 text-2xl font-black">{champion ? "Campeão da Clareira!" : "Uma bela disputa"}</h3>
           <p class="mt-2 max-w-md">{champion ? `Joe Bug entrega o prêmio${isSeasonFinal ? " do campeonato final" : " do dia"}.` : "Joe Bug agradece sua participação. Haverá outra disputa amanhã."}</p>
-          {#if champion}<p class="mt-1 font-bold">Prêmio recebido: ¥{prize}</p>{/if}
+          {#if champion}<p class="mt-1 font-bold">Prêmio recebido: ¥{prize}</p><p class="mt-2 text-sm font-bold">{bonusPrize}</p>{/if}
           <p class="mt-5 border-t border-[#b2936d] pt-3 font-bold">Joe Bug: “Hora de libertar os insetos.”</p>
           <button class="mt-5 border-2 border-[#3c6541] bg-[#628459] px-6 py-2 font-bold text-white" on:click={closeTournament}>Voltar à floresta</button>
         </div>

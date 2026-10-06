@@ -1,4 +1,4 @@
-import { MAPS_DATA, TILE_SIZE, isForestAccess } from "./data/world.js";
+import { MAPS_DATA, TILE_SIZE, isForestAccess, GARDEN_BOUNDS, inBounds } from "./data/world.js";
 
 export const TREE_ATLAS_URL = "/assets/arvores.png";
 export const TREE_ATLAS_SIZE = 256;
@@ -88,7 +88,7 @@ export function forestTrees(season = 0) {
     const top = (y + 1) * TILE_SIZE - height;
     for (let tileY = Math.floor(top / TILE_SIZE); tileY <= y; tileY++) {
       for (let tileX = Math.floor(left / TILE_SIZE); tileX <= Math.ceil((left + width) / TILE_SIZE) - 1; tileX++) {
-        if (isForestAccess("bug_forest", tileX, tileY)) return [];
+        if (isForestAccess("bug_forest", tileX, tileY) || inBounds(tileX,tileY,GARDEN_BOUNDS)) return [];
       }
     }
     return [{ key: `${x}:${y}`, x, y, frame, left, top, width, height }];

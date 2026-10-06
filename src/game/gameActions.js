@@ -44,6 +44,8 @@ import {
   insectInventory,
   showBugTournament,
   showBirdWatching,
+  eqSeedId, birdwatchingLuck,
+  cardOpponent, cardTradeUsed, cardDecks,
 } from "./stores.js";
 import {
   SEASONS,
@@ -89,6 +91,7 @@ import { catchInsect, ensureDailyInsects, insectSpecies } from "./insectHunt.js"
 import { BUG_ARCHETYPE_LINES, BUG_ARCHETYPES } from "./bugCatalog.js";
 import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
 import { ensureDailyBirds } from "./birdWatching.js";
+import { advanceGardenDay, eatFruit, plantSeed, GARDEN_PLOTS, gardenBonus } from "./garden.js";
 import {
   startAim,
   useNetAtShore,
@@ -118,6 +121,8 @@ export function sleep() {
     const newWeather = weathers[Math.floor(Math.random() * weathers.length)];
     currentWeather.set(newWeather);
     generateDailyQuest();
+    advanceGardenDay();
+    birdwatchingLuck.set(0);
 
     constructions.update((constr) => {
       Object.keys(constr).forEach((key) => {
@@ -294,8 +299,8 @@ export function confirmReplaceInventory() {
       return [...inv];
     });
     inventoryFullPendingFish.set(null);
-    checkDailyQuestProgress(pending);
-    finishCatchSequence(pending);
+    const questReward = checkDailyQuestProgress(pending);
+    finishCatchSequence(pending, questReward);
   }
 }
 
@@ -337,13 +342,13 @@ export function sellFish(index) {
   const inv = get(inventory);
   const item = inv[index];
   if (!item) return;
-  money.update((m) => m + item.priceFinal);
+  money.update((m) => m + Math.round(item.priceFinal * (1 + gardenBonus("sale"))));
   inventory.set(inv.filter((_, i) => i !== index));
   saveGame();
 }
 
 export function sellAll() {
-  const total = get(inventory).reduce((sum, f) => sum + f.priceFinal, 0);
+  const total = get(inventory).reduce((sum, f) => sum + Math.round(f.priceFinal * (1 + gardenBonus("sale"))), 0);
   money.update((m) => m + total);
   inventory.set([]);
   saveGame();
@@ -376,6 +381,7 @@ export function equipItem(id, type) {
   if (type === "rod") eqRodId.set(id);
   if (type === "net") eqNetId.set(id);
   if (type === "bait") eqBaitId.set(id);
+  if (type === "seed") eqSeedId.set(id);
   saveGame();
 }
 
@@ -420,6 +426,19 @@ function openNpcDialog(npc, atTavern) {
   const actions = { " ": closeDialog };
   const options = ["[SPACE] Tchau"];
 
+  if (npc.id === "card_seller") {
+    line = get(cardTradeUsed) || get(cardDecks).length ? "Agora, somente vendas. Um novo deck custa 2000." : get(gameMode) === "pokemon" ? "Eu sempre quis um dragao. Troco um Dratini pelo seu primeiro deck, ou vendo um por 2000." : "Eu sempre quis uma Tilapia Dourada. Troco uma pelo seu primeiro deck, ou vendo um por 2000.";
+    options.push("[C] Comprar cartas");
+    actions.C = () => phase.set(PHASES.CARD_SHOP);
+  }
+  if (npc.cardTheme && !atTavern) {
+    line = `${line} Quer duelar?`;
+    options[0] = "[SPACE] Sim";
+    options.push("[X] Nao");
+    actions[" "] = () => { cardOpponent.set(npc); phase.set(PHASES.CARD_DUEL); };
+    actions.X = closeDialog;
+  }
+
   const giftIndex = pickGift(npc);
   if (giftIndex >= 0 && canGiftToday(npc.id)) {
     options.push(`[G] Dar ${get(inventory)[giftIndex].name}`);
@@ -429,8 +448,8 @@ function openNpcDialog(npc, atTavern) {
       const reaction = result.loved
         ? `${npc.name}: "Uau, ${result.fish.name}! Eu adoro ${tasteLabel(npc)}!"`
         : `${npc.name}: "Obrigado pelo ${result.fish.name}!"`;
-      const perk = result.unlockedPerk ? ` ${PERK_MESSAGES[npc.id]}` : "";
-      currentMessage.set(`${reaction} ${heartsText(npc.id)}${perk}`);
+      const perk = result.unlockedPerk ? ` ${PERK_MESSAGES[npc.id] || "Sua amizade floresceu!"}` : "";
+      currentMessage.set(`${reaction} ${heartsText(npc.id)}${perk}${result.seed ? ` Presente: ${result.seed.seedName}!` : ""}`);
       dialogActions.set({ " ": closeDialog });
     };
   }
@@ -515,7 +534,7 @@ function openTournamentStall() {
       saveGame();
       currentMessage.set(
         result.prize > 0
-          ? `🏆 Você ficou em ${result.place}º lugar e ganhou ¥${result.prize}!`
+          ? `🏆 Você ficou em ${result.place}º lugar e ganhou ¥${result.prize}!${result.seed ? ` Presente: ${result.seed.seedName}.` : ""}`
           : `Você ficou em ${result.place}º lugar. Fica para o próximo festival!`
       );
       dialogActions.set({ " ": closeDialog });
@@ -536,8 +555,15 @@ export function interact() {
   const curDay = get(day);
   const cMap = get(currentMap);
 
+  if (cMap === "bug_forest" && GARDEN_PLOTS.some((plot) => plot.x === target.x && plot.y === target.y)) {
+    const result = eatFruit(target.x, target.y) || plantSeed(target.x, target.y);
+    showRPGMessage(result.message);
+    if (result.ok) saveGame();
+    return;
+  }
+
   const clickedNpc = get(villagers).find((n) => {
-    const loc = getNpcLocation(n, mins, curDay);
+    const loc = getNpcLocation(n, mins, curDay, get(seasonIndex));
     return loc.map === cMap && loc.x === target.x && loc.y === target.y;
   });
 
@@ -578,7 +604,7 @@ export function interact() {
   }
 
   if (clickedNpc) {
-    const loc = getNpcLocation(clickedNpc, mins, curDay);
+    const loc = getNpcLocation(clickedNpc, mins, curDay, get(seasonIndex));
     openNpcDialog(clickedNpc, loc.map === "tavern");
     return;
   }
@@ -675,6 +701,8 @@ export function interact() {
       shopTab.set("buy_bait");
     } else if (cMap === "carpenter_shop") {
       phase.set(PHASES.CARPENTER);
+    } else if (cMap === "game_house") {
+      phase.set(PHASES.CARD_SHOP);
     } else if (cMap === "tavern") {
       openKitchen();
     }

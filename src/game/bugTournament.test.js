@@ -62,14 +62,14 @@ describe("campeonato de insetos", () => {
   });
 
   it("aplica os prêmios diários e o prêmio final da estação", () => {
-    expect(prizeForCompetition(9, true)).toBe(2000);
+    expect(prizeForCompetition(9, true)).toBe(6000);
     for (let attempt = 0; attempt < 30; attempt++) {
       const threePlayerPrize = prizeForCompetition(3, false);
       const largerPrize = prizeForCompetition(6, false);
-      expect(threePlayerPrize).toBeGreaterThanOrEqual(100);
-      expect(threePlayerPrize).toBeLessThanOrEqual(500);
-      expect(largerPrize).toBeGreaterThanOrEqual(500);
-      expect(largerPrize).toBeLessThanOrEqual(1000);
+      expect(threePlayerPrize).toBeGreaterThanOrEqual(800);
+      expect(threePlayerPrize).toBeLessThanOrEqual(1400);
+      expect(largerPrize).toBeGreaterThanOrEqual(1500);
+      expect(largerPrize).toBeLessThanOrEqual(2500);
     }
   });
 });

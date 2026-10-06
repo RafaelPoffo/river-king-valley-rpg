@@ -37,25 +37,25 @@ export const TOURNAMENTS = {
     biome: "river",
     metric: "weight",
     goal: "o peixe de rio mais pesado",
-    prizes: [1500, 600, 250],
+    prizes: [4000, 1600, 800],
   },
   "Torneio de Verão": {
     biome: "sea",
     metric: "weight",
     goal: "o peixe de mar mais pesado",
-    prizes: [1800, 700, 300],
+    prizes: [5000, 2000, 1000],
   },
   "Colheita de Outono": {
     biome: null,
     metric: "value",
     goal: "o peixe mais valioso",
-    prizes: [2000, 800, 300],
+    prizes: [6000, 2400, 1200],
   },
   "Pesca Extrema": {
     biome: null,
     metric: "weight",
     goal: "o maior peixe do dia",
-    prizes: [3000, 1200, 500],
+    prizes: [8000, 3200, 1600],
   },
 };
 

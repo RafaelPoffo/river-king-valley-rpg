@@ -16,7 +16,7 @@ const NET_CREATURES = new Set([
 ]);
 
 function pmdUrl(id) {
-  return `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${id}/Normal.png`;
+  return `/assets/portraits/${id}.png`;
 }
 
 export const POKEMON_DB = [

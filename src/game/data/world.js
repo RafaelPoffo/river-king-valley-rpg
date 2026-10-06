@@ -33,6 +33,7 @@ export const BUILDING_SIGNS = [
   { x: 32, y: 6, label: "OFICINA" },
   { x: 6, y: 10, label: "CABANA DO JOE" },
   { x: 14, y: 10, label: "TAVERNA" },
+  { x: 22, y: 10, label: "CASA DOS JOGOS" },
   { x: 30, y: 10, label: "AQUÁRIO", requires: "aquarium_building", fallback: "AQUÁRIO (FECHADO)" },
 ];
 
@@ -44,6 +45,7 @@ export const FOREST_ACCESS_BOUNDS = {
   village: { x1: 4, x2: 8, y1: 0, y2: 7 },
   bug_forest: { x1: 4, x2: 8, y1: 19, y2: 24 },
 };
+export const GARDEN_BOUNDS = { x1:23, x2:37, y1:17, y2:22 };
 
 export function isForestAccess(mapName, x, y) {
   const bounds = FOREST_ACCESS_BOUNDS[mapName];
@@ -107,6 +109,12 @@ function createBugForest() {
   for (const [x, y] of [[5, 7], [10, 6], [13, 13], [16, 17], [24, 8], [34, 9],
     [24, 18], [31, 18], [34, 22]]) rows[y][x] = "F";
 
+  for (let y = GARDEN_BOUNDS.y1; y <= GARDEN_BOUNDS.y2; y++) {
+    for (let x = GARDEN_BOUNDS.x1; x <= GARDEN_BOUNDS.x2; x++) {
+      if (["T","F"].includes(rows[y][x])) rows[y][x] = "G";
+    }
+  }
+
   return rows.map((row) => row.join(""));
 }
 
@@ -139,6 +147,20 @@ export const MAPS_DATA = {
     "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
   ],
   bug_forest: createBugForest(),
+  game_house: [
+    "0000000000000000",
+    "0##############0",
+    "0#============#0",
+    "0#========CCCC#0",
+    "0#============#0",
+    "0#====h==h====#0",
+    "0#=====++=====#0",
+    "0#=====++=====#0",
+    "0#====h==h====#0",
+    "0#============#0",
+    "0######--######0",
+    "0000000000000000",
+  ],
   deep_sea: [
     "XXXXXXXXXXXXXXXXXXXXXXXX",
     "XXXXXXXXXXXXXXXXXXXXXXXX",
@@ -226,3 +248,9 @@ export const MAPS_DATA = {
     "0000000000000000",
   ],
 };
+
+for (const [rowIndex, tiles] of [[10, "HHHHH"], [11, "WWVWW"]]) {
+  const row = [...MAPS_DATA.village[rowIndex]];
+  [...tiles].forEach((tile, index) => { row[20 + index] = tile; });
+  MAPS_DATA.village[rowIndex] = row.join("");
+}

@@ -47,6 +47,8 @@ import {
   birdPopulationDay,
   birdLog,
   birdwatchingLuck,
+  garden, gardenDay, gardenBuffs, gardenVisitor, seedStock, eqSeedId,
+  cardCollection, cardDecks, cardTradeUsed, cardVictories, currentToolType,
 } from "./stores.js";
 import { updateCamera } from "./movement.js";
 import { generateDailyQuest } from "./quests.js";
@@ -54,6 +56,7 @@ import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constan
 import { ensureWorldPopulation } from "./worldCreatures.js";
 import { ensureDailyInsects } from "./insectHunt.js";
 import { ensureDailyBirds } from "./birdWatching.js";
+import { initialGarden } from "./garden.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
 export const SAVE_VERSION = 3;
@@ -100,6 +103,17 @@ export const PERSISTED_FIELDS = [
   { key: "birdPopulationDay", store: birdPopulationDay, initial: () => null },
   { key: "birdLog", store: birdLog, initial: () => ({}) },
   { key: "birdwatchingLuck", store: birdwatchingLuck, initial: () => 0 },
+  { key: "garden", store: garden, initial: initialGarden },
+  { key: "gardenDay", store: gardenDay, initial: () => 0 },
+  { key: "gardenBuffs", store: gardenBuffs, initial: () => [] },
+  { key: "gardenVisitor", store: gardenVisitor, initial: () => null },
+  { key: "seedStock", store: seedStock, initial: () => ({ pear: 1 }) },
+  { key: "eqSeedId", store: eqSeedId, initial: () => "pear" },
+  { key: "toolType", store: currentToolType, initial: () => "rod" },
+  { key: "cardCollection", store: cardCollection, initial: () => ({}) },
+  { key: "cardDecks", store: cardDecks, initial: () => [] },
+  { key: "cardTradeUsed", store: cardTradeUsed, initial: () => false },
+  { key: "cardVictories", store: cardVictories, initial: () => [] },
 ];
 
 // Each entry upgrades a save from version N to N + 1.

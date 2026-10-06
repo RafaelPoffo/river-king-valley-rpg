@@ -27,15 +27,17 @@ npm.cmd exec --yes --package=node@22 -- node node_modules/vite/bin/vite.js
 
 - **Dois modos de jogo**: Normal (peixes, insetos e aves reais) e Pokémon (Pokémon de água, insetos e aves das gerações 1 e 2).
 - **Tempo, estações e clima**: dias de 6h às 22h, quatro estações de 15 dias, sol, chuva e tempestade. O relógio para dentro das casas.
-- **Vila com NPCs**: Capitão Thomas, Mestre Gema, Ana e Velho Joe, cada um com seu canto na vila e visitas à taverna à noite.
+- **Vila com NPCs**: os moradores originais, quatro guias de pesca, aves, insetos e jardim, Ivo Jornaleiro e 14 duelistas com quatro presentes por dia. Os moradores recebem peixes, têm amizade e horários na taverna.
 - **Amizade**: converse e dê peixes de presente para ganhar corações. Cada morador libera uma vantagem.
 - **Pesca**: mira de distância limitada pelo alcance da vara, sombra se aproximando, fisgada e minigame de tensão na linha. Também dá para pescar com rede na margem.
 - **Criaturas pela vila**: de 2 a 8 visitantes por dia, com caminhada lenta e pausas. Pokémon terrestres são decorativos; criaturas na água podem ser pescadas. Os sprites vêm do atlas local, com quadros de 16×16 ou 32×32 para espécies grandes.
 - **Floresta conectada à vila**: ponte ao norte, trilhas de terra, clareiras e árvores locais com variações por estação. A ponte e seus acessos ficam livres de criaturas e de copas de árvores.
-- **Caça de insetos**: de 3 a 9 insetos por dia, 65 espécies no modo Normal e 22 Pokémon no outro modo, com mochila própria e perfis de batalha.
+- **Caça de insetos**: de 3 a 9 insetos por dia, sempre somando 18 pontos. Há 65 perfis no modo Normal e variações de 22 Pokémon, com espécies distintas em cada população diária.
 - **Campeonato da clareira**: escolha e ordene três insetos para enfrentar Joe Bug e os rivais em duelos animados na mesa. Há uma final no último dia de cada estação.
 - **Observação de pássaros**: explore o panorama com binóculos, registre tamanhos e recordes de 8 aves comuns ou 17 Pokémon e acumule sorte para a pesca e as batalhas de insetos.
-- **Pixelart local**: jogador, moradores, concorrentes da floresta e Pokémon das cenas usam recortes de `sprites.png`; árvores da floresta usam `arvores.png`. Insetos e aves do modo Normal usam emojis. Somente os portraits Pokémon dos menus e registros são carregados online.
+- **Jardim**: cinco espécies de árvores, plantio com sementes, frutos com bônus diários e um visitante de planta com 10% de chance por manhã.
+- **Casa dos Jogos**: decks surpresa de 32 cartas por ¥2.000, uma troca inicial por Dratini ou Tilápia Dourada, cartas avulsas caras, editor de decks e duelos contra 14 temas em rotação.
+- **Pixelart local**: personagens e insetos no mapa usam `sprites.png`, árvores do bosque usam `arvores.png`, e a casa dos jogos usa tiles de `tudo.png`. Os 251 portraits frontais de Crystal ficam locais, sem dependência de imagens remotas durante a partida.
 - **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
 - **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
 - **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨). Clique numa espécie para ver habitat, iscas preferidas, peso, força e preço.
@@ -79,6 +81,7 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Oficina do Marceneiro | Construções e melhorias com a Mestre Gema. |
 | Cabana do Velho Joe | Caixa de minhocas: de 2 a 4 minhocas grátis por dia e, se o estoque zerar, mais 2 de reserva a qualquer momento. |
 | Taverna | Quadro de missões, calendário de festivais e a cozinha da Ana (no balcão). À noite, os moradores se reúnem aqui. |
+| Casa dos Jogos | Entre a taverna e o aquário. Ivo vende decks e cartas no balcão; quatro duelistas recebem visitantes durante o dia. |
 | Terreno do aquário | Vazio até o Aquário Municipal ser construído. |
 | Praça | A barraca do festival aparece em dia de festa. |
 | Rio, margem e mar | Onde se pesca. O mar fica no sul da vila. |
@@ -98,7 +101,8 @@ Todo dia aparecem de **3 a 9 insetos** na área de caça da floresta. O sorteio 
 
 - Fique de frente para um inseto e aperte **Espaço** para conhecer seu perfil. Confirme com Espaço para guardá-lo ou use X para deixá-lo no bosque. Não é necessário equipar uma rede.
 - Os insetos ficam numa seção própria da mochila, separada dos peixes. A capacidade considera o valor interno das espécies, não apenas a quantidade; quando ela estiver cheia, solte um inseto pelo botão de sua ficha para abrir espaço.
-- O modo Normal tem **65 espécies**, representadas por emojis. O modo Pokémon tem **22 espécies de Kanto e Johto**, com pixelarts locais no mapa e portraits nas fichas.
+- O modo Normal tem **65 perfis**. O modo Pokémon tem **22 espécies de Kanto e Johto**, com variações de força, orçamento e arquétipo. Cada espécie tem perfis para diferentes orçamentos, evitando repetições forçadas pelo total de 18 pontos.
+- No overworld, as duas versões usam exclusivamente Weedle, os dois desenhos de mariposa e a abelha do atlas. As fichas e a mesa identificam a espécie capturada.
 - Os perfis incluem Impacto, Casca, Ágil, Tático, Versátil, Sorte, Embalo, Trapaça, Âncora e Azarão. Cada um modifica o comportamento do inseto nas disputas; os valores internos de força e orçamento não aparecem na interface.
 
 ### Campeonato de insetos
@@ -109,23 +113,51 @@ Cada confronto é uma **melhor de três**: os insetos se enfrentam um a um na me
 
 | Campeonato | Participantes, incluindo você | Prêmio do campeão |
 |---|---|---|
-| Diário pequeno | 3 | ¥100 a ¥500 |
-| Diário maior | 4 a 6 | ¥500 a ¥1.000 |
-| Final da estação, no dia 15 | 9 | ¥2.000 |
+| Diário pequeno | 3 | ¥800 a ¥1.400, uma semente e chance de carta rara |
+| Diário maior | 4 a 6 | ¥1.500 a ¥2.500, uma semente e chance de carta rara |
+| Final da estação, no dia 15 | 9 | ¥6.000, uma semente e a carta Guardião do Bosque |
 
 O campeão precisa vencer todos os confrontos. Ao terminar o campeonato, ganhando ou perdendo, Joe Bug liberta **todos os insetos carregados**, inclusive os que ficaram fora do trio. O resultado e o prêmio são salvos. Essa competição é independente dos torneios de pesca dos festivais.
 
-No modo Pokémon, os concorrentes da clareira usam personagens do atlas local, e os insetos na mesa usam o mesmo renderizador de pixelart do mapa. Os portraits continuam nos cantos da batalha e na preparação. No modo Normal, os insetos e os avatares dos concorrentes mantêm os emojis.
+Nas duas versões, os concorrentes da clareira e os insetos na mesa usam o atlas local. Cada duelo recria os dois lutadores: a orientação do derrotado não passa para o próximo inseto.
 
 ### Observação de pássaros
 
-Interaja com o **banco ao norte da floresta** e confirme para abrir os binóculos. O panorama tem **4.000×800 pixels**, com de **1 a 8 aves da mesma espécie** sorteadas para aquele dia. Espécies comuns aparecem com mais frequência, e cada ave tem posição e tamanho próprios.
+Interaja com o **banco ao norte da floresta** e confirme para abrir os binóculos. O panorama tem **4.000×800 pixels**, com de **1 a 8 aves de espécies diferentes** sorteadas para aquele dia. Espécies comuns aparecem com mais frequência; raras e lendárias têm pesos muito menores.
 
 Mova os binóculos com as setas e aperte Espaço quando uma ave estiver no campo de visão. Cada indivíduo pode ser observado uma vez por dia. O registro mostra nome, descrição, tamanho, quantidade de observações, maior e menor tamanho registrados e estrelas de raridade. O **Catálogo de Pássaros** ou a **Pokédex de Aves** fica no menu de pausa.
 
-O modo Normal possui **8 espécies** com emojis, incluindo pomba, pardal, coruja e arara. O modo Pokémon possui **17 espécies** de Kanto e Johto, incluindo Pidgey, Hoothoot, as aves lendárias e Lugia. Durante a observação, todas as aves Pokémon usam recortes locais; os portraits online aparecem somente no registro e no catálogo.
+O modo Normal possui **8 espécies** com emojis, incluindo pomba, pardal, coruja e arara. O modo Pokémon possui **17 espécies** de Kanto e Johto, incluindo Pidgey, Hoothoot, as aves lendárias e Lugia. As aves Pokémon usam seus portraits frontais locais nos binóculos, no registro e no catálogo, distinguindo visualmente cada espécie.
 
-Cada observação aumenta a **sorte**, de acordo com as estrelas da ave, até o nível **5**. Essa sorte aumenta proporcionalmente a chance de peixes raros, sem alterar a dos comuns, e oferece uma pequena vantagem nos duelos de insetos. O catálogo, os recordes, a sorte e os indivíduos já observados ficam preservados no save.
+Cada ave comum (1 estrela) concede **1 de sorte**; aves diferentes (2 ou 3 estrelas), **2**; raras (4 ou 5 estrelas), **3**. O limite é **10 por dia**, mas observar todas as aves disponíveis não garante esse total. A sorte melhora encontros raros e oferece uma vantagem pequena nas disputas. Ela é salva durante o dia e zera ao dormir; o catálogo e os recordes permanecem.
+
+### Jardim
+
+O jardim fica ao sul da clareira de Joe Bug, na metade leste da floresta. Você começa com uma macieira pronta e uma semente de pera. Há cinco canteiros; plante no máximo cinco árvores, sem repetir a espécie.
+
+Selecione uma semente pelas setas do balão de equipamento, fique de frente para um canteiro vazio e aperte **Espaço**. A árvore cresce em **3 a 5 dias**, inclusive através da troca de estação. Quando houver fruto, interaja com a árvore para comê-lo e receber o bônus até o fim do dia. Cada árvore guarda apenas um fruto e começa outro prazo de 3 a 5 dias após o consumo; o bônus da mesma fruta não acumula.
+
+| Fruto | Bônus do dia |
+|---|---|
+| Maçã | +1 na força da vara |
+| Pera | +6 na área de captura |
+| Pêssego | +2 na sorte de pesca |
+| Cereja | +20% no valor de venda dos peixes |
+| Ameixa | Marcador de captura 15% mais lento |
+
+Há **10% de chance por manhã** de um visitante de planta aparecer próximo ao jardim e recarregar todas as árvores já crescidas. Mudas continuam respeitando o prazo de crescimento. Sementes vêm de missões, campeonatos e presentes por marcos de amizade.
+
+### Cartas e Casa dos Jogos
+
+Ivo, atrás do balcão, vende um **deck aleatório por ¥2.000**. Antes do primeiro deck, também aceita um Dratini no modo Pokémon ou uma **Tilápia Dourada** no modo Normal. A Tilápia tem os mesmos atributos finais e a mesma chance de encontro de Dratini: 2,5% dos sorteios elegíveis de rio, antes dos ajustes de sorte e depois da verificação de lixo. Depois da primeira compra ou troca, Ivo só vende. É possível comprar outros decks; cartas avulsas custam de ¥2.500 a ¥14.000.
+
+O menu de pausa **Cartas & Decks** mostra a coleção e permite editar qualquer deck comprado. Cada deck precisa de exatamente **32 cartas**, respeitando as cópias que você possui. Os decks são configurações alternativas da mesma coleção, usadas uma de cada vez.
+
+Cada um dos 14 duelistas tem um tema exclusivo. Quatro aparecem na casa por dia e seguem para a taverna à noite; a rotação continua na troca de estação. Fale com um deles, aceite o duelo e escolha seu deck. A primeira vitória contra cada rival no dia concede ¥600.
+
+Regras: 10 HP iniciais, três zonas de monstros e três de magias, mão reabastecida até quatro no começo do turno (máximo cinco), uma invocação e uma troca por turno. Chefes exigem sacrificar um aliado. Monstros recém-invocados ou revividos não atacam naquele turno. Magias e preparações acontecem na fase principal; armadilhas respondem a ataques. Campos não acumulam bônus ao serem substituídos. Depois de 15 rodadas, vence quem tiver mais HP; empate é decidido nos dados.
+
+Os 14 temas mantêm atributos, subtipos e efeitos iguais nas duas versões. O modo Normal usa os personagens dos decks de fantasia; o modo Pokémon muda a apresentação para nomes e portraits frontais de Pokémon de Kanto e Johto. Cartas raras podem vir de quests, do campeonato de insetos e de capturas no mar: Guardião das Marés é bem mais raro que Canção do Oceano.
 
 ### Tempo e clima
 
@@ -152,7 +184,9 @@ Cada observação aumenta a **sorte**, de acordo com as estrelas da ave, até o 
 
 **Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio, no mar (longe do cais e do barco) e em volta do barco no alto-mar. São só decoração, sorteadas por dia, e não têm relação com a pesca.
 
-**Atlas do overworld.** Jogador, moradores, concorrentes da clareira e Pokémon das cenas usam [public/assets/sprites.png](public/assets/sprites.png), inclusive os insetos na mesa de batalha e as aves nos binóculos. O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16×16 (e os três de 32×32 da linha 14) com passo de 17 pixels, ignora as faixas brancas e remove apenas o fundo conectado aos cantos. Personagens usam direções e uma sequência de caminhada/parado; Pokémon usam seus pares de animação. Espécies sem um quadro exclusivo compartilham representações por família, priorizando lagartas, borboletas, vespas e mantis para insetos e quadros de aves para pássaros. A paleta original da imagem é preservada. Não há imports de sprites Pokémon online nas cenas: apenas os portraits de menus, fichas e registros continuam usando URLs externas. Os antigos arquivos de overworld em `public/assets/world/` não são mais usados pelo mapa; seus créditos permanecem nessa pasta.
+**Atlas do overworld.** Jogador, moradores, concorrentes da clareira e Pokémon das cenas usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16×16 (e três de 32×32) com passo de 17 pixels e remove apenas o fundo conectado aos cantos. Insetos selvagens usam exclusivamente os quatro desenhos permitidos. Os portraits frontais dos 251 Pokémon ficam em `public/assets/portraits/`, extraídos do primeiro frame do projeto `pret/pokecrystal`. As folhas solicitadas do Spriters Resource retornaram HTTP 403, então foi usada essa fonte alternativa dos sprites de Crystal. A origem está registrada em [public/assets/portraits/SOURCE.txt](public/assets/portraits/SOURCE.txt). O importador reproduzível é [scripts/crystal-assets.mjs](scripts/crystal-assets.mjs).
+
+**Construções.** O antigo arquivo de píer era um recorte de água, e os arquivos antigos de barco eram de um interior; o barco visível era vetorial. Docas e barcos agora usam bitmaps pixelados, bordas e postes coerentes, paleta limitada e escala sem suavização. A mesa, as cadeiras, o piso e o telhado da Casa dos Jogos usam recortes de [public/assets/tudo.png](public/assets/tudo.png). As árvores frutíferas vêm de `sprites.png`. Os recortes e os novos bitmaps são reproduzidos por [scripts/world-assets.mjs](scripts/world-assets.mjs).
 
 **Atlas da floresta.** [src/game/forestAtlas.js](src/game/forestAtlas.js) cadastra as coordenadas das árvores, prepara a transparência, define variantes sazonais e calcula as posições e dimensões das copas. A camada do mapa usa esses recortes sem alterar a árvore da vila ou da praia. A reserva de acesso está em `FOREST_ACCESS_BOUNDS` e `isForestAccess`, em [src/game/data/world.js](src/game/data/world.js), e é compartilhada pela geração de insetos, pelo posicionamento e movimento de criaturas e pela distribuição visual das árvores.
 

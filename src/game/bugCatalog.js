@@ -84,25 +84,33 @@ const pokemonRows = [
   ["0214", "Heracross", 5],
 ];
 
-const pmdPortrait = (dexId) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${dexId}/Normal.png`;
+const pmdPortrait = (dexId) => `/assets/portraits/${dexId}.png`;
 const commonProfileIndexes = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
   55, 41, 42, 43,
 ];
 
-export const POKEMON_BUGS = pokemonRows.map(([dexId, name], index) => {
-  const commonProfile = COMMON_BUGS[commonProfileIndexes[index]];
+const pokemonProfiles = COMMON_BUGS.map((commonProfile, index) => {
+  const baseIndex = index < pokemonRows.length ? index : index % pokemonRows.length;
+  const [dexId, name] = pokemonRows[baseIndex];
+  const originalProfile = index < pokemonRows.length ? COMMON_BUGS[commonProfileIndexes[index]] : commonProfile;
   return {
-    id: `pokemon_bug_${dexId}`,
+    id: `pokemon_bug_${dexId}${index < pokemonRows.length ? '' : `_${index}`}`,
     dexId,
-    name,
+    name: index < pokemonRows.length ? name : `${name} ${ARCHETYPES[originalProfile.archetypeId].name}`,
     emoji: "🐛",
-    strength: commonProfile.strength,
-    points: commonProfile.points,
-    archetypeId: commonProfile.archetypeId,
+    strength: originalProfile.strength,
+    points: originalProfile.points,
+    archetypeId: originalProfile.archetypeId,
     portrait: pmdPortrait(dexId),
   };
 });
+
+const budgetProfiles = [...new Set(COMMON_BUGS.map((bug) => bug.points))].map((points) => COMMON_BUGS.find((bug) => bug.points === points));
+export const POKEMON_BUGS = [...pokemonProfiles, ...pokemonRows.flatMap(([dexId,name], speciesIndex) => budgetProfiles.map((profile,index) => {
+  const archetypeId = Object.keys(ARCHETYPES)[(speciesIndex + index) % 10];
+  return { id:`pokemon_bug_${dexId}_budget_${profile.points}`, dexId, name:`${name} ${ARCHETYPES[archetypeId].name}`, emoji:"🐛", strength:profile.strength, points:profile.points, archetypeId, portrait:pmdPortrait(dexId) };
+}))];
 
 export const BUG_ARCHETYPES = ARCHETYPES;
 export const bugsForMode = (mode) => mode === "pokemon" ? POKEMON_BUGS : COMMON_BUGS;

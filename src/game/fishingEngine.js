@@ -44,6 +44,8 @@ import { saveGame } from "./saveSystem.js";
 import { recordTournamentCatch } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import { dishEffect } from "./dishes.js";
+import { gardenBonus } from "./garden.js";
+import { grantRareCard } from "./cards.js";
 import { canBreakLine, lineBreakChance } from "./fight.js";
 import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
 import { birdRarityMultiplier } from "./birdWatching.js";
@@ -395,7 +397,7 @@ export function rollFishByZone(zone) {
   const bait = get(eqBaitId);
   const baitTier = BAITS.find((item) => item.id === bait)?.tier || 0;
   const curSeason = get(seasonIndex);
-  const birdLuck = get(birdwatchingLuck);
+  const birdLuck = get(birdwatchingLuck) + gardenBonus("luck");
 
   if (isPokeMode && biomeTarget === "river" && bait === "megabit" && get(currentToolType) === "rod") {
     const porigon = database.find((fish) => fish.id === "porigon");
@@ -423,6 +425,12 @@ export function rollFishByZone(zone) {
       };
     }
   }
+
+  const exchangeSpeciesId = isPokeMode ? "dratini" : "tilapia_dourada";
+  const exchangeSpecies = database.find((fish) => fish.id === exchangeSpeciesId);
+  if (biomeTarget === "river" && exchangeSpecies && matchesDist(exchangeSpecies,zone)
+    && matchesTime(exchangeSpecies,night) && matchesSeason(exchangeSpecies,curSeason)
+    && Math.random() < 0.025 * birdRarityMultiplier(birdLuck,3)) return decorateCatch(exchangeSpecies);
 
   if (
     zone >= 2 &&
@@ -469,6 +477,7 @@ export function rollFishByZone(zone) {
     ]);
   }
 
+  pool = pool.filter((fish) => fish.id !== exchangeSpeciesId);
   if (pool.length === 0) return null;
 
   const weights = pool.map((fish) => {
@@ -564,7 +573,7 @@ export function startMinigame() {
   if (hooked && canBreakLine(hooked)) {
     const rolledWeight = rollCatchWeight(hooked);
     activeFish.set({ ...hooked, rolledWeight });
-    if (Math.random() < lineBreakChance(tool, hooked, rolledWeight)) {
+    if (Math.random() < lineBreakChance({ ...tool, strength: (tool?.strength || 0) + gardenBonus("strength") }, hooked, rolledWeight)) {
       resetAction("A linha arrebentou! O peixe era forte demais para a sua vara e fugiu com a isca.");
       return;
     }
@@ -577,6 +586,7 @@ export function startMinigame() {
   let baseWidth = catchZoneWidth(curFish?.diff || 10, tool?.power || 1);
   if (up.widerBar.bought) baseWidth *= 1.2;
   baseWidth *= dishEffect("catchBar", 1);
+  baseWidth = Math.min(90, baseWidth + gardenBonus("capture"));
 
   catchTargetWidth.set(baseWidth);
   catchTargetCenter.set(20 + Math.random() * 60);
@@ -593,7 +603,7 @@ function updateMinigame(time) {
   lastTime = time;
 
   const curFish = get(activeFish);
-  let bar = get(minigameBar) + minigameDir * (curFish?.spd || 1) * MINIGAME_SPEED * delta;
+  let bar = get(minigameBar) + minigameDir * (curFish?.spd || 1) * MINIGAME_SPEED * delta * (1 - gardenBonus("calm"));
   if (bar > 100) {
     bar = 100;
     minigameDir = -1;
@@ -649,17 +659,18 @@ export function addFishToInventory(fishObj) {
 
   if (inv.length < maxSize) {
     inventory.set([fishObj, ...inv]);
-    checkDailyQuestProgress(fishObj);
-    finishCatchSequence(fishObj);
+    const questReward = checkDailyQuestProgress(fishObj);
+    finishCatchSequence(fishObj, questReward);
   } else {
     inventoryFullPendingFish.set(fishObj);
   }
 }
 
-export function finishCatchSequence(finalFish) {
+export function finishCatchSequence(finalFish, questReward = null) {
   const tournamentRecord = recordTournamentCatch(finalFish);
   const isTreasure = finalFish.type === "treasure";
   const museumRewards = isTreasure ? claimCollectionRewards("museum") : [];
+  const rareCard = !isTreasure && ["sea","deep_sea"].includes(finalFish.biome) ? grantRareCard("sea") : null;
   saveGame();
   phase.set(PHASES.CAUGHT);
   activeFish.set(finalFish);
@@ -670,6 +681,8 @@ export function finishCatchSequence(finalFish) {
   const legendMsg = finalFish.requires ? " 👑 A LENDA! Conte ao Velho Joe!" : "";
   currentMessage.set(
     caughtMsg + legendMsg + tournamentMsg + rewardMessage("museum", museumRewards)
+      + (rareCard ? ` Carta encontrada: ${rareCard.name}!` : "")
+      + (questReward ? ` Missao concluida! ${questReward}` : "")
   );
 }
 

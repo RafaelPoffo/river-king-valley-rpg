@@ -63,10 +63,17 @@ export const eqRodId = writable("vara_vime");
 export const eqNetId = writable(null);
 export const eqBaitId = writable("sem_isca");
 export const currentToolType = writable("rod"); // 'rod' | 'net'
+export const eqSeedId = writable("pear");
+export const seedStock = writable({ pear: 1 });
+export const gardenDay = writable(0);
+export const garden = writable([{ fruitId: "apple", x: 24, y: 19, grownAt: 0, readyAt: 0 }]);
+export const gardenBuffs = writable([]);
+export const gardenVisitor = writable(null);
 
 export const currentToolData = derived(
   [currentToolType, eqRodId, eqNetId],
   ([$type, $rod, $net]) => {
+    if ($type === "seed") return null;
     const id = $type === "rod" ? $rod : $net;
     if (!id) return null;
     return TOOLS[$type]?.find((t) => t.id === id) || null;
@@ -113,6 +120,11 @@ export const dailyBirds = writable([]);
 export const birdPopulationDay = writable(null);
 export const birdLog = writable({});
 export const birdwatchingLuck = writable(0);
+export const cardCollection = writable({});
+export const cardDecks = writable([]);
+export const cardTradeUsed = writable(false);
+export const cardVictories = writable([]);
+export const cardOpponent = writable(null);
 
 // Collections & Quests
 export const inventory = writable([]);

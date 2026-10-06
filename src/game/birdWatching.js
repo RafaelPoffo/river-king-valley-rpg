@@ -42,7 +42,7 @@ const pokemonRows = [
   ["0249", "Lugia", 5, "Uma presença lendária que quase nunca se mostra."],
 ];
 
-const pmdPortrait = (dexId) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${dexId}/Normal.png`;
+const pmdPortrait = (dexId) => `/assets/portraits/${dexId}.png`;
 
 export const POKEMON_BIRDS = pokemonRows.map(([dexId, name, rarity, description]) => ({
   id: `bird_${dexId}`,
@@ -67,10 +67,12 @@ function hashRandom(seed) {
   };
 }
 
-const RARITY_WEIGHTS = [0, 46, 27, 15, 8, 2];
+const RARITY_WEIGHTS = [0, 46, 20, 6, 1, 0.15];
+
+export const birdLuckPoints = (rarity) => rarity <= 1 ? 1 : rarity <= 3 ? 2 : 3;
 
 export function birdRarityMultiplier(luck, rarity) {
-  const boundedLuck = Math.max(0, Math.min(5, luck));
+  const boundedLuck = Math.max(0, Math.min(10, luck));
   const boundedRarity = Math.max(1, Math.min(6, rarity));
   return 1 + boundedLuck * 0.08 * ((boundedRarity - 1) / 5);
 }
@@ -98,8 +100,10 @@ export function generateDailyBirds(key, mode = "normal") {
       break;
     }
   }
-  const species = chooseSpecies(catalog, random);
+  const available = [...catalog];
   return Array.from({ length: count }, (_, index) => {
+    const species = chooseSpecies(available, random);
+    available.splice(available.indexOf(species), 1);
     const size = species.sizeRange[0] + Math.floor(random() * (species.sizeRange[1] - species.sizeRange[0] + 1));
     return {
       id: `${key}:${index}`,
@@ -139,6 +143,6 @@ export function observeBird(id, mode = get(gameMode)) {
   };
   birdLog.update((entries) => ({ ...entries, [species.id]: observation }));
   dailyBirds.update((birds) => birds.map((bird) => bird.id === id ? { ...bird, observed: true } : bird));
-  birdwatchingLuck.update((level) => Math.min(5, level + species.rarity));
+  birdwatchingLuck.update((level) => Math.min(10, level + birdLuckPoints(species.rarity)));
   return { species, observation, size: sighting.size, luck: get(birdwatchingLuck) };
 }

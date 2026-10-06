@@ -1,5 +1,5 @@
 import { get } from "svelte/store";
-import { MAPS_DATA, isForestAccess } from "./constants.js";
+import { MAPS_DATA, isForestAccess, INITIAL_VILLAGERS } from "./constants.js";
 import { bugsForMode } from "./bugCatalog.js";
 import { day, gameMode, insectInventory, insectPopulationDay, seasonIndex, wildInsects } from "./stores.js";
 
@@ -56,7 +56,8 @@ function spawnTiles(random) {
   const tiles = [];
   for (let y = 2; y <= 22; y++) {
     for (let x = 2; x <= 17; x++) {
-      if (["G", "F"].includes(rows[y]?.[x]) && !isForestAccess("bug_forest", x, y)) tiles.push({ x, y });
+      if (["G", "F"].includes(rows[y]?.[x]) && !isForestAccess("bug_forest", x, y)
+        && !INITIAL_VILLAGERS.some((npc) => npc.homeMap === "bug_forest" && npc.homeX === x && npc.homeY === y)) tiles.push({ x, y });
     }
   }
   return tiles.sort(() => random() - 0.5);
@@ -72,7 +73,10 @@ export function generateDailyInsects(key, mode = "normal") {
   const creatures = [];
 
   for (let index = 0; index < count; index++) {
-    const available = catalog.filter((bug) => bug.points === values[index]);
+    const candidates = catalog.filter((bug) => bug.points === values[index]);
+    const unseenSpecies = candidates.filter((bug) => !creatures.some((creature) => catalog.find((item) => item.id === creature.speciesId)?.dexId === bug.dexId));
+    const unused = candidates.filter((bug) => !creatures.some((creature) => creature.speciesId === bug.id));
+    const available = mode === "pokemon" && unseenSpecies.length ? unseenSpecies : unused.length ? unused : candidates;
     const species = available[Math.floor(random() * available.length)];
     if (!species || !tiles[index]) continue;
     creatures.push({

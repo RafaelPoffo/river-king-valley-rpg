@@ -1,6 +1,7 @@
 import { get } from "svelte/store";
 import { TOURNAMENTS, TOURNAMENT_RIVALS, TOURNAMENT_CLOSE_MINUTES } from "./constants.js";
 import { SPRITES } from "./sprites.js";
+import { grantSeed } from "./garden.js";
 import {
   tournament,
   currentFestival,
@@ -115,6 +116,7 @@ export function submitTournament() {
   const place = placeFor(today.entry.best.score, today.rivals);
   const prize = prizeFor(today.rule, place);
   if (prize > 0) money.update((m) => m + prize);
+  const seed = place <= 3 ? grantSeed() : null;
   tournament.set({ ...today.entry, submitted: true, place, prize });
-  return { place, prize };
+  return { place, prize, seed };
 }

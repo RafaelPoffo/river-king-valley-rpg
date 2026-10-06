@@ -87,7 +87,7 @@ export function resolveBugDuel(left, right, key, playerLuck = 0) {
   const frames = [];
 
   for (let turn = 1; turn <= 5; turn++) {
-    const leftTotal = rollTotal(left, right, turn, random, Math.min(1, playerLuck * 0.2));
+    const leftTotal = rollTotal(left, right, turn, random, Math.min(1, playerLuck * 0.1));
     const rightTotal = rollTotal(right, left, turn, random);
     leftScore += leftTotal;
     rightScore += rightTotal;
@@ -125,10 +125,10 @@ export function resolveBugDuel(left, right, key, playerLuck = 0) {
 }
 
 export function prizeForCompetition(entrants, isSeasonFinal) {
-  if (isSeasonFinal) return 2000;
+  if (isSeasonFinal) return 6000;
   return entrants <= 3
-    ? 100 + Math.floor(Math.random() * 401)
-    : 500 + Math.floor(Math.random() * 501);
+    ? 800 + Math.floor(Math.random() * 601)
+    : 1500 + Math.floor(Math.random() * 1001);
 }
 
 export function archetypeForBug(bug) {
