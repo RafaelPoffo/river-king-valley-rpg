@@ -5,8 +5,8 @@ import CardFace from "../components/CardFace.svelte";
 import { get } from "svelte/store";
 import { cardCollection, cardDecks, cardTradeUsed, money, inventory, gameMode } from "./stores.js";
 import { buyDeck, buySingleCard, grantRareCard, saveDeck, validateDeck } from "./cards.js";
-import { CARD_THEMES, DECK_SIZE, themeDeck } from "./cardCatalog.js";
-import { INITIAL_VILLAGERS, getNpcLocation } from "./constants.js";
+import { ALL_CARDS, CARD_THEMES, DECK_SIZE, cardName, cardPortrait, pokemonCardStats, pokemonEvolutionInfo, themeDeck } from "./cardCatalog.js";
+import { CARD_NPC_THEMES, INITIAL_VILLAGERS, getNpcLocation } from "./constants.js";
 import { createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap } from "./cardGame.js";
 import { FISH_DB } from "./constants.js";
 import { POKEMON_DB } from "./data/pokemon.js";
@@ -24,7 +24,7 @@ import pokemonNames from "./data/pokemonNames.json";
 describe("colecao de cartas", () => {
   beforeEach(() => { cardCollection.set({}); cardDecks.set([]); cardTradeUsed.set(false); money.set(4000); inventory.set([]); gameMode.set("normal"); });
   it("gera todos os temas com 32 cartas e compra decks aleatorios", () => {
-    expect(CARD_THEMES).toHaveLength(14);
+    expect(CARD_THEMES).toHaveLength(20);
     for (const theme of CARD_THEMES) expect(themeDeck(theme.id)).toHaveLength(DECK_SIZE);
     expect(buyDeck(false, () => 0).ok).toBe(true);
     expect(buyDeck(false, () => 0.99).ok).toBe(true);
@@ -55,10 +55,29 @@ describe("colecao de cartas", () => {
     expect(grantRareCard("sea", () => 0.9)).toBeNull();
     expect(buySingleCard("rare:sea_guardian").ok).toBe(false);
   });
+  it("mantem no maximo tres cartas na mao inicial e ao comprar no turno", () => {
+    const duel = createCardDuel(themeDeck("aves"),themeDeck("fada"),() => 0.5);
+    expect(duel.p1.hand).toHaveLength(3);
+    expect(duel.p2.hand).toHaveLength(3);
+    duel.p1.hand.pop();
+    performCardAction(duel,"p1",{type:"end"});
+    performCardAction(duel,"p2",{type:"end"});
+    expect(duel.p1.hand).toHaveLength(3);
+  });
+  it("usa estagios e atributos de evolucao sem alterar o deck normal", () => {
+    expect(CARD_NPC_THEMES).toHaveLength(CARD_THEMES.length);
+    expect(pokemonEvolutionInfo(cardById("iniciais:m8"))).toMatchObject({stage:1,next:[{dexId:"0005",name:"Charmeleon"}]});
+    expect(pokemonCardStats(cardById("iniciais:m8"))).toEqual({atk:2,def:0});
+    expect(pokemonCardStats(cardById("iniciais:m1"))).toEqual({atk:3,def:4});
+    expect(pokemonCardStats(cardById("iniciais:m0"))).toEqual({atk:5,def:5});
+    const normal = createCardDuel(themeDeck("iniciais"),themeDeck("aves"),() => 0.5);
+    expect([...normal.p1.deck,...normal.p1.hand].find((card) => card.id === "iniciais:m8")).toMatchObject({atk:1,def:1});
+  });
   it("oferece Tilapia Dourada e Dratini com os mesmos atributos e chance de encontro", () => {
     const golden = FISH_DB.find((fish) => fish.id === "tilapia_dourada");
     const dragon = POKEMON_DB.find((fish) => fish.id === "dratini");
-    for (const field of ["price","rarity","biome","dist","seasons","times","minW","maxW","diff","spd"]) expect(golden[field]).toEqual(dragon[field]);
+    expect(golden.price).toBe(3000);
+    for (const field of ["rarity","biome","dist","seasons","times","minW","maxW","diff","spd"]) expect(golden[field]).toEqual(dragon[field]);
     currentWeather.set("sunny"); fishingBiome.set("river"); eqBaitId.set("minhoca"); birdwatchingLuck.set(0);
     for (const [mode,id] of [["normal","tilapia_dourada"],["pokemon","dratini"]]) {
       gameMode.set(mode);
@@ -75,7 +94,7 @@ describe("colecao de cartas", () => {
       const locations = INITIAL_VILLAGERS.map((npc) => getNpcLocation(npc, 1200, day)).filter((loc) => loc.map === "tavern");
       expect(new Set(locations.map((loc) => `${loc.x}:${loc.y}`)).size).toBe(locations.length);
     }
-    expect(seen.size).toBe(14);
+    expect(seen.size).toBe(CARD_NPC_THEMES.length);
     expect(cardPlayersForDay(15,0)).not.toEqual(cardPlayersForDay(1,1));
   });
 });
@@ -100,6 +119,28 @@ describe("regras do duelo de cartas", () => {
     performCardAction(duel,"p1",{type:"end"}); performCardAction(duel,"p2",{type:"end"});
     expect(performCardAction(duel,"p1",{type:"summon",uid:boss.uid,target:0}).ok).toBe(true);
     expect(duel.p1.graveyard.some((item) => item.uid === grunt.uid)).toBe(true);
+  });
+  it("permite apenas evolucao direta da propria especie, preserva estado e limita uma por turno", () => {
+    const duel = createCardDuel(themeDeck("iniciais"),themeDeck("colonia"),() => 0.5,"pokemon");
+    const base = putInHand(duel,"p1","iniciais:m8");
+    duel.p1.hand = duel.p1.hand.filter((item) => item !== base);
+    base.pos = "def"; base.hasAttacked = true; base.gear = ["equip_atk"];
+    duel.p1.monsters[0] = base;
+    const finalForm = putInHand(duel,"p1","iniciais:m0");
+    expect(performCardAction(duel,"p1",{type:"evolve",uid:finalForm.uid}).ok).toBe(false);
+    const middleForm = putInHand(duel,"p1","iniciais:m1");
+    expect(performCardAction(duel,"p1",{type:"evolve",uid:middleForm.uid}).ok).toBe(true);
+    expect(duel.p1.monsters[0]).toMatchObject({dexId:"0005",pos:"def",hasAttacked:true,gear:["equip_atk"],atk:3,def:4});
+    expect(performCardAction(duel,"p1",{type:"evolve",uid:finalForm.uid}).ok).toBe(false);
+    performCardAction(duel,"p1",{type:"end"});
+    performCardAction(duel,"p2",{type:"end"});
+    expect(performCardAction(duel,"p1",{type:"evolve",uid:finalForm.uid}).ok).toBe(true);
+    expect(duel.p1.monsters[0]).toMatchObject({dexId:"0006",atk:5,def:5});
+
+    const normal = createCardDuel(themeDeck("iniciais"),themeDeck("aves"),() => 0.5,"normal");
+    const evolved = putInHand(normal,"p1","iniciais:m1");
+    normal.p1.monsters[0] = cardById("iniciais:m8");
+    expect(performCardAction(normal,"p1",{type:"evolve",uid:evolved.uid}).ok).toBe(false);
   });
   it("substituir campo nao acumula bonus e equipamentos so aceitam o subtipo certo", () => {
     const duel = createCardDuel(themeDeck("aves"),themeDeck("fada"));
@@ -180,6 +221,13 @@ describe("interacoes e telas de cartas e jardim", () => {
     const face = render(CardFace,{props:{card:cardById("aves:m0"),mode:"pokemon"}}).body;
     expect(face).toContain("Moltres Chefe");
     expect(face).toContain("/assets/portraits/0146.png");
+    const magicFace = render(CardFace,{props:{card:cardById("aves:s0"),mode:"pokemon"}}).body;
+    expect(magicFace).toContain("magic-symbol");
+    expect(magicFace).not.toContain("/assets/portraits/");
+    for (const card of ALL_CARDS.filter((item) => item.type === "monster")) {
+      expect(cardPortrait(card),card.id).toBe(`/assets/portraits/${card.dexId}.png`);
+      expect(cardName(card,"pokemon"),card.id).toBe(`${pokemonNames[card.dexId]}${card.isBoss ? " Chefe" : ""}`);
+    }
   });
   it("tem 251 portraits frontais locais, nao vazios, de 56 pixels", () => {
     expect(Object.keys(pokemonNames)).toHaveLength(251);

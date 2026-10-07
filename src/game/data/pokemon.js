@@ -1342,7 +1342,7 @@ export const POKEMON_DB = [
     desc: "Pokémon digital temporário de teste, atraído pela Megabit.",
     diff: 3,
     spd: 1.0,
-    price: 20000,
+    price: 30000,
     weight: 36.5,
     minW: 30.0,
     maxW: 43.0,

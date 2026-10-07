@@ -9,6 +9,7 @@
     ownedRods,
     ownedNets,
     baitStock,
+    gameMode,
     inventory,
     maxInventorySize,
   } from "../game/stores.js";
@@ -93,7 +94,9 @@
             class="border-2 border-black p-3 flex justify-between items-center bg-[#9ce6e6]"
           >
             <div class="retro-font text-[10px]">
-              {bait.name} (Estoque: {$baitStock[bait.id] || 0}) - {bait.desc}
+              {bait.id === "megabit" && $gameMode !== "pokemon" ? "Isca de Tilápia Dourada" : bait.name}
+              (Estoque: {$baitStock[bait.id] || 0}) -
+              {bait.id === "megabit" && $gameMode !== "pokemon" ? "Sempre pega Tilápia Dourada no rio com vara." : bait.desc}
             </div>
             <button
               class="bg-black text-white retro-font text-[9px] px-4 py-2 disabled:bg-gray-400"

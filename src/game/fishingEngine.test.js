@@ -125,10 +125,10 @@ describe("preferências das iscas e preços", () => {
     const pokemon = POKEMON_DB.filter((fish) => fish.dexNum);
     expect(pokemon.filter((fish) => fish.stage === 1 && fish.id !== "porigon").every((fish) => fish.price <= 50)).toBe(true);
     expect(pokemon.filter((fish) => fish.id !== "porigon").every((fish) => fish.price <= 800)).toBe(true);
-    expect(POKEMON_DB.find((fish) => fish.id === "porigon").price).toBe(2000);
+    expect(POKEMON_DB.find((fish) => fish.id === "porigon").price).toBe(3000);
   });
 
-  it("Megabit é gratuita e garante Porigon por 2000 no rio com vara", () => {
+  it("Megabit é gratuita e garante Porigon no modo Pokémon e Tilápia Dourada no modo normal", () => {
     expect(BAITS.find((bait) => bait.id === "megabit").price).toBe(0);
     currentToolType.set("rod");
     setScene({ mode: "pokemon", biome: "river", bait: "megabit" });
@@ -136,7 +136,15 @@ describe("preferências das iscas e preços", () => {
     for (const zone of [1, 2, 3]) {
       const fish = rollFishByZone(zone);
       expect(fish.id).toBe("porigon");
-      expect(fish.priceFinal).toBe(2000);
+      expect(fish.priceFinal).toBe(3000);
+      expect(baitBiteChance(fish, "megabit")).toBe(1);
+    }
+
+    setScene({ mode: "normal", biome: "river", bait: "megabit" });
+    for (const zone of [1, 2, 3]) {
+      const fish = rollFishByZone(zone);
+      expect(fish.id).toBe("tilapia_dourada");
+      expect(fish.priceFinal).toBe(3000);
       expect(baitBiteChance(fish, "megabit")).toBe(1);
     }
   });
@@ -181,10 +189,10 @@ describe("análise da isca e consumo", () => {
     vi.unstubAllGlobals();
   });
 
-  function cast(bait = "minhoca") {
+  function cast(bait = "minhoca", waitTime = 21000) {
     eqBaitId.set(bait);
     throwLine();
-    vi.advanceTimersByTime(21000);
+    vi.advanceTimersByTime(waitTime);
     expect(get(phase)).toBe(PHASES.FISHING_APPROACH);
     expect(get(baitStock)[bait]).toBe(5);
   }
@@ -210,15 +218,23 @@ describe("análise da isca e consumo", () => {
     return species;
   }
 
-  it("Megabit garante Porigon e ignora encontros próximos no rio", () => {
+  it("Megabit garante o peixe especial do modo e ignora encontros próximos no rio", () => {
     visibleFish();
     setScene({ mode: "pokemon", biome: "river" });
     currentToolType.set("rod");
     baitStock.set({ ...get(baitStock), megabit: 5 });
 
-    cast("megabit");
+    cast("megabit", 250);
 
     expect(get(activeFish).id).toBe("porigon");
+    expect(get(worldCreatureEncounter)).toBe(null);
+    expect(get(worldCreatures)[0].state).toBe("wild");
+
+    setScene({ mode: "normal", biome: "river", bait: "megabit" });
+    baitStock.set({ ...get(baitStock), megabit: 5 });
+    cast("megabit", 250);
+
+    expect(get(activeFish).id).toBe("tilapia_dourada");
     expect(get(worldCreatureEncounter)).toBe(null);
     expect(get(worldCreatures)[0].state).toBe("wild");
   });

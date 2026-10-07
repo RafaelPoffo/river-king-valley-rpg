@@ -1,4 +1,5 @@
-export const CARD_NPC_THEMES = ["aves", "fada", "rei", "mago", "lich", "orc", "dragao", "fera", "demonio", "pirata", "gelo", "ninja", "inseto", "espirito"];
+export const CARD_NPC_THEMES = ["aves", "fada", "rei", "mago", "lich", "orc", "dragao", "fera", "demonio", "pirata", "gelo", "ninja", "inseto", "espirito", "iniciais", "colonia", "dragoes", "psiquicos", "eletricos", "ramificacoes"];
+const CARD_NPC_NAMES = ["Ari", "Mel", "Arthur", "Ciro", "Noa", "Bruno", "Dora", "Leo", "Dante", "Mara", "Neve", "Kai", "Bia", "Elo", "Luca", "Nina", "Ravi", "Tess", "Theo", "Yara"];
 export const CARD_SEATS = [{ x: 6, y: 5 }, { x: 9, y: 5 }, { x: 6, y: 8 }, { x: 9, y: 8 }];
 export function cardPlayersForDay(today, season = 0) {
   return Array.from({ length: 4 }, (_, index) => CARD_NPC_THEMES[((season * 15 + today) * 4 + index) % CARD_NPC_THEMES.length]);
@@ -77,7 +78,7 @@ export const INITIAL_VILLAGERS = [
   { id: "card_seller", name: "Ivo Jornaleiro", freq: "always", homeMap: "game_house", homeX: 11, homeY: 2, taste: "rare", tavernX: 13, tavernY: 5,
     dialogNormal: "Eu sempre quis um dragao. Vendo decks por 2000 e cartas avulsas para colecionadores.", dialogTavern: "A casa dos jogos recebe quatro jogadores diferentes por dia. Cada um prefere um deck." },
   ...CARD_NPC_THEMES.map((theme, index) => ({
-    id: `card_${theme}`, name: ["Ari", "Mel", "Arthur", "Ciro", "Noa", "Bruno", "Dora", "Leo", "Dante", "Mara", "Neve", "Kai", "Bia", "Elo"][index],
+    id: `card_${theme}`, name: CARD_NPC_NAMES[index] || `Mestre ${theme}`,
     cardTheme: theme, freq: "always", taste: index % 2 ? "river" : "sea", homeMap: "game_house",
     dialogNormal: "Vamos duelar? Escolha um de seus decks. Cada rodada permite invocar um monstro; o chefe exige um sacrificio.",
     dialogTavern: "Troque uma carta por turno, prepare suas armadilhas e so ataque com monstros que ja estavam em campo.",

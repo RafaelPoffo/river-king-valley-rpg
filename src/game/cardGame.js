@@ -1,5 +1,6 @@
-import { cardById } from "./cardCatalog.js";
+import { cardById, pokemonCardStats } from "./cardCatalog.js";
 
+const HAND_LIMIT = 3;
 const enemyOf = (owner) => owner === "p1" ? "p2" : "p1";
 const note = (duel, message) => { duel.log = [message, ...duel.log].slice(0,50); return { ok:true, message }; };
 const fail = (message) => ({ ok:false, message });
@@ -10,14 +11,18 @@ const shuffle = (cards, random) => {
   }
   return cards;
 };
-const playerState = (ids, owner, random) => ({ hp:10, deck:shuffle(ids.map((id,index) => ({ ...cardById(id), uid:`${owner}:${index}`, gear:[], pos:"hand", hasAttacked:false, changed:false })), random), hand:[], monsters:[null,null,null], spells:[null,null,null], field:null, graveyard:[], summoned:false, discarded:false });
+const playerState = (ids, owner, random, mode) => ({ hp:10, deck:shuffle(ids.map((id,index) => {
+  const card = cardById(id);
+  const stats = mode === "pokemon" && card.type === "monster" ? pokemonCardStats(card) : {};
+  return { ...card, ...stats, uid:`${owner}:${index}`, gear:[], pos:"hand", hasAttacked:false, changed:false };
+}), random), hand:[], monsters:[null,null,null], spells:[null,null,null], field:null, graveyard:[], summoned:false, discarded:false, evolvedThisTurn:false });
 function draw(player, count) {
-  for (let index = 0; index < count && player.hand.length < 5 && player.deck.length; index++) player.hand.push(player.deck.pop());
+  for (let index = 0; index < count && player.hand.length < HAND_LIMIT && player.deck.length; index++) player.hand.push(player.deck.pop());
 }
 
-export function createCardDuel(playerCards, opponentCards, random = Math.random) {
-  const duel = { p1:playerState(playerCards,"p1",random), p2:playerState(opponentCards,"p2",random), turn:"p1", state:"main", round:1, winner:null, pending:null, dice:null, log:["O duelo comeca!"] };
-  draw(duel.p1,4); draw(duel.p2,4);
+export function createCardDuel(playerCards, opponentCards, random = Math.random, mode = "normal") {
+  const duel = { p1:playerState(playerCards,"p1",random,mode), p2:playerState(opponentCards,"p2",random,mode), mode, turn:"p1", state:"main", round:1, winner:null, pending:null, dice:null, log:["O duelo comeca!"] };
+  draw(duel.p1,HAND_LIMIT); draw(duel.p2,HAND_LIMIT);
   return duel;
 }
 
@@ -67,9 +72,9 @@ function damage(duel, pending) {
 
 function beginTurn(duel, owner) {
   duel.turn = owner; duel.state = "main";
-  const player = duel[owner]; player.summoned = false; player.discarded = false;
+  const player = duel[owner]; player.summoned = false; player.discarded = false; player.evolvedThisTurn = false;
   player.monsters.forEach((card) => { if (card) { card.hasAttacked = false; card.changed = false; } });
-  draw(player,Math.max(0,4 - player.hand.length));
+  draw(player,Math.max(0,HAND_LIMIT - player.hand.length));
   note(duel,`Rodada ${duel.round}: turno de ${owner === "p1" ? "voce" : "seu rival"}.`);
 }
 
@@ -146,6 +151,22 @@ export function performCardAction(duel, owner, action, random = Math.random) {
     return note(duel,`${monster.name} mudou para ${monster.pos.toUpperCase()}.`);
   }
   if (!card) return fail("Selecione uma carta sua.");
+  if (action.type === "evolve") {
+    if (duel.mode !== "pokemon" || duel.state !== "main" || handIndex < 0 || card.type !== "monster" || !card.evolvesFrom) return fail("Esta carta nao pode evoluir agora.");
+    if (player.evolvedThisTurn) return fail("Voce ja evoluiu uma carta neste turno.");
+    const index = player.monsters.findIndex((monster) => monster?.dexId === card.evolvesFrom);
+    if (index < 0) return fail("A carta em campo nao e a pre-evolucao desta especie.");
+    const previous = player.monsters[index];
+    consume();
+    card.pos = previous.pos;
+    card.hasAttacked = previous.hasAttacked;
+    card.changed = previous.changed;
+    card.gear = [...previous.gear];
+    bury(player,previous);
+    player.monsters[index] = card;
+    player.evolvedThisTurn = true;
+    return note(duel,`${previous.name} evoluiu para ${card.name}.`);
+  }
   if (action.type === "discard") {
     if (handIndex < 0 || player.discarded) return fail("A troca de carta e permitida uma vez por turno.");
     consume(); bury(player,card); draw(player,1); player.discarded = true;
@@ -200,6 +221,10 @@ export function nextCardAIAction(duel) {
   if (duel.turn !== "p2" || duel.winner || !["main","battle"].includes(duel.state)) return null;
   const player = duel.p2;
   if (duel.state === "main") {
+    if (duel.mode === "pokemon" && !player.evolvedThisTurn) {
+      const evolution = player.hand.find((card) => card.type === "monster" && card.evolvesFrom && player.monsters.some((monster) => monster?.dexId === card.evolvesFrom));
+      if (evolution) return { type:"evolve", uid:evolution.uid };
+    }
     for (const card of [...player.hand,...player.spells.filter(Boolean)]) {
       if (card.type === "field" && !player.field) return { type:"activate", uid:card.uid };
       if (card.type === "trap" && player.hand.includes(card) && player.spells.some((item) => !item)) return { type:"set", uid:card.uid };

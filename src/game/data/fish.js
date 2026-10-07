@@ -482,7 +482,7 @@ export const FISH_DB = [
     desc: "Uma tilapia rara de escamas douradas. Ivo sempre sonhou em ter uma.",
     diff: 54,
     spd: 1.5,
-    price: 180,
+    price: 12000,
     minW: 2.7,
     maxW: 4.0,
   },
