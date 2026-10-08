@@ -27,7 +27,7 @@ npm.cmd exec --yes --package=node@22 -- node node_modules/vite/bin/vite.js
 
 - **Dois modos de jogo**: Normal (peixes, insetos e aves reais) e Pokémon (Pokémon de água, insetos e aves das gerações 1 e 2).
 - **Tempo, estações e clima**: dias de 6h às 22h, quatro estações de 15 dias, sol, chuva e tempestade. O relógio para dentro das casas.
-- **Vila com NPCs**: os moradores originais, quatro guias de pesca, aves, insetos e jardim, Ivo Jornaleiro e 14 duelistas com quatro presentes por dia. Os moradores recebem peixes, têm amizade e horários na taverna.
+- **Vila com NPCs**: cada morador tem gênero, personalidade e ofício iguais ao sprite de Crystal, ciclo do dia, gosto e desgosto de presente e um aniversário no calendário. Nina e Seu Nuno pescam; viajantes aparecem com seu Pokémon no modo Pokémon. Ivo e os duelistas ficam na casa dos jogos; nos dias 7, 15 e 22 a casa enche e pelo menos uma lenda duela sem entregar cartas lendárias.
 - **Amizade**: converse e dê peixes de presente para ganhar corações. Cada morador libera uma vantagem.
 - **Pesca**: mira de distância limitada pelo alcance da vara, sombra se aproximando, fisgada e minigame de tensão na linha. Também dá para pescar com rede na margem.
 - **Criaturas pela vila**: de 2 a 8 visitantes por dia, com caminhada lenta e pausas. Pokémon terrestres são decorativos; criaturas na água podem ser pescadas. Os sprites vêm do atlas local, com quadros de 16×16 ou 32×32 para espécies grandes.
@@ -36,15 +36,15 @@ npm.cmd exec --yes --package=node@22 -- node node_modules/vite/bin/vite.js
 - **Campeonato da clareira**: escolha e ordene três insetos para enfrentar Joe Bug e os rivais em duelos animados na mesa. Há uma final no último dia de cada estação.
 - **Observação de pássaros**: explore o panorama com binóculos, registre tamanhos e recordes de 8 aves comuns ou 17 Pokémon e acumule sorte para a pesca e as batalhas de insetos.
 - **Jardim**: cinco espécies de árvores, plantio com sementes, frutos com bônus diários e um visitante de planta com 10% de chance por manhã.
-- **Casa dos Jogos**: decks surpresa de 32 cartas por ¥2.000, uma troca inicial por Dratini ou Tilápia Dourada, cartas avulsas caras, editor de decks e duelos contra 14 temas em rotação.
+- **Casa dos Jogos**: decks temáticos de 24 cartas por ¥4.000, uma troca inicial por Dratini ou Tilápia Dourada, cartas avulsas só de Pokémon básico, editor limitado a básicos e duelos contra decks de tipo.
 - **Pixelart local**: personagens e insetos no mapa usam `sprites.png`, árvores do bosque usam `arvores.png`, e a casa dos jogos usa tiles de `tudo.png`. Os 251 portraits frontais de Crystal ficam locais, sem dependência de imagens remotas durante a partida.
 - **Catálogo grande**: no modo Normal, 72 peixes, 10 criaturas de rede, 15 tesouros e 10 tipos de lixo; no modo Pokémon, 54 Pokémon e 2 tesouros.
 - **Peixes de tempestade** e um **lendário** escondido atrás da missão do Velho Joe.
 - **Catálogo / Pokédex**: registro de capturas, recordes de peso e peixes brilhantes (✨). Clique numa espécie para ver habitat, iscas preferidas, peso, força e preço.
 - **Museu e aquário**, com prêmios a cada marco da coleção.
 - **Cozinha da Ana**: pratos feitos com seus peixes que dão bônus de pesca até o fim do dia.
-- **Construções e melhorias**: píer, docas, barco para o alto-mar, aquário municipal, mochila maior, barra de captura maior e sorte para brilhantes.
-- **Missão diária** no quadro da taverna.
+- **Construções e melhorias**: píer, docas e barco no visual de tiles Crystal; o píer pronto tem peixes exclusivos; o barco leva ao alto-mar do Norte. Também há aquário municipal, mochila maior, barra de captura maior e sorte para brilhantes.
+- **Diário de missões** no quadro da taverna e no menu: progresso, o que falta e o próximo passo, no estilo dos RPGs de SNES. Mini-quests dão iscas, varas e cartas; quests longas entregam decks chefes.
 - **Festivais**: brinde de ¥200 na barraca da praça e torneios de pesca no dia 10 de cada estação (veja abaixo).
 - **Som e música** gerados no navegador (Web Audio), com música de dia e de noite.
 - **Teclado, gamepad e toque**: botões na tela aparecem em celulares e tablets, e a tela se ajusta ao tamanho da janela.
@@ -78,10 +78,10 @@ Na tela inicial você escolhe o modo (Normal ou Pokémon) e o nome. O jogo come�
 | Sua casa | Cama para dormir e encerrar o dia. |
 | Loja de Equipamentos | Varas e redes, e a venda de peixes. |
 | Loja de Iscas | Iscas e a venda de peixes. |
-| Oficina do Marceneiro | Construções e melhorias com a Mestre Gema. |
+| Oficina do Marceneiro | Construções e melhorias com o Mestre Gino. |
 | Cabana do Velho Joe | Caixa de minhocas: de 2 a 4 minhocas grátis por dia e, se o estoque zerar, mais 2 de reserva a qualquer momento. |
 | Taverna | Quadro de missões, calendário de festivais e a cozinha da Ana (no balcão). À noite, os moradores se reúnem aqui. |
-| Casa dos Jogos | Entre a taverna e o aquário. Ivo vende decks e cartas no balcão; quatro duelistas recebem visitantes durante o dia. |
+| Casa dos Jogos | Entre a taverna e o aquário. Ivo vende decks e cartas básicas; 2 a 6 visitantes trocam básicos ou peixes raros por cartas. Quatro duelistas por dia; nos dias 7 e 22 a casa enche com uma lenda; no dia 15 o campeonato traz seis mesas. |
 | Terreno do aquário | Vazio até o Aquário Municipal ser construído. |
 | Praça | A barraca do festival aparece em dia de festa. |
 | Rio, margem e mar | Onde se pesca. O mar fica no sul da vila. |
@@ -123,11 +123,13 @@ Nas duas versões, os concorrentes da clareira e os insetos na mesa usam o atlas
 
 ### Observação de pássaros
 
-Interaja com o **banco ao norte da floresta** e confirme para abrir os binóculos. O panorama tem **4.000×800 pixels**, com de **1 a 8 aves de espécies diferentes** sorteadas para aquele dia. Espécies comuns aparecem com mais frequência; raras e lendárias têm pesos muito menores.
+Interaja com o **banco ao norte da floresta** e confirme para abrir os binóculos. O panorama tem **4.000×800 pixels**, com de **1 a 8 aves de espécies diferentes** sorteadas para aquele dia. Espécies comuns aparecem com mais frequência; raras e lendárias têm pesos muito menores. A visão dos binóculos tem **288×144 pixels** (15% maior que o recorte original) e as aves renderizam com um tamanho mínimo maior. Pokémon sem asas ou que não voam bem — Doduo, Dodrio e Farfetch'd — aparecem sempre na parte de baixo do panorama.
 
-Mova os binóculos com as setas e aperte Espaço quando uma ave estiver no campo de visão. Cada indivíduo pode ser observado uma vez por dia. O registro mostra nome, descrição, tamanho, quantidade de observações, maior e menor tamanho registrados e estrelas de raridade. O **Catálogo de Pássaros** ou a **Pokédex de Aves** fica no menu de pausa.
+Mova os binóculos com as setas, arrastando a imagem ou o direcional do toque, e aperte **Espaço / A / Observar** quando o sprite da ave cruzar as lentes — não é preciso acertar o centro exato. No celular, os controles ficam acima da overlay e também dá para arrastar e tocar na ave. Cada indivíduo pode ser observado uma vez por dia. O registro mostra nome, descrição, tamanho, quantidade de observações, maior e menor tamanho registrados e estrelas de raridade. O **Catálogo de Pássaros** ou a **Pokédex de Aves** fica no menu de pausa.
 
-O modo Normal possui **8 espécies** com emojis, incluindo pomba, pardal, coruja e arara. O modo Pokémon possui **17 espécies** de Kanto e Johto, incluindo Pidgey, Hoothoot, as aves lendárias e Lugia. As aves Pokémon usam seus portraits frontais locais nos binóculos, no registro e no catálogo, distinguindo visualmente cada espécie.
+O modo Normal possui **8 espécies** com emojis, incluindo pomba, pardal, coruja e arara. O modo Pokémon possui **17 espécies** de Kanto e Johto, incluindo Pidgey, Hoothoot, as aves lendárias e Lugia. As aves Pokémon usam seus portraits frontais locais nos binóculos, no registro e no catálogo, distinguindo visualmente cada espécie. De vez em quando cruzam o campo NPCs da vila e, no modo Pokémon, qualquer espécie de tipo voador (Charizard, Dragonite e outros); esses visitantes **não contam** como observação de ave.
+
+Ao observar um pássaro literal (não qualquer voador), há **10% de chance** de ele deixar uma pena no chão da floresta. A pena aparece como sprite no mapa, pode ser guardada na mochila e vendida na loja.
 
 Cada ave comum (1 estrela) concede **1 de sorte**; aves diferentes (2 ou 3 estrelas), **2**; raras (4 ou 5 estrelas), **3**. O limite é **10 por dia**, mas observar todas as aves disponíveis não garante esse total. A sorte melhora encontros raros e oferece uma vantagem pequena nas disputas. Ela é salva durante o dia e zera ao dormir; o catálogo e os recordes permanecem.
 
@@ -149,15 +151,17 @@ Há **10% de chance por manhã** de um visitante de planta aparecer próximo ao 
 
 ### Cartas e Casa dos Jogos
 
-Ivo, atrás do balcão, vende um **deck aleatório por ¥2.000**. Antes do primeiro deck, também aceita um Dratini no modo Pokémon ou uma **Tilápia Dourada** no modo Normal. A Tilápia tem os mesmos atributos finais e a mesma chance de encontro de Dratini: 2,5% dos sorteios elegíveis de rio, antes dos ajustes de sorte e depois da verificação de lixo. Depois da primeira compra ou troca, Ivo só vende. É possível comprar outros decks; cartas avulsas custam de ¥2.500 a ¥14.000.
+Ivo, atrás do balcão, vende **decks temáticos por ¥4.000**. Antes do primeiro deck, também aceita um Dratini no modo Pokémon ou uma **Tilápia Dourada** no modo Normal. A Tilápia tem os mesmos atributos finais e a mesma chance de encontro de Dratini: 2,5% dos sorteios elegíveis de rio, antes dos ajustes de sorte e depois da verificação de lixo. Cartas avulsas são só de Pokémon **básico** (sem evolução e sem pré-evolução).
 
-O menu de pausa **Cartas & Decks** mostra a coleção e permite editar qualquer deck comprado. Cada deck precisa de exatamente **32 cartas**, respeitando as cópias que você possui. Os decks são configurações alternativas da mesma coleção, usadas uma de cada vez.
+O menu **Cartas & Decks** mostra a coleção. Cada deck tem **24 cartas**. Só dá para trocar Pokémon básicos; fase 1, fase 2, fase 3 e lendários ficam fixos no tema.
 
-Cada um dos 14 duelistas tem um tema exclusivo. Quatro aparecem na casa por dia e seguem para a taverna à noite; a rotação continua na troca de estação. Fale com um deles, aceite o duelo e escolha seu deck. A primeira vitória contra cada rival no dia concede ¥600.
+Cada deck tem um duelista com nome temático. Quatro aparecem na casa por dia. Nos **dias 7 e 22** a casa enche e pelo menos um jogador tem status de **lenda** (deck com pokémon lendário): dá para duelar, mas a lenda nunca entrega essa carta. No **dia 15** há campeonato com seis mestres. Fale com Ivo e escolha **[T] Campeonato**. Vencer o campeonato dá cartas básicas e ¥1.000. A primeira vitória amistosa contra cada rival no dia concede ¥600.
 
-Regras: 10 HP iniciais, três zonas de monstros e três de magias, mão reabastecida até quatro no começo do turno (máximo cinco), uma invocação e uma troca por turno. Chefes exigem sacrificar um aliado. Monstros recém-invocados ou revividos não atacam naquele turno. Magias e preparações acontecem na fase principal; armadilhas respondem a ataques. Campos não acumulam bônus ao serem substituídos. Depois de 15 rodadas, vence quem tiver mais HP; empate é decidido nos dados.
+Visitantes no piso da loja (2 a 6, mais nos eventos) não duelam. Eles pedem uma carta básica — “eu queria tanto uma carta de Corsola” — e trocam por outra básica, ou dão uma carta em troca de um peixe raro.
 
-Os 14 temas mantêm atributos, subtipos e efeitos iguais nas duas versões. O modo Normal usa os personagens dos decks de fantasia; o modo Pokémon muda a apresentação para nomes e portraits frontais de Pokémon de Kanto e Johto. Cartas raras podem vir de quests, do campeonato de insetos e de capturas no mar: Guardião das Marés é bem mais raro que Canção do Oceano.
+Regras: 10 HP, três zonas de monstros e **duas** de armadilhas, mão de três. Fase 2 só evolui sobre a fase 1 da mesma linha; fase 3 só sobre a fase 2. Lendários pedem sacrifício. Cada monstro aceita um equipamento. Campo e equipamento somam no tipo da carta. Na batalha, quem pode atacar ganha borda vermelha e avança contra o alvo. O inspetor à esquerda mostra a carta em que o mouse passa.
+
+Os atributos e as linhas evolutivas valem nos dois modos. O modo Normal usa nomes de fantasia; o modo Pokémon usa nomes e portraits de Kanto e Johto. Cartas raras ainda podem vir de quests, do campeonato de insetos e de capturas no mar.
 
 ### Tempo e clima
 
@@ -178,15 +182,15 @@ Os 14 temas mantêm atributos, subtipos e efeitos iguais nas duas versões. O mo
 6. **Força:** ao fisgar, o peso do peixe é sorteado e comparado com a força da vara. Se o peixe for forte demais, a linha arrebenta antes da luta e ele leva a isca. Veja a tabela de força abaixo.
 7. **Luta:** um marcador corre pela barra. Aperte Espaço quando ele estiver na área verde. Errou, a linha arrebenta. A área verde é estreita (de 8% a 40% da barra): menor para peixes difíceis e maior com varas melhores, com o upgrade Braço Forte e com a Sopa do Rio. O marcador é rápido, e peixes mais ágeis o deixam ainda mais rápido.
 
-**Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao alto-mar. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia.
+**Onde você pesca muda o que aparece.** A água da vila é rio; a área do mar (sul) é mar; o barco leva ao **alto-mar do Norte**. Cada peixe tem bioma, zonas, estação e horário (dia, noite ou qualquer hora). À noite saem espécies que não aparecem de dia. Pokémon de água e de gelo quase só mordem no **inverno**, com chance baixíssima nas outras estações; no Norte e no píer as regras mudam. Do píer pronto saem o Peixe-Estaca e o Qwilfish, que não mordem da margem.
 
 **Criaturas visíveis.** A população da vila (2 a 8 criaturas) se renova ao dormir e fica preservada no save durante aquele dia. Peixes e Pokémon visíveis na água podem ser atraídos: lance a boia perto deles, na zona em que estão, e eles vêm analisar a isca com coração ou X como qualquer sombra. Se fugirem ou forem pescados, saem do mapa até o dia seguinte. Os Pokémon terrestres são só visitantes: andam pela grama e bloqueiam a passagem. Lapras, Onix e Snorlax ocupam 2×2 quadrados; os demais, um.
 
-**Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio, no mar (longe do cais e do barco) e em volta do barco no alto-mar. São só decoração, sorteadas por dia, e não têm relação com a pesca.
+**Sombras de ambiente.** Silhuetas de peixe nadam de um lado para o outro no rio (a leste da ponte da floresta, sem cruzar o tabuão), no mar (longe do cais e do barco) e em volta do barco no alto-mar. São só decoração, sorteadas por dia, e não têm relação com a pesca.
 
 **Atlas do overworld.** Jogador, moradores, concorrentes da clareira e Pokémon das cenas usam [public/assets/sprites.png](public/assets/sprites.png). O cadastro em [src/game/overworldAtlas.js](src/game/overworldAtlas.js) define quadros de 16×16 (e três de 32×32) com passo de 17 pixels e remove apenas o fundo conectado aos cantos. Insetos selvagens usam exclusivamente os quatro desenhos permitidos. Os portraits frontais dos 251 Pokémon ficam em `public/assets/portraits/`, extraídos do primeiro frame do projeto `pret/pokecrystal`. As folhas solicitadas do Spriters Resource retornaram HTTP 403, então foi usada essa fonte alternativa dos sprites de Crystal. A origem está registrada em [public/assets/portraits/SOURCE.txt](public/assets/portraits/SOURCE.txt). O importador reproduzível é [scripts/crystal-assets.mjs](scripts/crystal-assets.mjs).
 
-**Construções.** O antigo arquivo de píer era um recorte de água, e os arquivos antigos de barco eram de um interior; o barco visível era vetorial. Docas e barcos agora usam bitmaps pixelados, bordas e postes coerentes, paleta limitada e escala sem suavização. A mesa, as cadeiras, o piso e o telhado da Casa dos Jogos usam recortes de [public/assets/tudo.png](public/assets/tudo.png). As árvores frutíferas vêm de `sprites.png`. Os recortes e os novos bitmaps são reproduzidos por [scripts/world-assets.mjs](scripts/world-assets.mjs).
+**Construções.** Píer, docas, barco e o banco de aves usam tiles no estilo Crystal (tábuas, postes e banco de 16×16 com `shape-rendering: crispEdges`). O piso da loja de cartas é xadrez de madeira. A mesa, as cadeiras e o telhado da Casa dos Jogos continuam com recortes de [public/assets/tudo.png](public/assets/tudo.png). As árvores frutíferas vêm de `sprites.png`.
 
 **Atlas da floresta.** [src/game/forestAtlas.js](src/game/forestAtlas.js) cadastra as coordenadas das árvores, prepara a transparência, define variantes sazonais e calcula as posições e dimensões das copas. A camada do mapa usa esses recortes sem alterar a árvore da vila ou da praia. A reserva de acesso está em `FOREST_ACCESS_BOUNDS` e `isForestAccess`, em [src/game/data/world.js](src/game/data/world.js), e é compartilhada pela geração de insetos, pelo posicionamento e movimento de criaturas e pela distribuição visual das árvores.
 
@@ -239,13 +243,13 @@ Troque a isca pelas setas do balão no canto superior esquerdo, sem abrir o menu
 
 A mochila tem 10 espaços, ou 15 com a Mochila Expandida. Com ela cheia, você escolhe entre trocar o peixe pelo primeiro da mochila e soltar o novo. As lojas compram um peixe por vez ou tudo de uma vez. Na mochila dá para reorganizar os peixes.
 
-### Construções e melhorias (Mestre Gema)
+### Construções e melhorias (Mestre Gino)
 
 | Construção | Preço | O que faz |
 |---|---|---|
-| Píer de Pesca | ¥1.500 | Uma passarela curta sobre o mar, para pescar mais longe da margem. |
+| Píer de Pesca | ¥1.500 | Passarela curta. Só dali saem o Peixe-Estaca e o Qwilfish. |
 | Docas do Porto | ¥3.500 | Precisa do píer. Alarga e alonga o cais e cria o atracadouro do barco. |
-| Barco de Pesca | ¥9.000 | Precisa das docas. Fica atracado ao lado delas e leva ao alto-mar. |
+| Barco de Pesca | ¥9.000 | Precisa das docas. Aguenta as correntes de inverno e leva ao Norte. |
 | Aquário Municipal | ¥5.000 | Permite doar peixes para exposição. |
 
 A obra começa no dia seguinte à encomenda e fica pronta depois de mais uma noite. Enquanto isso, uma placa de obras marca o lugar no mar. Na oficina, cada construção mostra o que faz e o que precisa antes; as que dependem de outra ficam bloqueadas. Saves antigos que já tinham as docas ganham o píer.
@@ -258,9 +262,9 @@ A obra começa no dia seguinte à encomenda e fica pronta depois de mais uma noi
 
 ### Alto-mar
 
-Com o barco pronto, fique na ponta das docas virado para ele e interaja para zarpar com o Capitão Thomas. Não dá para andar sobre o barco atracado. O barco só sai até as 16h.
+Com o barco pronto, fique na ponta das docas virado para ele e interaja. O capitão diz que o barco aguenta as correntes de inverno e pergunta se você vai para o Norte. Não dá para andar sobre o barco atracado. O barco só sai até as 16h.
 
-O alto-mar é um mapa próprio: o barco no meio do oceano, com convés de madeira, mastro e o capitão no leme (na popa). Ande pelo convés e pesque por qualquer lado; a linha sempre cai na água e cada zona vai mais longe. Lá só se pesca com vara (se a rede estiver na mão, você troca para a vara) e as criaturas da vila não aparecem. Para voltar, fale com o capitão. Às 17h ele volta sozinho para as docas.
+O alto-mar do Norte é um mapa próprio: o barco no meio do oceano, com convés de madeira, mastro e o capitão no leme (na popa). Ande pelo convés e pesque por qualquer lado; a linha sempre cai na água e cada zona vai mais longe. Lá só se pesca com vara (se a rede estiver na mão, você troca para a vara) e as criaturas da vila não aparecem. Água e gelo mordem o ano todo neste mapa. Para voltar, fale com o capitão. Às 17h ele volta sozinho para as docas.
 
 No alto-mar ficam os peixes mais pesados e raros. De dia aparecem o Dourado do Alto-Mar, o Atum-Azul e, na primavera e no verão, o Marlim-Azul. À noite saem a Lula Gigante e o Espadarte Negro.
 
@@ -293,20 +297,24 @@ No balcão da taverna, a Ana cozinha um prato por dia com peixes da sua mochila.
 | Moqueca Real | ¥800 | 1 peixe de 3 estrelas ou mais | +30 de raridade, somado à isca |
 | Caldo da Sorte | ¥1.500 | 1 peixe muito raro (raridade 4+) | Chance de brilhante ×1,5 |
 
-### Missão diária
+### Diário de missões
 
-Todo dia o quadro da taverna pede de 1 a 2 peixes de uma espécie sorteada. A recompensa é pelo menos ¥100, ou 2,5× o preço base do peixe, o que for maior. Ela é paga assim que você completa a missão.
+O quadro da taverna e o item **Diário de missões** no menu mostram o que está ativa, o que falta e o próximo passo. NPCs com missão mudam o diálogo para apontar a próxima ação.
+
+Além do pedido diário do quadro (1 a 2 peixes, pelo menos ¥100), há mini-quests no estilo dos RPGs de SNES: Nina dá iscas e uma Vara de Fibra, Nuno dá isca de rio, Thomas guia o píer e o Norte, Leo, Flora e Bento ensinam a floresta, Ivo pede decks e básicos. Quests longas com Neve, Magma, Raio e Elo entregam os decks chefes de gelo, fogo, raio e místico. Duelos contra lendas nunca dão a carta lendária; só a quest longa entrega.
 
 ### Moradores
 
 | Morador | De dia | Vai à taverna à noite |
 |---|---|---|
 | Capitão Thomas | perto do cais | toda noite |
-| Ana a Cozinheira | na praça | toda noite |
-| Mestre Gema | perto da oficina | dias pares |
+| Ana a Cozinheira | praça de manhã, taverna de tarde | toda noite |
+| Mestre Gino | oficina | dias pares |
 | Velho Joe | perto da cabana | a cada 4 dias |
+| Nina Pescadora | margem | toda noite |
+| Seu Nuno | rio, perto da ponte | fica no rio |
 
-Moradores bloqueiam a passagem. Fale com eles com Espaço; a fala muda na taverna.
+Moradores, viajantes, Pokémon e o tronco das árvores da floresta bloqueiam a passagem. Fale com eles com Espaço; a fala muda com a missão, o aniversário e a taverna.
 
 **Amizade.** Cada morador tem até 10 corações, e cada coração vale 3 pontos.
 
@@ -317,7 +325,7 @@ Moradores bloqueiam a passagem. Fale com eles com Espaço; a fala muda na tavern
 | Morador | Gosta de | Vantagem | Corações |
 |---|---|---|---|
 | Capitão Thomas | peixes do mar e do alto-mar | Dá uma dica do dia sobre um peixe raro do mar | 5 |
-| Mestre Gema | peixes de rio | 10% de desconto em construções e melhorias | 5 |
+| Mestre Gino | peixes de rio | 10% de desconto em construções e melhorias | 5 |
 | Ana a Cozinheira | peixes de 3 estrelas ou mais | Pratos pela metade do preço | 5 |
 | Velho Joe | peixes muito raros | Conta a lenda do Rei do Rio | 3 |
 
@@ -358,7 +366,7 @@ Nos dias 5 e 15, a barraca da praça dá ¥200 de brinde uma vez por dia.
 
 - Até as 17h, o jogo guarda sozinho o seu melhor peixe do dia. O peixe continua na mochila para vender.
 - Na barraca da praça você vê seu melhor peixe e o líder, e escolhe entre entregar e continuar pescando. O prêmio é pago uma vez só.
-- Os rivais são Joe, Thomas, Gema e Ana, do mais forte para o mais fraco. A pontuação deles é sorteada com a data como semente, então não muda ao longo do dia.
+- Os rivais são Joe, Thomas, Gino e Ana, do mais forte para o mais fraco. A pontuação deles é sorteada com a data como semente, então não muda ao longo do dia.
 
 ### Modo Pokémon
 
@@ -388,7 +396,8 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 
 | Arquivo | O que garante |
 |---|---|
-| `map.test.js` | Mapas retangulares, chão e interações alcançáveis, NPCs e barraca como obstáculos, ponte e acessos livres, reposicionamento de insetos de saves antigos, população diária com orçamento preservado, perfis equivalentes entre modos, recortes locais de personagens e árvores, transparência sem apagar pixels internos, variantes sazonais, visitantes decorativos, criaturas aquáticas pescáveis, sprites 2×2, sombras de ambiente e mira. |
+| `map.test.js` | Mapas retangulares, chão e interações alcançáveis, NPCs e barraca como obstáculos, ponte e acessos livres, reposicionamento de insetos de saves antigos, população diária com orçamento preservado, perfis equivalentes entre modos, recortes locais de personagens e árvores, transparência sem apagar pixels internos, variantes sazonais, visitantes decorativos, criaturas aquáticas pescáveis, sprites 2×2, sombras de ambiente longe da ponte e mira. |
+| `npcQuest.test.js` | Gênero e ofício dos NPCs, visitantes da loja, viajantes, diário de missões, trocas de cartas básicas e progresso de quest. |
 | `fishingEngine.test.js` | Em todas as combinações de bioma, zona, horário e estação: peixe só sai no horário, bioma e distância certos, lixo só da lista de lixo, preço final certo e o upgrade de sorte funcionando. Usa números aleatórios com semente fixa. |
 | `saveSystem.test.js` | Salvar e carregar sem perder nada, jogo novo zerando o progresso e mantendo o nome, migração de saves antigos. |
 | `phases.test.js` | Todo `PHASES.X` usado no código existe e os grupos de fases são coerentes. |
@@ -404,8 +413,6 @@ Os dois comandos passam por `scripts/vitest.mjs`. No Windows, terminais como o d
 | `controls.test.js` | Som certo para cada fase da pesca e botões e analógico do gamepad virando teclas. |
 | `bugTournament.test.js` | Joe Bug e rivais com trios válidos nos dois modos, final sazonal, duelos determinísticos, influência da sorte e faixas de prêmios. |
 | `birdWatching.test.js` | População diária determinística, posições no panorama, catálogo Pokémon com quadros locais e portraits, emojis no modo Normal, registros de tamanho, bônus único por indivíduo e sorte limitada a cinco. |
-
-**Pendência conhecida:** o teste de sombras aquáticas em `map.test.js` ainda falha na verificação de que todo o trajeto fica na água. Essa pendência é independente da reformulação da floresta; os testes focados de atlas, acesso, insetos, campeonato e observação de aves passam.
 
 ## 🗂️ Estrutura
 

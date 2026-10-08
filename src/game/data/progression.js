@@ -75,7 +75,7 @@ export const INITIAL_CONSTRUCTIONS = {
   pier: {
     name: "Píer de Pesca",
     cost: 1500,
-    desc: "Uma passarela curta sobre o mar, para pescar mais longe da margem.",
+    desc: "Passarela curta no estilo Crystal. Só do píer morde o Peixe-Estaca e o Qwilfish.",
     status: "none",
     orderDay: 0,
   },
@@ -90,7 +90,7 @@ export const INITIAL_CONSTRUCTIONS = {
   boat: {
     name: "Barco de Pesca",
     cost: 9000,
-    desc: "Fica atracado nas docas. Leva ao alto-mar com o Capitão Thomas até as 16h.",
+    desc: "Aguenta as correntes de inverno e leva ao alto-mar do Norte, onde água e gelo aparecem o ano todo.",
     status: "none",
     orderDay: 0,
     required: "docks",

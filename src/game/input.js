@@ -1,10 +1,11 @@
 import { get } from "svelte/store";
 import { PHASES, CLOSABLE_SCREENS, CANCELABLE_FISHING } from "./phases.js";
-import { phase, dialogActions } from "./stores.js";
+import { phase, dialogActions, showTavernQuestModal } from "./stores.js";
 import { setDirectionHeld, releaseMovement } from "./movement.js";
 import { throwLine, startMinigame, attemptCatch, resetAction } from "./fishingEngine.js";
 import { interact, showRPGMessage } from "./gameActions.js";
 import { toggleAudio } from "./audio.js";
+import { closeBirdWatchingView, observeVisibleBird, startBirdPan, stopBirdPan } from "./birdWatching.js";
 
 const BLOCKED_DEFAULTS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Enter"]);
 const CONFIRM_KEYS = new Set([" ", "Spacebar"]);
@@ -35,6 +36,11 @@ export function pressKey(key) {
     return;
   }
 
+  if (get(showTavernQuestModal) && CLOSE_KEYS.has(key)) {
+    showTavernQuestModal.set(false);
+    return;
+  }
+
   if (current === PHASES.PLAYING) {
     const dir = directionFromKey(key);
     if (dir) {
@@ -51,6 +57,17 @@ export function pressKey(key) {
       return;
     }
     if (confirm) interact();
+  } else if (current === PHASES.BIRD_WATCHING) {
+    if (CLOSE_KEYS.has(key)) {
+      closeBirdWatchingView();
+      return;
+    }
+    const dir = directionFromKey(key);
+    if (dir) {
+      startBirdPan(dir);
+      return;
+    }
+    if (confirm) observeVisibleBird();
   } else if (current === PHASES.FISHING_AIM && confirm) {
     throwLine();
   } else if (current === PHASES.FISHING_BITE && confirm) {
@@ -66,7 +83,10 @@ export function pressKey(key) {
 
 export function releaseKey(key) {
   const dir = directionFromKey(key);
-  if (dir) setDirectionHeld(dir, false);
+  if (dir) {
+    setDirectionHeld(dir, false);
+    stopBirdPan();
+  }
 }
 
 export function attachKeyboard(isEnabled = () => true) {
@@ -79,13 +99,18 @@ export function attachKeyboard(isEnabled = () => true) {
   };
   const onKeyup = (e) => releaseKey(e.key);
 
+  const onBlur = () => {
+    releaseMovement();
+    stopBirdPan();
+  };
   window.addEventListener("keydown", onKeydown);
   window.addEventListener("keyup", onKeyup);
-  window.addEventListener("blur", releaseMovement);
+  window.addEventListener("blur", onBlur);
   return () => {
     window.removeEventListener("keydown", onKeydown);
     window.removeEventListener("keyup", onKeyup);
-    window.removeEventListener("blur", releaseMovement);
+    window.removeEventListener("blur", onBlur);
     releaseMovement();
+    stopBirdPan();
   };
 }

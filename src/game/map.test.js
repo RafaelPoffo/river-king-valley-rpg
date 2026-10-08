@@ -26,7 +26,7 @@ import { ambientShadows } from "./ambientShadows.js";
 import { castTarget } from "./fishingEngine.js";
 import { catchInsect, ensureDailyInsects, generateDailyInsects } from "./insectHunt.js";
 import { COMMON_BUGS, POKEMON_BUGS } from "./bugCatalog.js";
-import { TREE_FRAMES, TREE_ATLAS_SIZE, forestTrees, clearTreeBackground } from "./forestAtlas.js";
+import { TREE_FRAMES, TREE_ATLAS_SIZE, forestTrees, clearTreeBackground, forestTreeBlocks } from "./forestAtlas.js";
 
 describe("folha de sprites do overworld", () => {
   it("remove fundos alternados de árvores retangulares sem apagar a copa", () => {
@@ -66,6 +66,23 @@ describe("folha de sprites do overworld", () => {
       }
     }
     expect(forestTrees(0)).not.toEqual(forestTrees(2));
+  });
+
+  it("o tronco das árvores bloqueia grama vizinha e poupa o caminho", () => {
+    const trees = forestTrees(0);
+    const oak = trees.find((tree) => tree.frame.width === 64);
+    expect(oak).toBeTruthy();
+    let blockedGrass = false;
+    for (let tileY = 0; tileY < MAPS_DATA.bug_forest.length; tileY++) {
+      for (let tileX = 0; tileX < MAPS_DATA.bug_forest[0].length; tileX++) {
+        if (!forestTreeBlocks(tileX, tileY, 0)) continue;
+        const tile = MAPS_DATA.bug_forest[tileY][tileX];
+        expect(tile).not.toBe(".");
+        expect(tile).not.toBe("J");
+        if (tile === "G" || tile === "F") blockedGrass = true;
+      }
+    }
+    expect(blockedGrass).toBe(true);
   });
 
   it("recorta quadros de 16 pixels sem incluir as faixas e usa o centro em repouso", () => {
@@ -603,6 +620,11 @@ describe("sombras de ambiente e mira", () => {
       for (const shadow of shadows) {
         for (let x = shadow.x1; x <= shadow.x2 + shadow.size; x += 0.5) expect(isWater(x, shadow.y)).toBe(true);
         expect(shadow.y < DOCK_BOUNDS.y1 || shadow.y > DOCK_BOUNDS.y2).toBe(true);
+        if (shadow.biome === "river") {
+          expect(shadow.x1).toBeGreaterThanOrEqual(9);
+          expect(rows[shadow.y][6]).toBe("J");
+          expect(shadow.x1 > 6 || shadow.x2 + shadow.size < 6).toBe(true);
+        }
       }
       expect(shadows).toEqual(ambientShadows(`normal:0:${today}`));
     }

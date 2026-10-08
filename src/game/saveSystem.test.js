@@ -8,7 +8,7 @@ import {
   resetState,
   migrateSave,
 } from "./saveSystem.js";
-import { money, playerName, lastWormHarvestDay, gameMode, constructions, upgrades, worldCreatures, worldPopulationDay, insectInventory, wildInsects, insectPopulationDay, birdLog, dailyBirds, birdPopulationDay, birdwatchingLuck } from "./stores.js";
+import { money, playerName, lastWormHarvestDay, gameMode, constructions, upgrades, worldCreatures, worldPopulationDay, insectInventory, wildInsects, insectPopulationDay, birdLog, dailyBirds, birdPopulationDay, birdwatchingLuck, forestFeathers } from "./stores.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES } from "./constants.js";
 import { ensureWorldPopulation, removeWorldCreature } from "./worldCreatures.js";
 
@@ -84,6 +84,7 @@ describe("registro do save", () => {
     dailyBirds.set([{ id: "pokemon:0:1", speciesId: "bird_0016", x: 250, y: 170, size: 33, observed: true }]);
     birdPopulationDay.set("pokemon:0:1");
     birdwatchingLuck.set(3);
+    forestFeathers.set([{ id: "feather:1", x: 10, y: 4, item: { id: "pena_pomba", name: "Pena de Pomba", priceFinal: 80 } }]);
     const saved = JSON.parse(JSON.stringify(serializeState()));
 
     resetState("normal");
@@ -93,6 +94,7 @@ describe("registro do save", () => {
     expect(get(dailyBirds)).toEqual(saved.dailyBirds);
     expect(get(birdPopulationDay)).toBe("pokemon:0:1");
     expect(get(birdwatchingLuck)).toBe(3);
+    expect(get(forestFeathers)).toEqual(saved.forestFeathers);
   });
 
   it("campo ausente no save volta ao valor inicial", () => {

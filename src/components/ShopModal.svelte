@@ -134,7 +134,7 @@
                 {@html draw(fish.sprite, fish.name)}
               </div>
               <div class="retro-font text-[8px]">
-                {fish.name} ({fish.weight}kg)
+                {fish.weight ? `${fish.name} (${fish.weight}kg)` : fish.name}
               </div>
             </div>
             <button

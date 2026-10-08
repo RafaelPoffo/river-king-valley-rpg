@@ -94,3 +94,19 @@ export function forestTrees(season = 0) {
     return [{ key: `${x}:${y}`, x, y, frame, left, top, width, height }];
   }));
 }
+
+export function treeOccupies(tree, tileX, tileY) {
+  const baseTop = tree.top + tree.height - TILE_SIZE;
+  const baseBottom = tree.top + tree.height;
+  const left = tree.left;
+  const right = tree.left + tree.width;
+  return tileX * TILE_SIZE < right && (tileX + 1) * TILE_SIZE > left
+    && tileY * TILE_SIZE < baseBottom && (tileY + 1) * TILE_SIZE > baseTop;
+}
+
+export function forestTreeBlocks(tileX, tileY, season = 0) {
+  const tile = MAPS_DATA.bug_forest[tileY]?.[tileX];
+  if (!tile || tile === "." || tile === "J") return false;
+  if (isForestAccess("bug_forest", tileX, tileY) || inBounds(tileX, tileY, GARDEN_BOUNDS)) return false;
+  return forestTrees(season).some((tree) => treeOccupies(tree, tileX, tileY));
+}

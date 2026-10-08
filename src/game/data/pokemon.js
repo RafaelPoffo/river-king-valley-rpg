@@ -1000,6 +1000,7 @@ export const POKEMON_DB = [
     rarity: 2,
     type: "fish",
     biome: "sea",
+    pierOnly: true,
     seasons: [0, 1, 2, 3],
     times: "all",
     dist: [1, 2],

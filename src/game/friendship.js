@@ -1,7 +1,8 @@
 import { get } from "svelte/store";
 import { FRIENDSHIP, TASTE_LABELS, INITIAL_VILLAGERS } from "./constants.js";
 import { SPRITES } from "./sprites.js";
-import { friendship, inventory, seasonIndex, day, getActiveDatabase, claimedRewards } from "./stores.js";
+import { friendship, inventory, seasonIndex, day, getActiveDatabase, claimedRewards, baitStock, ownedBaits } from "./stores.js";
+import { addCards } from "./cards.js";
 import { grantSeed } from "./garden.js";
 import { dayKey } from "./tournament.js";
 
@@ -41,6 +42,8 @@ export function tasteLabel(npc) {
 
 export function giftValue(npc, fish) {
   if (!fish || fish.type !== "fish" || fish.sprite === SPRITES.trash) return 0;
+  if (npc.dislikes?.includes(fish.id)) return 0;
+  if (npc.likes?.includes(fish.id)) return FRIENDSHIP.lovedGift;
   return TASTES[npc.taste]?.(fish) ? FRIENDSHIP.lovedGift : FRIENDSHIP.likedGift;
 }
 
@@ -99,7 +102,25 @@ export function giveGift(npc, index) {
     seed = grantSeed();
     claimedRewards.update((keys) => [...keys, rewardKey]);
   }
-  return { fish, loved: value === FRIENDSHIP.lovedGift, unlockedPerk, seed };
+  let present = null;
+  if (value === FRIENDSHIP.lovedGift && npc.present) {
+    const rewardKey = `npc-present:${npc.id}:${today()}`;
+    if (!get(claimedRewards).includes(rewardKey)) {
+      present = npc.present;
+      claimedRewards.update((keys) => [...keys, rewardKey]);
+      const baits = Object.entries(present.baits || {});
+      if (baits.length) {
+        baitStock.update((stock) => {
+          const next = { ...stock };
+          for (const [id, qty] of baits) next[id] = (next[id] || 0) + qty;
+          return next;
+        });
+        ownedBaits.update((list) => [...new Set([...list, ...baits.map(([id]) => id)])]);
+      }
+      if (present.cards) addCards(present.cards);
+    }
+  }
+  return { fish, loved: value === FRIENDSHIP.lovedGift, unlockedPerk, seed, present };
 }
 
 export function friendPrice(cost) {

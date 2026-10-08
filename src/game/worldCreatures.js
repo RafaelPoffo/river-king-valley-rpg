@@ -155,7 +155,8 @@ export function ensureWorldPopulation() {
     (!species.seasons || species.seasons.includes(get(seasonIndex))) &&
     ["all", "river", "sea"].includes(species.biome) &&
     (species.biome !== "river" || species.dist.some((zone) => zone <= 2)) &&
-    (get(gameMode) !== "pokemon" || WORLD_SPRITES[species.dexId])
+    (get(gameMode) !== "pokemon" || WORLD_SPRITES[species.dexId]) &&
+    (get(seasonIndex) === 3 || !Array.isArray(species.types) || !species.types.some((type) => /gelo/i.test(type)))
   ).map((species) => ({
     ...species,
     worldSize: species.dexId ? worldSizeFor(species.dexId) : Math.max(species.weight || 0, species.maxW || 0) >= 30 ? 2 : 1,

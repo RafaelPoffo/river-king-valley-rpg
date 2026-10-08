@@ -62,6 +62,6 @@ export const TOURNAMENTS = {
 export const TOURNAMENT_RIVALS = [
   { name: "Velho Joe", skill: 0.8 },
   { name: "Capitão Thomas", skill: 0.6 },
-  { name: "Mestre Gema", skill: 0.4 },
+  { name: "Mestre Gino", skill: 0.4 },
   { name: "Ana a Cozinheira", skill: 0.2 },
 ];

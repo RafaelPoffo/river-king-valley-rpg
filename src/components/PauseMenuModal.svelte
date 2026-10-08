@@ -1,6 +1,6 @@
 <script>
   import { PHASES } from "../game/phases.js";
-  import { phase, currentToolType, gameMode } from "../game/stores.js";
+  import { phase, currentToolType, gameMode, showTavernQuestModal } from "../game/stores.js";
   import { toggleTool } from "../game/gameActions.js";
   import { audioSettings, toggleAudio } from "../game/audio.js";
 </script>
@@ -41,6 +41,12 @@
       MUSEU
     </button>
     <button class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black" on:click={() => phase.set(PHASES.CARD_COLLECTION)}>CARTAS & DECKS</button>
+    <button
+      class="text-left retro-font text-[9px] hover:bg-[#f4e4b8] p-2 border-2 border-transparent focus:border-black"
+      on:click={() => { phase.set(PHASES.PLAYING); showTavernQuestModal.set(true); }}
+    >
+      DIÁRIO DE MISSÕES
+    </button>
     <button
       class="text-left retro-font text-[9px] hover:bg-[#9ce6e6] p-2 border-2 border-transparent focus:border-black bg-gray-100 mt-2"
       on:click={toggleTool}

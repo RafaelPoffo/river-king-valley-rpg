@@ -45,7 +45,9 @@ import {
   showBugTournament,
   showBirdWatching,
   eqSeedId, birdwatchingLuck,
-  cardOpponent, cardTradeUsed, cardDecks,
+  forestFeathers,
+  maxInventorySize,
+  cardOpponent, cardTradeUsed, cardDecks, cardChampionship,
 } from "./stores.js";
 import {
   SEASONS,
@@ -60,6 +62,9 @@ import {
   inBounds,
   getNpcLocation,
   TOURNAMENT_CLOSE_MINUTES,
+  cardPlayersForDay,
+  CARD_CHAMPIONSHIP_DAY,
+  isCardEventDay,
 } from "./constants.js";
 import { todaysTournament, submitTournament, formatScore, dayKey } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
@@ -86,7 +91,9 @@ import {
 } from "./movement.js";
 import { saveGame } from "./saveSystem.js";
 import { ensureWorldPopulation } from "./worldCreatures.js";
-import { generateDailyQuest, checkDailyQuestProgress } from "./quests.js";
+import { generateDailyQuest, checkDailyQuestProgress, offerQuestOnTalk, setQuestFlag, describeQuestReward } from "./quests.js";
+import { actorAt, spokenLine, isBirthday, playerHasCard, playerHasFish } from "./npcLife.js";
+import { tradeBasicCard, addCards } from "./cards.js";
 import { catchInsect, ensureDailyInsects, insectSpecies } from "./insectHunt.js";
 import { BUG_ARCHETYPE_LINES, BUG_ARCHETYPES } from "./bugCatalog.js";
 import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
@@ -165,7 +172,7 @@ export function startBoatVoyage() {
   }
   phase.set(PHASES.DIALOG);
   currentMessage.set(
-    "Capitão Thomas: 'Quer zarpar para o alto-mar? Voltamos às 17h.' [SPACE] Sim / [X] Não"
+    "Capitão Thomas: 'O meu barco aguenta até as correntes de inverno. Vamos para o Norte?' [SPACE] Sim / [X] Não"
   );
   dialogActions.set({
     " ": () => {
@@ -177,8 +184,9 @@ export function startBoatVoyage() {
         player.set({ ...DEEP_SEA_SPAWN });
         phase.set(PHASES.PLAYING);
         updateCamera();
+        setQuestFlag("sailed_north");
         showRPGMessage(
-          "Alto-mar! Ande pelo convés e pesque pelos lados. Fale com o Capitão para voltar."
+          "Alto-mar do Norte! Água e gelo aparecem aqui o ano todo. Ande pelo convés e pesque pelos lados."
         );
       }, 2000);
     },
@@ -245,7 +253,7 @@ export function orderConstruction(key) {
     constructions.set({ ...constr });
     saveGame();
     showRPGMessage(
-      `Mestre Gema: "Anotado! Começo a obra do ${c.name} amanhã."`
+      `Mestre Gino: "Anotado! Começo a obra do ${c.name} amanhã."`
     );
   } else {
     showRPGMessage("Dinheiro insuficiente!");
@@ -417,7 +425,14 @@ function openNpcDialog(npc, atTavern) {
   saveGame();
   phase.set(PHASES.DIALOG);
 
-  let line = atTavern ? npc.dialogTavern : friendLine(npc);
+  const legendToday = npc.cardTheme?.startsWith("lendas_") && isCardEventDay(get(day));
+  if (legendToday) setQuestFlag("met_legend");
+
+  let line = spokenLine(npc, atTavern);
+  if (!line) line = atTavern ? npc.dialogTavern : friendLine(npc);
+  if (isBirthday(npc)) {
+    line = `${line} Pode me dar um presente se quiser.`;
+  }
   if (npc.id === "veteran" && hasPerk("veteran")) {
     const tip = captainTip();
     if (tip) line = `${line} ${tip}`;
@@ -426,32 +441,107 @@ function openNpcDialog(npc, atTavern) {
   const actions = { " ": closeDialog };
   const options = ["[SPACE] Tchau"];
 
+  const quest = offerQuestOnTalk(npc.id);
+  if (quest?.met) {
+    line = `${quest.stage.title}: "Era isso que eu precisava!" Você recebeu ${describeQuestReward(quest.stage.reward)}.${quest.next ? ` Agora: ${quest.next.hint}` : " Missão concluída."}`;
+    currentMessage.set(`${npc.name} ${heartsText(npc.id)}: "${line}" [SPACE] Tchau`);
+    dialogActions.set({ " ": closeDialog });
+    saveGame();
+    return;
+  }
+
   if (npc.id === "card_seller") {
-    line = get(cardTradeUsed) || get(cardDecks).length ? "Agora, somente vendas. Um novo deck custa 2000." : get(gameMode) === "pokemon" ? "Eu sempre quis um dragao. Troco um Dratini pelo seu primeiro deck, ou vendo um por 2000." : "Eu sempre quis uma Tilapia Dourada. Troco uma pelo seu primeiro deck, ou vendo um por 2000.";
+    const championshipOpen = get(day) === CARD_CHAMPIONSHIP_DAY;
+    const eventOpen = isCardEventDay(get(day));
+    line = get(cardTradeUsed) || get(cardDecks).length
+      ? `Decks tematicos por 4000. Cartas avulsas so de pokemon basico.${championshipOpen ? " O campeonato esta aberto!" : eventOpen ? " Hoje a casa encheu: tem lenda nas mesas." : ""}`
+      : get(gameMode) === "pokemon"
+        ? "Eu sempre quis um dragao. Troco um Dratini pelo seu primeiro deck, ou vendo um por 4000."
+        : "Eu sempre quis uma Tilapia Dourada. Troco uma pelo seu primeiro deck, ou vendo um por 4000.";
     options.push("[C] Comprar cartas");
     actions.C = () => phase.set(PHASES.CARD_SHOP);
+    if (championshipOpen) {
+      options.push("[T] Campeonato");
+      actions.T = () => {
+        const opponents = cardPlayersForDay(get(day), get(seasonIndex));
+        cardChampionship.update((state) => {
+          const key = `${get(seasonIndex)}:${get(day)}`;
+          return state.dayKey === key ? state : { dayKey: key, wins: 0, claimed: false, opponents };
+        });
+        cardOpponent.set({
+          id: "championship",
+          name: "Campeonato das Cartas",
+          cardTheme: opponents[get(cardChampionship).wins] || opponents[0],
+          championship: true,
+          opponents,
+        });
+        phase.set(PHASES.CARD_DUEL);
+      };
+    }
   }
   if (npc.cardTheme && !atTavern) {
-    line = `${line} Quer duelar?`;
+    line = legendToday
+      ? `${line} Sou uma lenda deste salão. Pode duelar, mas minhas cartas lendárias não saem daqui.`
+      : `${line} Quer duelar?`;
     options[0] = "[SPACE] Sim";
     options.push("[X] Nao");
-    actions[" "] = () => { cardOpponent.set(npc); phase.set(PHASES.CARD_DUEL); };
+    actions[" "] = () => {
+      cardOpponent.set({ ...npc, isLegend: legendToday });
+      phase.set(PHASES.CARD_DUEL);
+    };
     actions.X = closeDialog;
   }
 
-  const giftIndex = pickGift(npc);
-  if (giftIndex >= 0 && canGiftToday(npc.id)) {
-    options.push(`[G] Dar ${get(inventory)[giftIndex].name}`);
-    actions.G = () => {
-      const result = giveGift(npc, giftIndex);
+  if (npc.role === "shop_visitor") {
+    options.push("[T] Trocar carta");
+    actions.T = () => {
+      if (!playerHasCard(npc.wantCard)) {
+        currentMessage.set(`${npc.name}: "Ainda não tem ${npc.wantName}? Volte quando tiver."`);
+        dialogActions.set({ " ": closeDialog });
+        return;
+      }
+      const result = tradeBasicCard(npc.wantCard, npc.offerCard);
       saveGame();
-      const reaction = result.loved
-        ? `${npc.name}: "Uau, ${result.fish.name}! Eu adoro ${tasteLabel(npc)}!"`
-        : `${npc.name}: "Obrigado pelo ${result.fish.name}!"`;
-      const perk = result.unlockedPerk ? ` ${PERK_MESSAGES[npc.id] || "Sua amizade floresceu!"}` : "";
-      currentMessage.set(`${reaction} ${heartsText(npc.id)}${perk}${result.seed ? ` Presente: ${result.seed.seedName}!` : ""}`);
+      currentMessage.set(`${npc.name}: "${result.message}"`);
       dialogActions.set({ " ": closeDialog });
     };
+    const fishIndex = playerHasFish(npc.wantFish);
+    if (fishIndex >= 0) {
+      options.push("[P] Peixe por carta");
+      actions.P = () => {
+        inventory.update((items) => items.filter((_, index) => index !== fishIndex));
+        addCards([npc.offerCard]);
+        saveGame();
+        currentMessage.set(`${npc.name}: "Esse ${npc.wantFish} é raro! Fica com ${npc.offerName}."`);
+        dialogActions.set({ " ": closeDialog });
+      };
+    }
+  }
+
+  const giftIndex = pickGift(npc);
+  if (giftIndex >= 0 && canGiftToday(npc.id) && giftIndex !== undefined) {
+    const loved = (npc.likes || []).includes(get(inventory)[giftIndex]?.id);
+    if (npc.dislikes?.includes(get(inventory)[giftIndex]?.id)) {
+      /* skip disliked automatic gift */
+    } else {
+      options.push(`[G] Dar ${get(inventory)[giftIndex].name}`);
+      actions.G = () => {
+        const result = giveGift(npc, giftIndex);
+        saveGame();
+        if (!result) {
+          currentMessage.set(`${npc.name}: "Isso eu não quero."`);
+          dialogActions.set({ " ": closeDialog });
+          return;
+        }
+        const reaction = result.loved
+          ? `${npc.name}: "Uau, ${result.fish.name}! ${loved ? "Era exatamente o que eu queria!" : `Eu adoro ${tasteLabel(npc)}!`}"`
+          : `${npc.name}: "Obrigado pelo ${result.fish.name}!"`;
+        const perk = result.unlockedPerk ? ` ${PERK_MESSAGES[npc.id] || "Sua amizade floresceu!"}` : "";
+        const extra = result.present ? " Trouxe um presente em troca!" : "";
+        currentMessage.set(`${reaction} ${heartsText(npc.id)}${perk}${result.seed ? ` Presente: ${result.seed.seedName}!` : ""}${extra}`);
+        dialogActions.set({ " ": closeDialog });
+      };
+    }
   }
 
   if (npc.id === "old_joe" && hasPerk("old_joe")) {
@@ -465,7 +555,7 @@ function openNpcDialog(npc, atTavern) {
 
 const PERK_MESSAGES = {
   veteran: "🎉 Thomas agora te dá dicas de peixes raros do mar!",
-  carpenter: "🎉 Gema agora dá 10% de desconto na oficina!",
+  carpenter: "🎉 Gino agora dá 10% de desconto na oficina!",
   anna: "🎉 Ana agora cozinha seus pratos pela metade do preço!",
   old_joe: "🎉 Joe quer te contar a lenda do Rei do Rio! Fale com ele de novo.",
 };
@@ -562,10 +652,8 @@ export function interact() {
     return;
   }
 
-  const clickedNpc = get(villagers).find((n) => {
-    const loc = getNpcLocation(n, mins, curDay, get(seasonIndex));
-    return loc.map === cMap && loc.x === target.x && loc.y === target.y;
-  });
+  const found = actorAt(cMap, target.x, target.y, mins, curDay, get(seasonIndex), get(gameMode), get(villagers));
+  const clickedNpc = found?.npc;
 
   const bugCompetitor = bugCompetitorAt(target.x, target.y);
   if (bugCompetitor) {
@@ -579,6 +667,18 @@ export function interact() {
   }
 
   if (cMap === "bug_forest") {
+    const droppedFeather = get(forestFeathers).find((feather) => feather.x === target.x && feather.y === target.y);
+    if (droppedFeather) {
+      if (get(inventory).length >= get(maxInventorySize)) {
+        showRPGMessage("A mochila está cheia. Venda ou descarte algo para guardar a pena.");
+        return;
+      }
+      inventory.update((items) => [...items, droppedFeather.item]);
+      forestFeathers.update((list) => list.filter((feather) => feather.id !== droppedFeather.id));
+      saveGame();
+      showRPGMessage(`Você guardou ${droppedFeather.item.name} na mochila.`);
+      return;
+    }
     const wildBug = get(wildInsects).find((insect) => insect.x === target.x && insect.y === target.y);
     if (wildBug) {
       const species = insectSpecies(wildBug);
@@ -720,6 +820,8 @@ export function interact() {
     currentMessage.set('Deseja observar os pássaros? [SPACE] Sim / [X] Não');
     dialogActions.set({
       " ": () => {
+        currentMessage.set("");
+        dialogActions.set(null);
         showBirdWatching.set(true);
         phase.set(PHASES.BIRD_WATCHING);
       },

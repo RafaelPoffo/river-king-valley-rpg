@@ -1,6 +1,6 @@
 <script>
   import { draw, SPRITES } from "../game/sprites.js";
-  import { CHARACTER_SPRITES } from "../game/overworldAtlas.js";
+  import { CHARACTER_SPRITES, POKEMON_SPRITES } from "../game/overworldAtlas.js";
   import OverworldSprite from "./OverworldSprite.svelte";
   import {
     TILE_SIZE,
@@ -15,7 +15,13 @@
     day,
     seasonIndex,
     currentFestival,
+    gameMode,
   } from "../game/stores.js";
+  import { extrasForDay, isBirthday } from "../game/npcLife.js";
+
+  $: extras = extrasForDay($day, $seasonIndex, $gameMode);
+  $: hour = Math.floor($inGameMinutes / 60);
+  $: extrasVisible = hour >= 6 && hour < 18 ? extras : [];
 </script>
 
 {#each $villagers as npc}
@@ -27,7 +33,31 @@
       title={npc.name}
     >
       <OverworldSprite sprite={CHARACTER_SPRITES[npc.id] || CHARACTER_SPRITES.veteran} direction={npc.cardTheme && $currentMap === "game_house" && loc.y === 5 ? "down" : npc.cardTheme && $currentMap === "game_house" ? "up" : "down"} label={npc.name} />
+      {#if isBirthday(npc, $seasonIndex, $day)}
+        <span class="absolute -top-2 left-3 text-[10px]" aria-hidden="true">🎂</span>
+      {/if}
     </div>
+  {/if}
+{/each}
+
+{#each extrasVisible as extra}
+  {#if (extra.homeMap || "village") === $currentMap}
+    <div
+      class="tile"
+      style="left: {extra.homeX * TILE_SIZE}px; top: {extra.homeY * TILE_SIZE}px; z-index: 20;"
+      title={extra.name}
+    >
+      <OverworldSprite sprite={CHARACTER_SPRITES[extra.sprite] || CHARACTER_SPRITES.traveler_m} direction="down" label={extra.name} />
+    </div>
+    {#if extra.companion}
+      <div
+        class="tile"
+        style="left: {extra.companion.x * TILE_SIZE}px; top: {extra.companion.y * TILE_SIZE}px; z-index: 20;"
+        title={extra.companion.name}
+      >
+        <OverworldSprite sprite={POKEMON_SPRITES[extra.companion.dexId] || POKEMON_SPRITES["0129"]} direction="down" label={extra.companion.name} />
+      </div>
+    {/if}
   {/if}
 {/each}
 

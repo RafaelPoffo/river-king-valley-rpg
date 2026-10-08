@@ -1,7 +1,7 @@
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
-import { BAITS, MAPS_DATA, CAST_TILES, DEEP_SEA_DECK } from "./constants.js";
+import { BAITS, MAPS_DATA, CAST_TILES, DEEP_SEA_DECK, PIER_BOUNDS, inBounds } from "./constants.js";
 import {
   gameMode,
   birdwatchingLuck,
@@ -38,8 +38,9 @@ import {
   eqNetId,
   currentMap,
   worldCreatureEncounter,
+  constructions,
 } from "./stores.js";
-import { checkDailyQuestProgress } from "./quests.js";
+import { checkDailyQuestProgress, isColdType } from "./quests.js";
 import { saveGame } from "./saveSystem.js";
 import { recordTournamentCatch } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
@@ -331,6 +332,17 @@ function matchesBiome(fish, biome) {
   return fish.biome === biome || fish.biome === "all";
 }
 
+export function playerOnPier() {
+  const position = get(player);
+  return get(currentMap) === "village"
+    && get(constructions).pier?.status === "built"
+    && inBounds(Math.round(position.x), Math.round(position.y), PIER_BOUNDS);
+}
+
+function isIceType(fish) {
+  return (fish.types || []).some((type) => /gelo/i.test(type));
+}
+
 function matchesWeather(fish, weather) {
   return !fish.weather || fish.weather === weather;
 }
@@ -480,8 +492,12 @@ export function rollFishByZone(zone) {
   }
 
   pool = pool.filter((fish) => fish.id !== exchangeSpeciesId);
+  const fromPier = playerOnPier();
+  pool = pool.filter((fish) => !fish.pierOnly || fromPier);
   if (pool.length === 0) return null;
 
+  const baitInfo = BAITS.find((item) => item.id === bait);
+  const winter = curSeason === 3;
   const weights = pool.map((fish) => {
     const rarity = Math.max(1, Math.min(6, fish.rarity || 1));
     const rareBonus = rarity >= 3
@@ -496,6 +512,15 @@ export function rollFishByZone(zone) {
       weight = [0, 100, 20, 6, 1.2, 0.15, 0.015][rarity] *
         Math.pow(1 + (zone - 1) * 0.3, rarity - 1) * rareBonus;
     }
+    if (isPokeMode && isColdType(fish) && !winter && biomeTarget !== "deep_sea") {
+      weight *= isIceType(fish) ? 0.02 : 0.05;
+    }
+    if (fromPier && fish.pierOnly) weight *= 8;
+    if (baitInfo?.attract === "river" && fish.biome === "river") weight *= 4;
+    if (baitInfo?.attract === "pier" && fish.pierOnly) weight *= 10;
+    if (baitInfo?.attract === "water" && isColdType(fish) && !isIceType(fish)) weight *= 5;
+    if (baitInfo?.attract === "ice" && isIceType(fish)) weight *= 8;
+    if (baitInfo?.attract === "ice" && isColdType(fish) && (winter || biomeTarget === "deep_sea")) weight *= 3;
     return weight * birdRarityMultiplier(birdLuck, rarity);
   });
   let roll = Math.random() * weights.reduce((total, weight) => total + weight, 0);

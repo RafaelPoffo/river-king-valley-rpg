@@ -2,18 +2,36 @@
   import { onDestroy, onMount } from "svelte";
   import { birdwatchingLuck, dailyBirds, gameMode, phase, showBirdWatching } from "../game/stores.js";
   import { PHASES } from "../game/phases.js";
-  import { birdSpecies, observeBird } from "../game/birdWatching.js";
+  import {
+    BINOCULAR_VIEW_HEIGHT,
+    BINOCULAR_VIEW_WIDTH,
+    PANORAMA_HEIGHT,
+    PANORAMA_WIDTH,
+    bindBirdWatchingView,
+    binocularPanDelta,
+    clampBinocularCamera,
+    countableSightings,
+    observeBird,
+    pickSightingInView,
+    sightingDisplay,
+    sightingSpriteSize,
+    startBirdPan,
+    stopBirdPan,
+  } from "../game/birdWatching.js";
+  import { CHARACTER_SPRITES } from "../game/overworldAtlas.js";
   import { saveGame } from "../game/saveSystem.js";
-
-  const PANORAMA_WIDTH = 4000;
-  const PANORAMA_HEIGHT = 800;
-  const VIEW_WIDTH = 250;
-  const VIEW_HEIGHT = 125;
+  import OverworldSprite from "./OverworldSprite.svelte";
 
   let cameraX = 1875;
   let cameraY = 338;
   let observation = null;
   let message = "";
+  let dragging = false;
+  let lastPointerX = 0;
+  let lastPointerY = 0;
+
+  $: countable = countableSightings($dailyBirds);
+  $: observedCount = countable.filter((bird) => bird.observed).length;
 
   function closeWatching() {
     showBirdWatching.set(false);
@@ -21,47 +39,88 @@
     cameraX = 1875;
     cameraY = 338;
     observation = null;
+    message = "";
+    dragging = false;
+  }
+
+  function pan(dir) {
+    const [dx, dy] = binocularPanDelta(dir);
+    const next = clampBinocularCamera(cameraX + dx, cameraY + dy);
+    cameraX = next.x;
+    cameraY = next.y;
   }
 
   function seeBird() {
-    const visible = $dailyBirds
-      .filter((bird) => !bird.observed && bird.x >= cameraX && bird.x < cameraX + VIEW_WIDTH && bird.y >= cameraY && bird.y < cameraY + VIEW_HEIGHT)
-      .sort((first, second) => Math.hypot(first.x - cameraX, first.y - cameraY) - Math.hypot(second.x - cameraX, second.y - cameraY));
-    if (!visible.length) {
-      message = "Não há nenhuma ave nova dentro do campo de visão.";
-      return;
-    }
-    observation = observeBird(visible[0].id);
-    message = "";
-    if (observation) saveGame();
-  }
-
-  function handleKeydown(event) {
-    if (!$showBirdWatching || event.repeat) return;
-    if (event.key === "Escape") {
-      event.preventDefault();
-      closeWatching();
-      return;
-    }
-    if (observation && (event.key === " " || event.key === "Spacebar")) {
-      event.preventDefault();
+    if (observation) {
       observation = null;
       return;
     }
-    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
-      event.preventDefault();
-      cameraX = Math.max(0, Math.min(PANORAMA_WIDTH - VIEW_WIDTH, cameraX + (event.key === "ArrowLeft" ? -60 : 60)));
-    } else if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-      event.preventDefault();
-      cameraY = Math.max(0, Math.min(PANORAMA_HEIGHT - VIEW_HEIGHT, cameraY + (event.key === "ArrowUp" ? -40 : 40)));
-    } else if (event.key === " " || event.key === "Spacebar") {
-      event.preventDefault();
-      seeBird();
+    const visible = pickSightingInView($dailyBirds, cameraX, cameraY);
+    if (!visible) {
+      message = "Não há nenhuma ave nova dentro do campo de visão.";
+      return;
     }
+    const result = observeBird(visible.id);
+    if (!result) {
+      message = "Não há nenhuma ave nova dentro do campo de visão.";
+      return;
+    }
+    if (result.visitor) {
+      message = result.message;
+      return;
+    }
+    observation = result;
+    message = result.featherMessage || "";
+    saveGame();
   }
 
-  onMount(() => window.addEventListener("keydown", handleKeydown));
-  onDestroy(() => window.removeEventListener("keydown", handleKeydown));
+  function onPointerDown(event) {
+    if (observation) return;
+    dragging = true;
+    lastPointerX = event.clientX;
+    lastPointerY = event.clientY;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function onPointerMove(event) {
+    if (!dragging) return;
+    const next = clampBinocularCamera(
+      cameraX - (event.clientX - lastPointerX) * 1.6,
+      cameraY - (event.clientY - lastPointerY) * 1.6,
+    );
+    cameraX = next.x;
+    cameraY = next.y;
+    lastPointerX = event.clientX;
+    lastPointerY = event.clientY;
+  }
+
+  function onPointerUp() {
+    dragging = false;
+  }
+
+  function tapSighting(sighting) {
+    if (observation || sighting.observed) return;
+    if (!pickSightingInView([sighting], cameraX, cameraY)) return;
+    const result = observeBird(sighting.id);
+    if (!result) return;
+    if (result.visitor) {
+      message = result.message;
+      return;
+    }
+    observation = result;
+    message = result.featherMessage || "";
+    saveGame();
+  }
+
+  onMount(() => {
+    bindBirdWatchingView({
+      pan,
+      observe: seeBird,
+      close: closeWatching,
+    });
+  });
+
+  onDestroy(() => bindBirdWatchingView(null));
 </script>
 
 {#if $showBirdWatching}
@@ -69,26 +128,41 @@
     <div class="absolute left-4 top-4 z-20 flex items-center gap-3 border border-white/30 bg-black/75 px-3 py-2 font-mono text-[10px]">
       <span>OBSERVAÇÃO</span>
       <span class="text-emerald-300">SORTE {$birdwatchingLuck}/10</span>
-      <span class="text-white/65">AVES {$dailyBirds.filter((bird) => bird.observed).length}/{$dailyBirds.length}</span>
+      <span class="text-white/65">AVES {observedCount}/{countable.length}</span>
     </div>
 
-    <div class="binoculars" aria-label="Visão dos binóculos">
+    <div
+      class="binoculars"
+      class:dragging
+      aria-label="Visão dos binóculos"
+      role="application"
+      on:pointerdown={onPointerDown}
+      on:pointermove={onPointerMove}
+      on:pointerup={onPointerUp}
+      on:pointercancel={onPointerUp}
+    >
       {#each [0, 1] as lens}
         <div class="lens">
-          <div class="panorama" style={`width:${PANORAMA_WIDTH}px;height:${PANORAMA_HEIGHT}px;transform:translate(${-cameraX - lens * VIEW_WIDTH / 2}px,${-cameraY}px)`}>
+          <div class="panorama" style={`width:${PANORAMA_WIDTH}px;height:${PANORAMA_HEIGHT}px;transform:translate(${-cameraX - lens * BINOCULAR_VIEW_WIDTH / 2}px,${-cameraY}px)`}>
             {#each $dailyBirds as sighting (sighting.id)}
-              {@const species = birdSpecies(sighting, $gameMode)}
-              <div
+              {@const species = sightingDisplay(sighting, $gameMode)}
+              {@const size = sightingSpriteSize(sighting)}
+              <button
+                type="button"
                 class:observed={sighting.observed}
+                class:visitor={sighting.kind === "visitor"}
                 class="bird-sprite"
-                style={`left:${sighting.x}px;top:${sighting.y}px;width:${Math.max(26, Math.round(sighting.size * 0.8))}px;height:${Math.max(26, Math.round(sighting.size * 0.8))}px;`}
+                style={`left:${sighting.x}px;top:${sighting.y}px;width:${size}px;height:${size}px;font-size:${size}px;`}
+                on:pointerdown|stopPropagation={() => tapSighting(sighting)}
               >
-                {#if $gameMode === "pokemon"}
-                  <img src={species?.portrait} alt={species?.name} class="h-full w-full object-contain" style="image-rendering:pixelated" />
+                {#if sighting.kind === "visitor" && sighting.visitorType === "npc"}
+                  <OverworldSprite sprite={CHARACTER_SPRITES[sighting.spriteId]} label={species?.name || "Visitante"} />
+                {:else if species?.portrait}
+                  <img src={species.portrait} alt={species?.name} class="h-full w-full object-contain" style="image-rendering:pixelated" />
                 {:else}
                   <span class="bird-emoji" role="img" aria-label={species?.name || "Ave distante"}>{species?.emoji}</span>
                 {/if}
-              </div>
+              </button>
             {/each}
           </div>
         </div>
@@ -96,8 +170,20 @@
       <div class="bridge" aria-hidden="true"></div>
     </div>
 
-    <div class="absolute bottom-5 left-1/2 z-20 w-[min(90%,520px)] -translate-x-1/2 border border-white/25 bg-black/80 px-4 py-3 text-center font-mono text-[10px]">
-      {#if message}{message}{:else}Setas para explorar · Espaço para observar · Esc para sair{/if}
+    <div class="absolute bottom-5 left-1/2 z-20 flex w-[min(94%,560px)] -translate-x-1/2 flex-col items-center gap-2">
+      <div class="w-full border border-white/25 bg-black/80 px-4 py-2 text-center font-mono text-[10px]">
+        {#if message}{message}{:else}Arraste ou use as setas · A / Espaço observa · B / Esc sai{/if}
+      </div>
+      <div class="flex flex-wrap items-center justify-center gap-2">
+        <div class="grid grid-cols-3 grid-rows-3 gap-1">
+          <button class="col-start-2 row-start-1 h-10 w-10 border border-white/50 bg-black/70" on:pointerdown={() => startBirdPan("up")} on:pointerup={() => stopBirdPan()} on:pointercancel={() => stopBirdPan()}>▲</button>
+          <button class="col-start-1 row-start-2 h-10 w-10 border border-white/50 bg-black/70" on:pointerdown={() => startBirdPan("left")} on:pointerup={() => stopBirdPan()} on:pointercancel={() => stopBirdPan()}>◀</button>
+          <button class="col-start-3 row-start-2 h-10 w-10 border border-white/50 bg-black/70" on:pointerdown={() => startBirdPan("right")} on:pointerup={() => stopBirdPan()} on:pointercancel={() => stopBirdPan()}>▶</button>
+          <button class="col-start-2 row-start-3 h-10 w-10 border border-white/50 bg-black/70" on:pointerdown={() => startBirdPan("down")} on:pointerup={() => stopBirdPan()} on:pointercancel={() => stopBirdPan()}>▼</button>
+        </div>
+        <button class="h-12 border-2 border-white bg-emerald-700 px-4 font-mono text-[11px]" on:click={seeBird}>OBSERVAR</button>
+        <button class="h-12 border-2 border-white bg-gray-700 px-4 font-mono text-[11px]" on:click={closeWatching}>SAIR</button>
+      </div>
     </div>
 
     {#if observation}
@@ -121,6 +207,9 @@
               <p class="mt-2 text-xs">Tamanho: {observation.size} cm</p>
               <p class="text-xs">Recorde: {observation.observation.recordSize} cm · Menor: {observation.observation.smallestSize} cm</p>
               <p class="text-xs">Observações: {observation.observation.count}</p>
+              {#if observation.featherMessage}
+                <p class="mt-2 text-xs font-bold text-amber-800">{observation.featherMessage}</p>
+              {/if}
             </div>
           </div>
           <footer class="flex items-center justify-between border-t border-black/20 px-4 py-3 text-xs">
@@ -137,16 +226,21 @@
   .binoculars {
     position: relative;
     display: flex;
-    width: 250px;
-    height: 125px;
+    width: 288px;
+    height: 144px;
+    touch-action: none;
     filter: drop-shadow(0 0 24px #000);
+  }
+
+  .binoculars.dragging .panorama {
+    transition: none;
   }
 
   .lens {
     position: relative;
     z-index: 2;
-    width: 125px;
-    height: 125px;
+    width: 144px;
+    height: 144px;
     overflow: hidden;
     border: 3px solid #111;
     border-radius: 50%;
@@ -161,22 +255,29 @@
     background-color: #192b22;
     background-image: url("/assets/birdWatching.jpg");
     background-repeat: repeat-x;
-    background-position: center center;
-    background-size: auto 266.667%;
     background-position: center 40%;
+    background-size: auto 266.667%;
     transition: transform 180ms ease-out;
   }
 
   .bird-sprite {
     position: absolute;
     z-index: 2;
+    padding: 0;
+    border: 0;
+    background: transparent;
     object-fit: contain;
     image-rendering: pixelated;
     filter: drop-shadow(1px 2px 1px #101711);
+    cursor: pointer;
   }
 
   .bird-sprite.observed {
     opacity: 0.45;
+  }
+
+  .bird-sprite.visitor {
+    filter: drop-shadow(1px 2px 1px #101711) saturate(0.85);
   }
 
   .bird-emoji {
@@ -185,17 +286,16 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    font-size: 26px;
     line-height: 1;
   }
 
   .bridge {
     position: absolute;
     z-index: 3;
-    top: 49px;
-    left: 119px;
-    width: 12px;
-    height: 27px;
+    top: 56px;
+    left: 137px;
+    width: 14px;
+    height: 31px;
     background: #080a09;
     pointer-events: none;
   }

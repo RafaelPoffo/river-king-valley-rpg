@@ -16,6 +16,7 @@
   import NpcLayer from "./NpcLayer.svelte";
   import PlayerLayer from "./PlayerLayer.svelte";
   import BugLayer from "./BugLayer.svelte";
+  import FeatherLayer from "./FeatherLayer.svelte";
   import BugCompetitorLayer from "./BugCompetitorLayer.svelte";
   import GardenLayer from "./GardenLayer.svelte";
 
@@ -34,6 +35,7 @@
     <BoatLayer />
     <WorldCreatureLayer />
     <BugLayer />
+    <FeatherLayer />
     <BugCompetitorLayer />
     <GardenLayer />
     <NpcLayer />

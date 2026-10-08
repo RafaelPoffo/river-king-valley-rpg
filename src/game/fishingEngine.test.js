@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { get } from "svelte/store";
-import { rollFishByZone, shadowEntry, baitBiteChance, throwLine, resetAction, cleanupFishing, startMinigame, attemptCatch } from "./fishingEngine.js";
+import { rollFishByZone, shadowEntry, baitBiteChance, throwLine, resetAction, cleanupFishing, startMinigame, attemptCatch, playerOnPier } from "./fishingEngine.js";
 import { PHASES } from "./phases.js";
 import { SPRITES } from "./sprites.js";
-import { BAITS, FISH_DB, INITIAL_UPGRADES } from "./constants.js";
+import { BAITS, FISH_DB, INITIAL_UPGRADES, INITIAL_CONSTRUCTIONS, PIER_BOUNDS } from "./constants.js";
 import { POKEMON_DB } from "./data/pokemon.js";
 import {
   gameMode,
@@ -32,6 +32,7 @@ import {
   worldCreatures,
   worldCreatureEncounter,
   currentToolType,
+  constructions,
 } from "./stores.js";
 
 const DAY = 10 * 60;
@@ -511,5 +512,17 @@ describe("rollFishByZone no modo Pokémon", () => {
         }
       }
     }
+  });
+
+  it("o píer tem espécies exclusivas e a margem não", () => {
+    constructions.set(JSON.parse(JSON.stringify(INITIAL_CONSTRUCTIONS)));
+    currentMap.set("village");
+    player.set({ x: 10, y: 16, dir: "down" });
+    setScene({ biome: "sea" });
+    expect(rollMany(1, 250).some((fish) => fish.pierOnly)).toBe(false);
+    constructions.update((all) => ({ ...all, pier: { ...all.pier, status: "built" } }));
+    player.set({ x: PIER_BOUNDS.x1, y: PIER_BOUNDS.y1, dir: "down" });
+    expect(playerOnPier()).toBe(true);
+    expect(rollMany(1, 400).some((fish) => fish.id === "peixe_cais")).toBe(true);
   });
 });

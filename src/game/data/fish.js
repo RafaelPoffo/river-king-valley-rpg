@@ -1858,6 +1858,24 @@ export const FISH_DB = [
     minW: 50.0,
     maxW: 150.0,
   },
+  {
+    id: "peixe_cais",
+    name: "Peixe-Estaca",
+    sprite: SPRITES.fish,
+    rarity: 3,
+    type: "fish",
+    biome: "sea",
+    pierOnly: true,
+    seasons: [0, 1, 2, 3],
+    times: "all",
+    dist: [1, 2],
+    desc: "Vive grudado nas estacas do píer. Só morde de lá.",
+    diff: 28,
+    spd: 1.6,
+    price: 180,
+    minW: 1.2,
+    maxW: 4.5,
+  },
 ].map((species) => {
   const sellable = SELLABLE.has(species.type) && species.sprite !== SPRITES.trash;
   return withBaitPreferences({

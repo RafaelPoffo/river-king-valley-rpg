@@ -103,9 +103,15 @@
                 <div class="retro-font text-[7px] text-center truncate w-full mt-1">
                   {fish.name}
                 </div>
-                <div class="retro-font text-[6px] text-gray-500">
-                  {fish.weight}kg
-                </div>
+                {#if fish.weight}
+                  <div class="retro-font text-[6px] text-gray-500">
+                    {fish.weight}kg
+                  </div>
+                {:else if fish.priceFinal}
+                  <div class="retro-font text-[6px] text-gray-500">
+                    venda {fish.priceFinal}¥
+                  </div>
+                {/if}
               </button>
             {:else}
               <span class="retro-font text-[7px] text-gray-400 mt-6">

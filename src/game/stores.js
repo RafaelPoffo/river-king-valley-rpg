@@ -105,6 +105,9 @@ export const unlocks = writable([]);
 export const claimedRewards = writable([]);
 export const friendship = writable({});
 export const joeQuest = writable(0);
+export const questLog = writable({});
+export const questFlags = writable({});
+export const questStats = writable({ catches: 0, river: 0, sea: 0, pier: 0, cold: 0 });
 export const activeDish = writable(null);
 export const cameraX = writable(0);
 export const cameraY = writable(0);
@@ -120,11 +123,13 @@ export const dailyBirds = writable([]);
 export const birdPopulationDay = writable(null);
 export const birdLog = writable({});
 export const birdwatchingLuck = writable(0);
+export const forestFeathers = writable([]);
 export const cardCollection = writable({});
 export const cardDecks = writable([]);
 export const cardTradeUsed = writable(false);
 export const cardVictories = writable([]);
 export const cardOpponent = writable(null);
+export const cardChampionship = writable({ dayKey: null, wins: 0, claimed: false, opponents: [] });
 
 // Collections & Quests
 export const inventory = writable([]);

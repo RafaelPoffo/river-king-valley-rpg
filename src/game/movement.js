@@ -1,6 +1,8 @@
 import { get } from "svelte/store";
 import { PHASES } from "./phases.js";
 import { worldCreatureBlocks } from "./worldCreatures.js";
+import { forestTreeBlocks } from "./forestAtlas.js";
+import { extraOccupantAt } from "./npcLife.js";
 import {
   MAPS_DATA,
   TILE_SIZE,
@@ -212,7 +214,9 @@ function beginStep(dx, dy, dirStr) {
   ).some((competitor, index) => BUG_COMPETITOR_SEATS[index].x === nx && BUG_COMPETITOR_SEATS[index].y === ny);
 
   const gardenOccupying = cMap === "bug_forest" && get(garden).some((tree) => tree.x === nx && tree.y === ny);
-  if (npcOccupying || bugCompetitorOccupying || gardenOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny)) {
+  const extraOccupying = extraOccupantAt(cMap, nx, ny, mins, curDay, get(seasonIndex), get(gameMode));
+  const treeOccupying = cMap === "bug_forest" && forestTreeBlocks(nx, ny, get(seasonIndex));
+  if (npcOccupying || extraOccupying || bugCompetitorOccupying || gardenOccupying || stallBlocks(cMap, nx, ny) || worldCreatureBlocks(cMap, nx, ny) || treeOccupying) {
     player.set({ x: originX, y: originY, dir: dirStr });
     return;
   }

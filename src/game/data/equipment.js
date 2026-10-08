@@ -161,6 +161,42 @@ export const BAITS = [
     desc: "Favorita dos raros; 80% de mordida.",
   },
   {
+    id: "isca_rio",
+    name: "Isca de Corrente (Rio)",
+    tier: 3,
+    bonus: 40,
+    price: 20,
+    attract: "river",
+    desc: "Chama peixes de rio. Missão do Seu Nuno.",
+  },
+  {
+    id: "isca_cais",
+    name: "Isca de Estaca (Píer)",
+    tier: 4,
+    bonus: 55,
+    price: 40,
+    attract: "pier",
+    desc: "Só rende no píer. Atrai o que mora nas estacas.",
+  },
+  {
+    id: "isca_marinha",
+    name: "Isca das Marés",
+    tier: 4,
+    bonus: 60,
+    price: 45,
+    attract: "water",
+    desc: "Aumenta a chance de Pokémon de água.",
+  },
+  {
+    id: "isca_gelo",
+    name: "Isca de Gelo",
+    tier: 5,
+    bonus: 80,
+    price: 80,
+    attract: "ice",
+    desc: "Atrai água e gelo no inverno e no alto-mar do Norte.",
+  },
+  {
     id: "megabit",
     name: "Megabit",
     tier: 7,
@@ -176,7 +212,7 @@ export function withBaitPreferences(species) {
   const firstTier = rare ? 4 : intermediate ? 2 : 1;
   const favoriteTier = rare ? 6 : intermediate ? 3 : 1;
   const baitPreferences = Object.fromEntries(
-    BAITS.filter((bait) => bait.tier >= firstTier && bait.tier < firstTier + 3)
+    BAITS.filter((bait) => bait.tier >= firstTier && bait.tier < firstTier + 3 && !bait.attract && bait.id !== "megabit")
       .map((bait) => [bait.id, bait.tier === favoriteTier ? 0.8 : 0.5]),
   );
   return { ...species, baitPreferences };

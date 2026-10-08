@@ -47,19 +47,22 @@ import {
   birdPopulationDay,
   birdLog,
   birdwatchingLuck,
+  forestFeathers,
   garden, gardenDay, gardenBuffs, gardenVisitor, seedStock, eqSeedId,
-  cardCollection, cardDecks, cardTradeUsed, cardVictories, currentToolType,
+  cardCollection, cardDecks, cardTradeUsed, cardVictories, cardChampionship, currentToolType,
+  questLog, questFlags, questStats,
 } from "./stores.js";
 import { updateCamera } from "./movement.js";
-import { generateDailyQuest } from "./quests.js";
+import { generateDailyQuest, ensureQuestLog } from "./quests.js";
 import { INITIAL_CONSTRUCTIONS, INITIAL_UPGRADES, PLAYER_START } from "./constants.js";
+import { CARD_THEMES, themeDeck, themeById } from "./cardCatalog.js";
 import { ensureWorldPopulation } from "./worldCreatures.js";
 import { ensureDailyInsects } from "./insectHunt.js";
 import { ensureDailyBirds } from "./birdWatching.js";
 import { initialGarden } from "./garden.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 6;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -103,6 +106,7 @@ export const PERSISTED_FIELDS = [
   { key: "birdPopulationDay", store: birdPopulationDay, initial: () => null },
   { key: "birdLog", store: birdLog, initial: () => ({}) },
   { key: "birdwatchingLuck", store: birdwatchingLuck, initial: () => 0 },
+  { key: "forestFeathers", store: forestFeathers, initial: () => [] },
   { key: "garden", store: garden, initial: initialGarden },
   { key: "gardenDay", store: gardenDay, initial: () => 0 },
   { key: "gardenBuffs", store: gardenBuffs, initial: () => [] },
@@ -114,6 +118,10 @@ export const PERSISTED_FIELDS = [
   { key: "cardDecks", store: cardDecks, initial: () => [] },
   { key: "cardTradeUsed", store: cardTradeUsed, initial: () => false },
   { key: "cardVictories", store: cardVictories, initial: () => [] },
+  { key: "cardChampionship", store: cardChampionship, initial: () => ({ dayKey: null, wins: 0, claimed: false, opponents: [] }) },
+  { key: "questLog", store: questLog, initial: () => ({}) },
+  { key: "questFlags", store: questFlags, initial: () => ({}) },
+  { key: "questStats", store: questStats, initial: () => ({ catches: 0, river: 0, sea: 0, pier: 0, cold: 0 }) },
 ];
 
 // Each entry upgrades a save from version N to N + 1.
@@ -136,6 +144,40 @@ const MIGRATIONS = {
     }
     return { ...data, constructions };
   },
+  3: (data) => {
+    const legacy = {
+      aves: "voador", fada: "planta", rei: "lutador", mago: "psiquico", lich: "fantasma",
+      orc: "lutador", dragao: "dragao", fera: "normal", demonio: "fantasma", pirata: "agua",
+      gelo: "lendas_gelo", ninja: "voador", inseto: "inseto", espirito: "fantasma",
+      iniciais: "fogo", colonia: "inseto", dragoes: "dragao", psiquicos: "psiquico",
+      eletricos: "eletrico", ramificacoes: "agua",
+    };
+    const seen = new Set();
+    const decks = (data.cardDecks || []).map((deck, index) => {
+      const themeId = themeById(deck.themeId)?.id || legacy[deck.themeId] || CARD_THEMES[index % CARD_THEMES.length].id;
+      const unique = seen.has(themeId)
+        ? CARD_THEMES.find((theme) => !seen.has(theme.id))?.id || themeId
+        : themeId;
+      seen.add(unique);
+      const theme = themeById(unique);
+      return { id: `deck-${unique}`, name: theme.name, themeId: unique, cards: themeDeck(unique) };
+    });
+    const collection = { ...(data.cardCollection || {}) };
+    for (const deck of decks) {
+      for (const id of deck.cards) collection[id] = (collection[id] || 0) + 1;
+    }
+    return { ...data, cardDecks: decks, cardCollection: collection };
+  },
+  4: (data) => ({
+    ...data,
+    questLog: data.questLog || {},
+    questFlags: data.questFlags || {},
+    questStats: data.questStats || { catches: 0, river: 0, sea: 0, pier: 0, cold: 0 },
+  }),
+  5: (data) => ({
+    ...data,
+    forestFeathers: data.forestFeathers || [],
+  }),
 };
 
 export function migrateSave(data) {
@@ -224,6 +266,7 @@ export function deleteSave() {
 export function newGame(selectedMode = "normal") {
   resetState(selectedMode);
   generateDailyQuest();
+  ensureQuestLog();
   const currentName = get(playerName);
   if (!currentName || !currentName.trim()) {
     playerName.set("Red");

@@ -1,6 +1,8 @@
 <script>
-  import { SEASONS, FESTIVALS, TOURNAMENTS } from "../game/constants.js";
+  import { SEASONS, FESTIVALS, TOURNAMENTS, INITIAL_VILLAGERS, CARD_EVENT_DAYS } from "../game/constants.js";
   import { showCalendarModal } from "../game/stores.js";
+
+  const birthdays = INITIAL_VILLAGERS.filter((npc) => npc.birthday && !npc.cardTheme);
 </script>
 
 <div
@@ -35,6 +37,18 @@
                 <span class="font-bold text-black">
                   {TOURNAMENTS[fName] ? "🏆 " : ""}{fName}
                 </span>
+              </li>
+            {/each}
+            {#each CARD_EVENT_DAYS as eventDay}
+              <li class="flex justify-between text-purple-800">
+                <span>Dia {eventDay}:</span>
+                <span>Casa dos Jogos — {eventDay === 15 ? "campeonato" : "noite das lendas"}</span>
+              </li>
+            {/each}
+            {#each birthdays.filter((npc) => npc.birthday.season === sIdx) as npc}
+              <li class="flex justify-between text-rose-700">
+                <span>Dia {npc.birthday.day}:</span>
+                <span>Aniversário de {npc.name}</span>
               </li>
             {/each}
           </ul>
