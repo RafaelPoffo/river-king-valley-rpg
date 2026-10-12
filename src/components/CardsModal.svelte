@@ -3,8 +3,9 @@
   import { phase, gameMode, money, inventory, cardCollection, cardDecks, cardTradeUsed, cardVictories, cardOpponent, cardChampionship, gardenDay, day, seasonIndex } from "../game/stores.js";
   import { PHASES } from "../game/phases.js";
   import {
-    ALL_CARDS, CARD_THEMES, DECK_SIZE, DECK_PRICE, BASIC_SHOP_CARDS,
-    cardName, kindLabel, themeDeck, themeById, isBasicMonster,
+    ALL_CARDS, CARD_THEMES, POKEMON_THEMES, DECK_SIZE, DECK_PRICE, BASIC_SHOP_CARDS,
+    cardName, kindLabel, themeDeck, themeById, isBasicMonster, cardsForMode,
+    themesForMode, deckSize, pokemonThemeForNpc,
   } from "../game/cardCatalog.js";
   import { buyDeck, buySingleCard, saveDeck, validateDeck, grantChampionshipPrize } from "../game/cards.js";
   import { createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap, canAttack, effectNeedsTarget } from "../game/cardGame.js";
@@ -36,7 +37,9 @@
 
   $: shop = $phase === PHASES.CARD_SHOP;
   $: choosing = $phase === PHASES.CARD_DUEL && !duel;
-  $: ownedCards = ALL_CARDS.filter((card) => ($cardCollection[card.id] || 0) > 0);
+  $: modeThemes = themesForMode($gameMode);
+  $: modeCards = cardsForMode($gameMode);
+  $: ownedCards = modeCards.filter((card) => ($cardCollection[card.id] || 0) > 0);
   $: visibleCards = (shop ? BASIC_SHOP_CARDS : ownedCards).filter((card) => (themeFilter === "all" || (themeFilter === "rare" ? card.rarity === "rare" : themeFilter === "basico" ? isBasicMonster(card) : card.themeId === themeFilter)) && cardName(card, $gameMode).toLowerCase().includes(filter.toLowerCase()));
   $: tradeFish = $gameMode === "pokemon" ? "dratini" : "tilapia_dourada";
   $: canTrade = !$cardTradeUsed && !$cardDecks.length && $inventory.some((fish) => fish.id === tradeFish);
@@ -44,6 +47,7 @@
   $: selectedStats = selected?.type === "monster" ? cardStats(selected, duel?.p1 || { field: null }) : null;
   $: evolutionTargetIndex = selected?.evolvesFrom ? duel?.p1.monsters.findIndex((card) => card?.dexId === selected.evolvesFrom) ?? -1 : -1;
   $: editingDeck = $cardDecks.find((deck) => deck.id === editingId);
+  $: opponentDeckTheme = $gameMode === "pokemon" ? pokemonThemeForNpc(currentOpponentTheme()) : themeById(currentOpponentTheme());
   $: if (duel?.turn === "p2" && !duel.winner && ["main", "battle"].includes(duel.state) && !aiTimer) scheduleAI();
   $: if (duel?.winner && !rewardHandled) claimVictory();
 
@@ -65,7 +69,7 @@
     const card = ALL_CARDS.find((item) => item.id === id);
     if (!isBasicMonster(card)) { message = "So pokemon basicos podem ser trocados no deck."; return; }
     if (delta > 0) {
-      if (draft.length >= DECK_SIZE || draft.filter((cardId) => cardId === id).length >= ($cardCollection[id] || 0)) return;
+      if (draft.length >= (deckSize(editingDeck?.themeId) || DECK_SIZE) || draft.filter((cardId) => cardId === id).length >= ($cardCollection[id] || 0)) return;
       draft = [...draft, id];
     } else {
       const index = draft.lastIndexOf(id);
@@ -82,8 +86,9 @@
 
   function beginDuel(deck) {
     if (!$cardOpponent || !validateDeck(deck.cards)) { message = "Escolha um deck valido."; return; }
-    const theme = currentOpponentTheme();
-    duel = createCardDuel(deck.cards, themeDeck(theme), Math.random, $gameMode);
+    const opponentThemeId = $gameMode === "pokemon" ? opponentDeckTheme?.id : currentOpponentTheme();
+    if (!$cardOpponent || !validateDeck(deck.cards,$cardCollection,deck.cards,deck.themeId)) { message = "Escolha um deck valido."; return; }
+    duel = createCardDuel(deck.cards, themeDeck(opponentThemeId), Math.random, $gameMode);
     selected = null; source = null; attacker = null; targeting = null;
     inspectCard = null; inspectOwner = null;
     rewardHandled = false; rewardText = ""; message = "";
@@ -237,8 +242,8 @@
       <div class="shrink-0 border-b border-[#9bb3a4] bg-white px-3 py-3">
         <p class="text-sm">{!$cardTradeUsed && !$cardDecks.length ? $gameMode === "pokemon" ? 'Ivo: "Eu sempre quis um dragao."' : 'Ivo: "Eu sempre quis uma Tilapia Dourada."' : 'Ivo: "Decks por 4000. Avulsas so pokemon basico."'}</p>
         <div class="mt-2 flex flex-wrap gap-2">
-          {#each CARD_THEMES as theme}
-            <button class="command" disabled={$money < DECK_PRICE || $cardDecks.some((deck) => deck.themeId === theme.id)} on:click={() => finishAction(buyDeck(false, theme.id))}>{theme.name} · {DECK_PRICE}</button>
+          {#each modeThemes as theme}
+            <button class="command" disabled={$money < DECK_PRICE || $cardDecks.some((deck) => deck.themeId === theme.id)} on:click={() => finishAction(buyDeck(false, theme.id))}>{theme.name} · {DECK_PRICE} · {deckSize(theme.id)}</button>
           {/each}
           {#if !$cardTradeUsed && !$cardDecks.length}<button class="command" disabled={!canTrade} on:click={() => finishAction(buyDeck(true))}>{$gameMode === "pokemon" ? "Trocar Dratini" : "Trocar Tilapia Dourada"}</button>{/if}
         </div>
@@ -248,7 +253,7 @@
     {#if choosing}
       <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
         {#if $cardOpponent?.championship}<p class="text-sm">Campeonato · luta {$cardChampionship.wins + 1} de {$cardChampionship.opponents.length}</p>{/if}
-        {#each $cardDecks as deck}<button class="deck-row" disabled={!validateDeck(deck.cards)} on:click={() => beginDuel(deck)}><strong>{deck.name}</strong><span>{deck.cards.length}/{DECK_SIZE} cartas · Duelar →</span></button>{/each}
+        {#each $cardDecks as deck}<button class="deck-row" disabled={!validateDeck(deck.cards,$cardCollection,deck.cards,deck.themeId)} on:click={() => beginDuel(deck)}><strong>{deck.name}</strong><span>{deck.cards.length}/{deckSize(deck.themeId) || DECK_SIZE} cartas · Duelar →</span></button>{/each}
         {#if !$cardDecks.length}<p class="text-sm">Voce ainda nao tem um deck. Ivo vende decks no balcao.</p>{/if}
       </div>
     {:else}
@@ -257,13 +262,13 @@
           {#each $cardDecks as deck}<button class="command whitespace-nowrap" class:chosen={editingId === deck.id} on:click={() => startEditing(deck)}>{deck.name}</button>{/each}
           {#if !$cardDecks.length}<p class="px-2 text-sm">Nenhum deck adquirido.</p>{/if}
         </div>
-        {#if editingId}<div class="flex shrink-0 items-center gap-2 border-b border-[#9bb3a4] p-2"><input aria-label="Nome do deck" maxlength="30" class="min-w-0 flex-1 border-2 border-[#53756a] bg-white px-2 py-1 text-sm" bind:value={editingName} /><strong>{draft.length}/{DECK_SIZE}</strong><button class="command" disabled={!validateDeck(draft, $cardCollection, editingDeck?.cards)} on:click={() => finishAction(saveDeck(editingId, draft, editingName))}>Salvar</button></div>
+        {#if editingId}<div class="flex shrink-0 items-center gap-2 border-b border-[#9bb3a4] p-2"><input aria-label="Nome do deck" maxlength="30" class="min-w-0 flex-1 border-2 border-[#53756a] bg-white px-2 py-1 text-sm" bind:value={editingName} /><strong>{draft.length}/{deckSize(editingDeck?.themeId) || DECK_SIZE}</strong><button class="command" disabled={!validateDeck(draft,$cardCollection,editingDeck?.cards,editingDeck?.themeId)} on:click={() => finishAction(saveDeck(editingId, draft, editingName))}>Salvar</button></div>
           <p class="shrink-0 px-3 py-1 text-[11px]">So pokemon basicos (sem evolucao e sem pre-evolucao) podem ser trocados.</p>
         {/if}
       {/if}
       <div class="flex shrink-0 gap-2 border-b border-[#9bb3a4] p-2">
         <input aria-label="Buscar cartas" placeholder="Buscar carta" class="min-w-0 flex-1 border border-[#53756a] bg-white px-2 py-1 text-sm" bind:value={filter} />
-        <select aria-label="Filtrar cartas por deck" class="max-w-[190px] border border-[#53756a] bg-white px-2 text-xs" bind:value={themeFilter}><option value="all">Todos os temas</option><option value="basico">Basicos</option><option value="rare">Raras</option>{#each CARD_THEMES as theme}<option value={theme.id}>{theme.name}</option>{/each}</select>
+        <select aria-label="Filtrar cartas por deck" class="max-w-[190px] border border-[#53756a] bg-white px-2 text-xs" bind:value={themeFilter}><option value="all">Todos os temas</option><option value="basico">Basicos</option><option value="rare">Raras</option>{#each modeThemes as theme}<option value={theme.id}>{theme.name}</option>{/each}</select>
       </div>
       <div class="card-grid min-h-0 flex-1 overflow-y-auto p-3">
         {#each visibleCards as card}
@@ -274,7 +279,7 @@
               <div class="flex items-center gap-1">
                 <button class="count-button" aria-label={`Remover ${cardName(card, $gameMode)}`} title="Remover carta" disabled={!isBasicMonster(card) || !draft.includes(card.id)} on:click={() => changeCount(card.id, -1)}>−</button>
                 <span class="w-10 text-center text-xs">{draft.filter((id) => id === card.id).length}/{$cardCollection[card.id]}</span>
-                <button class="count-button" aria-label={`Adicionar ${cardName(card, $gameMode)}`} title="Adicionar carta" disabled={!isBasicMonster(card) || draft.length >= DECK_SIZE || draft.filter((id) => id === card.id).length >= $cardCollection[card.id]} on:click={() => changeCount(card.id, 1)}>+</button>
+                <button class="count-button" aria-label={`Adicionar ${cardName(card, $gameMode)}`} title="Adicionar carta" disabled={!isBasicMonster(card) || draft.length >= (deckSize(editingDeck?.themeId) || DECK_SIZE) || draft.filter((id) => id === card.id).length >= $cardCollection[card.id]} on:click={() => changeCount(card.id, 1)}>+</button>
               </div>
             {:else}<span class="text-xs">Possuidas: {$cardCollection[card.id]}</span>{/if}
             <p class="w-[110px] text-center text-[10px] leading-tight">{card.desc}</p>

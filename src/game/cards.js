@@ -3,6 +3,7 @@ import { cardCollection, cardDecks, cardTradeUsed, cardChampionship, money, inve
 import {
   ALL_CARDS, CARD_THEMES, DECK_SIZE, DECK_PRICE, BASIC_CARD_PRICE, RARE_CARDS,
   cardById, themeDeck, themeById, isBasicMonster, lockedDeckIds, BASIC_SHOP_CARDS,
+  deckSize, themesForMode,
 } from "./cardCatalog.js";
 
 export function addCards(ids) {
@@ -26,8 +27,8 @@ function sameLocked(original, next) {
   return [...keys].every((key) => first[key] === second[key]);
 }
 
-export function validateDeck(ids, collection = get(cardCollection), original = null) {
-  if (ids.length !== DECK_SIZE) return false;
+export function validateDeck(ids, collection = get(cardCollection), original = null, themeId = null) {
+  if (ids.length !== (deckSize(themeId) || DECK_SIZE)) return false;
   const counts = {};
   const ownedOk = ids.every((id) => {
     counts[id] = (counts[id] || 0) + 1;
@@ -49,7 +50,8 @@ export function buyDeck(trade = false, themeId = null, random = Math.random) {
     return { ok: false, message: "A troca esta disponivel apenas antes do primeiro deck, com a captura certa." };
   }
   if (!trade && get(money) < DECK_PRICE) return { ok: false, message: `Um deck custa ${DECK_PRICE}.` };
-  const theme = themeById(themeId) || CARD_THEMES[Math.floor(random() * CARD_THEMES.length)];
+  const themes = themesForMode(get(gameMode));
+  const theme = themeById(themeId) || themes[Math.floor(random() * themes.length)];
   if (!theme) return { ok: false, message: "Deck indisponivel." };
   if (get(cardDecks).some((deck) => deck.themeId === theme.id)) {
     return { ok: false, message: `Voce ja tem o ${theme.name}.` };
@@ -61,7 +63,7 @@ export function buyDeck(trade = false, themeId = null, random = Math.random) {
   addCards(cards);
   const deck = { id: `deck-${theme.id}`, name: theme.name, themeId: theme.id, cards };
   cardDecks.update((decks) => [...decks, deck]);
-  return { ok: true, deck, message: `Deck recebido: ${theme.name} (${DECK_SIZE} cartas).` };
+  return { ok: true, deck, message: `Deck recebido: ${theme.name} (${cards.length} cartas).` };
 }
 
 export function buySingleCard(id) {
@@ -79,8 +81,8 @@ export function buySingleCard(id) {
 export function saveDeck(id, cards, name) {
   const current = get(cardDecks).find((deck) => deck.id === id);
   if (!current) return { ok: false, message: "Deck nao encontrado." };
-  if (!validateDeck(cards, get(cardCollection), current.cards)) {
-    return { ok: false, message: `So e possivel trocar pokemon basicos. O deck precisa de ${DECK_SIZE} cartas suas.` };
+  if (!validateDeck(cards, get(cardCollection), current.cards, current.themeId)) {
+    return { ok: false, message: `So e possivel trocar pokemon basicos. O deck precisa de ${deckSize(current.themeId) || DECK_SIZE} cartas suas.` };
   }
   cardDecks.update((decks) => decks.map((deck) => deck.id === id
     ? { ...deck, name: name.trim().slice(0, 30) || themeById(deck.themeId).name, cards: [...cards] }
