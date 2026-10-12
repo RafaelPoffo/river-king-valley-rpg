@@ -592,7 +592,7 @@ const pokemonDeckCatalog = POKEMON_THEMES.flatMap((theme) => {
     };
   });
   const spells = theme.magics.map((effect,index) => ({
-    id:effect === "field" ? `${theme.id}:field` : `${theme.id}:s${index - 1}`,
+    id:effect === "field" ? `${theme.id}:field` : `${theme.id}:s${index}`,
     themeId:theme.id,
     type:effect === "field" ? "field" : "spell",
     name:theme.magicNames[index],
@@ -636,7 +636,7 @@ export const RARE_CARDS = [
 
 export const ALL_CARDS = [...builtCatalog, ...pokemonDeckCatalog, ...RARE_CARDS];
 export const DECK_SIZE = 24;
-export const TRAP_SLOTS = 2;
+export const TRAP_SLOTS = 1;
 export const DECK_PRICE = 4000;
 export const BASIC_CARD_PRICE = 500;
 export const TYPE_LABELS_MAP = TYPE_LABELS;

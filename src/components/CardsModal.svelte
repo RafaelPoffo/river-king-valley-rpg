@@ -4,11 +4,11 @@
   import { PHASES } from "../game/phases.js";
   import {
     ALL_CARDS, DECK_SIZE, DECK_PRICE, BASIC_SHOP_CARDS,
-    cardName, kindLabel, themeDeck, themeById, isBasicMonster, cardsForMode,
+    cardName, cardById, kindLabel, themeDeck, themeById, isBasicMonster, cardsForMode,
     dailyDeckThemes, themesForMode, deckSize, pokemonThemeForNpc,
   } from "../game/cardCatalog.js";
   import { buyDeck, buySingleCard, saveDeck, validateDeck, grantChampionshipPrize } from "../game/cards.js";
-  import { createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap, canAttack, effectNeedsTarget } from "../game/cardGame.js";
+  import { CARD_DUEL_ROUNDS, createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap, canAttack, effectNeedsTarget } from "../game/cardGame.js";
   import { saveGame } from "../game/saveSystem.js";
   import { setQuestFlag } from "../game/quests.js";
   import CardFace from "./CardFace.svelte";
@@ -87,7 +87,7 @@
   }
 
   function beginDuel(deck) {
-    if (!$cardOpponent || !validateDeck(deck.cards,$cardCollection,deck.cards,deck.themeId)) { message = "Escolha um deck valido."; return; }
+    if (!$cardOpponent || !deck?.cards?.length || deck.cards.some((id) => !cardById(id))) { message = "Este deck contem cartas indisponiveis."; return; }
     const opponentThemeId = $gameMode === "pokemon" ? opponentDeckTheme?.id : currentOpponentTheme();
     if (!opponentThemeId || !themeDeck(opponentThemeId).length) { message = "Deck do rival indisponivel."; return; }
     duel = createCardDuel(deck.cards, themeDeck(opponentThemeId), Math.random, $gameMode);
@@ -255,7 +255,7 @@
     {#if choosing}
       <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
         {#if $cardOpponent?.championship}<p class="text-sm">Campeonato · luta {$cardChampionship.wins + 1} de {$cardChampionship.opponents.length}</p>{/if}
-        {#each $cardDecks as deck}<button class="deck-row" disabled={!validateDeck(deck.cards,$cardCollection,deck.cards,deck.themeId)} on:click={() => beginDuel(deck)}><strong>{deck.name}</strong><span>{deck.cards.length}/{deckSize(deck.themeId) || DECK_SIZE} cartas · Duelar →</span></button>{/each}
+        {#each $cardDecks as deck}<button class="deck-row" on:click={() => beginDuel(deck)}><strong>{deck.name}</strong><span>{deck.cards.length}/{deckSize(deck.themeId) || DECK_SIZE} cartas · Duelar →</span></button>{/each}
         {#if !$cardDecks.length}<p class="text-sm">Voce ainda nao tem um deck. Ivo vende decks no balcao.</p>{/if}
       </div>
     {:else}
@@ -353,7 +353,7 @@
             >{#if card}<CardFace {card} mode={$gameMode} compact stats={cardStats(card, duel.p2)} />{/if}</button>
           {/each}
         </div>
-        <div class="my-1 flex h-6 shrink-0 items-center justify-between border-y-2 border-[#53756a] text-xs font-bold"><span>Rodada {Math.min(15, duel.round)}/15 · {duel.turn === "p1" ? "Sua vez" : "Rival"}</span><button class="border border-[#243c35] bg-white px-2 text-[10px] disabled:opacity-40" disabled={attacker === null || duel.p2.monsters.some(Boolean)} on:click={() => act({ type: "attack", index: attacker, target: "direct" })}>Ataque direto</button></div>
+        <div class="my-1 flex h-6 shrink-0 items-center justify-between border-y-2 border-[#53756a] text-xs font-bold"><span>Rodada {Math.min(CARD_DUEL_ROUNDS, duel.round)}/{CARD_DUEL_ROUNDS} · {duel.turn === "p1" ? "Sua vez" : "Rival"}</span><button class="border border-[#243c35] bg-white px-2 text-[10px] disabled:opacity-40" disabled={attacker === null || duel.p2.monsters.some(Boolean)} on:click={() => act({ type: "attack", index: attacker, target: "direct" })}>Ataque direto</button></div>
         <div class="zone-row">
           {#each duel.p1.monsters as card, index}
             <button
@@ -393,7 +393,7 @@
           <h3 class="text-2xl font-bold">{duel.winner === "p1" ? "Vitoria!" : "O rival venceu"}</h3>
           {#if rewardText}<p class="mt-3 text-sm">{rewardText}</p>{/if}
           {#if duel.winner === "p1" && $cardOpponent?.championship && !$cardChampionship.claimed}
-            {#each $cardDecks as deck}<button class="command mt-3" disabled={!validateDeck(deck.cards)} on:click={() => continueChampionship(deck)}>Proximo oponente com {deck.name}</button>{/each}
+            {#each $cardDecks as deck}<button class="command mt-3" on:click={() => continueChampionship(deck)}>Proximo oponente com {deck.name}</button>{/each}
           {:else}
             <button class="command mt-5" on:click={() => { phase.set(PHASES.PLAYING); }}>Voltar a mesa</button>
           {/if}

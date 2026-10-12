@@ -7,7 +7,7 @@ import { cardCollection, cardDecks, cardTradeUsed, cardChampionship, money, inve
 import { buyDeck, buySingleCard, grantRareCard, grantChampionshipPrize, saveDeck, validateDeck } from "./cards.js";
 import { ALL_CARDS, CARD_THEMES, POKEMON_THEMES, DECK_SIZE, DECK_PRICE, BASIC_SHOP_CARDS, cardName, cardPortrait, pokemonCardStats, pokemonEvolutionInfo, themeDeck, dailyDeckThemes, isLegendaryDeck, isBasicMonster, canNormalSummon } from "./cardCatalog.js";
 import { CARD_NPC_THEMES, INITIAL_VILLAGERS, getNpcLocation, CARD_CHAMPIONSHIP_DAY, cardPlayersForDay, cardTableCount } from "./constants.js";
-import { createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap, canAttack } from "./cardGame.js";
+import { CARD_DUEL_ROUNDS, createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap, canAttack } from "./cardGame.js";
 import { FISH_DB } from "./constants.js";
 import { POKEMON_DB } from "./data/pokemon.js";
 import { rollFishByZone } from "./fishingEngine.js";
@@ -64,6 +64,18 @@ describe("colecao de cartas", () => {
     expect(buySingleCard("rare:sky_legend").ok).toBe(false);
   });
 
+  it("mantem todos os IDs do deck comprado validos para escolher o duelo", () => {
+    gameMode.set("pokemon");
+    const theme = dailyDeckThemes(1,0,"pokemon")[0];
+    const result = buyDeck(false,theme.id);
+    expect(result.ok).toBe(true);
+    expect(result.deck.cards.every((id) => cardById(id))).toBe(true);
+    expect(validateDeck(result.deck.cards,get(cardCollection),result.deck.cards,result.deck.themeId)).toBe(true);
+    for (const pokemonTheme of POKEMON_THEMES) {
+      expect(themeDeck(pokemonTheme.id).every((id) => cardById(id)),pokemonTheme.id).toBe(true);
+    }
+  });
+
   it("so troca pokemon basicos no editor e so vende basicos na loja", () => {
     const { deck } = buyDeck(false, "agua");
     expect(validateDeck(deck.cards)).toBe(true);
@@ -89,11 +101,30 @@ describe("colecao de cartas", () => {
     const duel = createCardDuel(themeDeck("agua"), themeDeck("fogo"), () => 0.5);
     expect(duel.p1.hand).toHaveLength(3);
     expect(duel.p2.hand).toHaveLength(3);
-    expect(duel.p1.spells).toHaveLength(2);
+    expect(duel.p1.spells).toHaveLength(1);
     duel.p1.hand.pop();
     performCardAction(duel, "p1", { type: "end" });
     performCardAction(duel, "p2", { type: "end" });
     expect(duel.p1.hand).toHaveLength(3);
+  });
+
+  it("usa cinco HP, uma armadilha e encerra o duelo apos dez rodadas", () => {
+    const tied = createCardDuel(themeDeck("agua"),themeDeck("fogo"),() => 0.5);
+    expect(tied.p1.hp).toBe(5);
+    expect(tied.p2.hp).toBe(5);
+    expect(tied.p1.spells).toHaveLength(1);
+    tied.round = CARD_DUEL_ROUNDS;
+    tied.turn = "p2";
+    expect(performCardAction(tied,"p2",{type:"end"}).ok).toBe(true);
+    expect(tied.state).toBe("dice");
+    expect(tied.round).toBe(CARD_DUEL_ROUNDS);
+
+    const winner = createCardDuel(themeDeck("agua"),themeDeck("fogo"),() => 0.5);
+    winner.round = CARD_DUEL_ROUNDS;
+    winner.turn = "p2";
+    winner.p1.hp = 4;
+    expect(performCardAction(winner,"p2",{type:"end"}).ok).toBe(true);
+    expect(winner.winner).toBe("p2");
   });
 
   it("usa fase, basico e atributos iguais nos dois modos", () => {
@@ -255,11 +286,18 @@ describe("interacoes e telas de cartas e jardim", () => {
   it("renderiza loja, colecao e escolha de deck com portraits frontais", () => {
     phase.set(PHASES.CARD_SHOP); inventory.set([{ id: "dratini" }]);
     expect(render(CardsModal).body).toContain("Trocar Dratini");
-    money.set(DECK_PRICE); buyDeck(false, dailyDeckThemes(1,0,"normal")[0].id);
+    gameMode.set("normal"); money.set(DECK_PRICE);
+    const purchased = buyDeck(false, dailyDeckThemes(1,0,"normal")[0].id).deck;
+    gameMode.set("pokemon");
+    cardCollection.update((cards) => ({ ...cards, [purchased.cards[0]]:0 }));
+    expect(validateDeck(purchased.cards,get(cardCollection),purchased.cards,purchased.themeId)).toBe(false);
     phase.set(PHASES.CARD_COLLECTION);
     expect(render(CardsModal).body).toContain("Cartas e Decks");
     cardOpponent.set({ id: "card_voador", name: "Ari das Asas", cardTheme: "voador" }); phase.set(PHASES.CARD_DUEL);
-    expect(render(CardsModal).body).toContain("Duelo com Ari das Asas");
+    const picker = render(CardsModal).body;
+    expect(picker).toContain("Duelo com Ari das Asas");
+    expect(picker).toContain(purchased.name);
+    expect(picker).not.toMatch(/class="deck-row"[^>]*disabled/);
     const face = render(CardFace, { props: { card: cardById("fogo:0006"), mode: "pokemon" } }).body;
     expect(face).toContain("Charizard");
     expect(face).toContain("/assets/portraits/0006.png");
