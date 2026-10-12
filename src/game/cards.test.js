@@ -225,10 +225,11 @@ describe("interacoes e telas de cartas e jardim", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("abre a loja no balcao e pergunta antes de iniciar o duelo", () => {
-    currentMap.set("game_house"); player.set({ x: 10, y: 4, dir: "up" }); interact();
-    expect(get(phase)).toBe(PHASES.PLAYING);
-    player.set({ x: 11, y: 4, dir: "up" }); interact();
-    expect(get(phase)).toBe(PHASES.CARD_SHOP);
+    currentMap.set("game_house");
+    for (let x = 10; x <= 13; x++) {
+      phase.set(PHASES.PLAYING); player.set({ x, y: 4, dir: "up" }); interact();
+      expect(get(phase),`counter ${x}`).toBe(PHASES.CARD_SHOP);
+    }
     phase.set(PHASES.PLAYING); player.set({ x: 10, y: 2, dir: "right" }); interact();
     expect(get(phase)).toBe(PHASES.DIALOG);
     get(dialogActions).C();

@@ -802,10 +802,7 @@ export function interact() {
     } else if (cMap === "carpenter_shop") {
       phase.set(PHASES.CARPENTER);
     } else if (cMap === "game_house") {
-      const seller = get(villagers).find((npc) => npc.id === "card_seller");
-      const sellerLoc = seller && getNpcLocation(seller,mins,curDay,get(seasonIndex));
-      if (sellerLoc?.map === "game_house" && target.x === sellerLoc.x && target.y === sellerLoc.y + 1) phase.set(PHASES.CARD_SHOP);
-      else showRPGMessage("O balcão do Ivo fica diretamente em frente ao vendedor.");
+      phase.set(PHASES.CARD_SHOP);
     } else if (cMap === "tavern") {
       openKitchen();
     }
