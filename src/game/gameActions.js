@@ -442,7 +442,7 @@ function openNpcDialog(npc, atTavern) {
   const options = ["[SPACE] Tchau"];
 
   const quest = offerQuestOnTalk(npc.id);
-  if (quest?.met) {
+  if (quest?.met && npc.id !== "card_seller") {
     line = `${quest.stage.title}: "Era isso que eu precisava!" Você recebeu ${describeQuestReward(quest.stage.reward)}.${quest.next ? ` Agora: ${quest.next.hint}` : " Missão concluída."}`;
     currentMessage.set(`${npc.name} ${heartsText(npc.id)}: "${line}" [SPACE] Tchau`);
     dialogActions.set({ " ": closeDialog });
@@ -802,7 +802,10 @@ export function interact() {
     } else if (cMap === "carpenter_shop") {
       phase.set(PHASES.CARPENTER);
     } else if (cMap === "game_house") {
-      phase.set(PHASES.CARD_SHOP);
+      const seller = get(villagers).find((npc) => npc.id === "card_seller");
+      const sellerLoc = seller && getNpcLocation(seller,mins,curDay,get(seasonIndex));
+      if (sellerLoc?.map === "game_house" && target.x === sellerLoc.x && target.y === sellerLoc.y + 1) phase.set(PHASES.CARD_SHOP);
+      else showRPGMessage("O balcão do Ivo fica diretamente em frente ao vendedor.");
     } else if (cMap === "tavern") {
       openKitchen();
     }

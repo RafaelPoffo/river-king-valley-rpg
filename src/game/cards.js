@@ -1,9 +1,9 @@
 import { get } from "svelte/store";
-import { cardCollection, cardDecks, cardTradeUsed, cardChampionship, money, inventory, gameMode } from "./stores.js";
+import { cardCollection, cardDecks, cardTradeUsed, cardChampionship, money, inventory, gameMode, day, seasonIndex } from "./stores.js";
 import {
   ALL_CARDS, CARD_THEMES, DECK_SIZE, DECK_PRICE, BASIC_CARD_PRICE, RARE_CARDS,
   cardById, themeDeck, themeById, isBasicMonster, lockedDeckIds, BASIC_SHOP_CARDS,
-  deckSize, themesForMode,
+  deckSize, dailyDeckThemes,
 } from "./cardCatalog.js";
 
 export function addCards(ids) {
@@ -50,9 +50,9 @@ export function buyDeck(trade = false, themeId = null, random = Math.random) {
     return { ok: false, message: "A troca esta disponivel apenas antes do primeiro deck, com a captura certa." };
   }
   if (!trade && get(money) < DECK_PRICE) return { ok: false, message: `Um deck custa ${DECK_PRICE}.` };
-  const themes = themesForMode(get(gameMode));
-  const theme = themeById(themeId) || themes[Math.floor(random() * themes.length)];
-  if (!theme) return { ok: false, message: "Deck indisponivel." };
+  const themes = dailyDeckThemes(get(day),get(seasonIndex),get(gameMode));
+  const theme = themeId ? themes.find((item) => item.id === themeId) : themes[Math.floor(random() * themes.length)];
+  if (!theme) return { ok: false, message: "Este deck nao esta disponivel hoje." };
   if (get(cardDecks).some((deck) => deck.themeId === theme.id)) {
     return { ok: false, message: `Voce ja tem o ${theme.name}.` };
   }

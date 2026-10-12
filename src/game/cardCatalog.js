@@ -617,7 +617,7 @@ const pokemonDeckCatalog = POKEMON_THEMES.flatMap((theme) => {
 });
 
 export const RARE_CARDS = [
-  ["sea_guardian", "Guardiao das Mares", "0249", "água", "sea", 0.008, 14000],
+  ["sea_guardian", "Guardiao das Mares", "0249", "água", "quest", 0.008, 14000],
   ["sea_song", "Cancao do Oceano", "0131", "água", "sea", 0.045, 6000],
   ["forest_guardian", "Guardiao do Bosque", "0251", "planta", "bugs", 0.1, 12000],
   ["steel_champion", "Campeao de Aco", "0212", "inseto", "bugs", 0.4, 8000],
@@ -648,6 +648,19 @@ export const cardsForMode = (mode) => {
   const cards = mode === "pokemon" ? pokemonDeckCatalog : builtCatalog;
   return [...cards,...RARE_CARDS,...BASIC_SHOP_CARDS];
 };
+const legendaryPokemonDecks = new Set(["articuno", "zapdos", "moltres", "raikou", "entei", "suicune", "lugia", "ho-oh", "mew", "celebi"]);
+export const isLegendaryDeck = (themeId) => {
+  const theme = themeById(themeId);
+  if (!theme) return false;
+  if (theme.id.startsWith("lendas_")) return true;
+  return theme.pokemonDeck && legendaryPokemonDecks.has(theme.id.slice("pokemon:".length));
+};
+export function dailyDeckThemes(today, season, mode) {
+  const themes = themesForMode(mode).filter((theme) => !isLegendaryDeck(theme.id));
+  if (themes.length <= 5) return themes;
+  const start = (((season * 31 + today - 1) * 5) % themes.length + themes.length) % themes.length;
+  return Array.from({ length:5 }, (_, index) => themes[(start + index) % themes.length]);
+}
 export const deckSize = (id) => themeDeck(id).length;
 export const pokemonThemeForNpc = (themeId) => {
   const normalIndex = CARD_THEMES.findIndex((theme) => theme.id === themeId);
