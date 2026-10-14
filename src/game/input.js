@@ -2,7 +2,8 @@ import { get } from "svelte/store";
 import { PHASES, CLOSABLE_SCREENS, CANCELABLE_FISHING } from "./phases.js";
 import { phase, dialogActions, showTavernQuestModal } from "./stores.js";
 import { setDirectionHeld, releaseMovement } from "./movement.js";
-import { throwLine, startMinigame, attemptCatch, resetAction } from "./fishingEngine.js";
+import { throwLine, startMinigame, resetAction, haulNet } from "./fishingEngine.js";
+import { startReel, stopReel } from "./fishFight.js";
 import { interact, showRPGMessage } from "./gameActions.js";
 import { toggleAudio } from "./audio.js";
 import { closeBirdWatchingView, observeVisibleBird, startBirdPan, stopBirdPan } from "./birdWatching.js";
@@ -73,7 +74,9 @@ export function pressKey(key) {
   } else if (current === PHASES.FISHING_BITE && confirm) {
     startMinigame();
   } else if (current === PHASES.FISHING_MINIGAME && confirm) {
-    attemptCatch();
+    startReel();
+  } else if (current === PHASES.FISHING_NET_HAUL && confirm) {
+    haulNet();
   } else if (current === PHASES.CAUGHT && confirm) {
     resetAction("Use as setas para se mover.");
   } else if (CLOSABLE_SCREENS.has(current) && CLOSE_KEYS.has(key)) {
@@ -87,6 +90,7 @@ export function releaseKey(key) {
     setDirectionHeld(dir, false);
     stopBirdPan();
   }
+  if (CONFIRM_KEYS.has(key)) stopReel();
 }
 
 export function attachKeyboard(isEnabled = () => true) {

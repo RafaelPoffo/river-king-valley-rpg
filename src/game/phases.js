@@ -21,6 +21,7 @@ export const PHASES = Object.freeze({
   FISHING_APPROACH: "fishing_approach",
   FISHING_BITE: "fishing_bite",
   FISHING_MINIGAME: "fishing_minigame",
+  FISHING_NET_HAUL: "fishing_net_haul",
   CAUGHT: "caught",
 });
 
@@ -41,6 +42,7 @@ export const LINE_IN_WATER = new Set([
   PHASES.FISHING_APPROACH,
   PHASES.FISHING_BITE,
   PHASES.FISHING_MINIGAME,
+  PHASES.FISHING_NET_HAUL,
 ]);
 
 export const CANCELABLE_FISHING = new Set([PHASES.FISHING_WAIT, PHASES.FISHING_APPROACH]);

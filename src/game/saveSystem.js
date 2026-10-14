@@ -48,6 +48,9 @@ import {
   birdLog,
   birdwatchingLuck,
   forestFeathers,
+  petCompanion,
+  terrarium,
+  dungeonRun,
   garden, gardenDay, gardenBuffs, gardenVisitor, seedStock, eqSeedId,
   cardCollection, cardDecks, cardTradeUsed, cardVictories, cardChampionship, currentToolType,
   questLog, questFlags, questStats,
@@ -62,7 +65,7 @@ import { ensureDailyBirds } from "./birdWatching.js";
 import { initialGarden } from "./garden.js";
 
 const SAVE_KEY = "pkr_fishing_rpg_v18";
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
 
@@ -107,6 +110,9 @@ export const PERSISTED_FIELDS = [
   { key: "birdLog", store: birdLog, initial: () => ({}) },
   { key: "birdwatchingLuck", store: birdwatchingLuck, initial: () => 0 },
   { key: "forestFeathers", store: forestFeathers, initial: () => [] },
+  { key: "petCompanion", store: petCompanion, initial: () => null },
+  { key: "terrarium", store: terrarium, initial: () => ({ size: null, fed: 0, lastFedDay: 0, awayUntil: 0, inBall: false, roaming: false }) },
+  { key: "dungeonRun", store: dungeonRun, initial: () => null },
   { key: "garden", store: garden, initial: initialGarden },
   { key: "gardenDay", store: gardenDay, initial: () => 0 },
   { key: "gardenBuffs", store: gardenBuffs, initial: () => [] },
@@ -177,6 +183,21 @@ const MIGRATIONS = {
   5: (data) => ({
     ...data,
     forestFeathers: data.forestFeathers || [],
+  }),
+  6: (data) => ({
+    ...data,
+    constructions: {
+      ...(data.constructions || {}),
+      forest_bridge: data.constructions?.forest_bridge || {
+        name: "Ponte da Floresta",
+        cost: 1000,
+        status: "built",
+        orderDay: 0,
+        days: 1,
+      },
+    },
+    petCompanion: data.petCompanion || null,
+    terrarium: data.terrarium || { size: null, fed: 0, lastFedDay: 0, awayUntil: 0, inBall: false, roaming: false },
   }),
 };
 

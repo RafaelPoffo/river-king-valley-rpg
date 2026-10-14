@@ -113,15 +113,17 @@ export const POKEMON_SPRITES = {
   "0143": largePokemon(4),
 };
 
-const GENERIC_INSECT_SPRITES = [
-  POKEMON_SPRITES["0013"],
-  pokemon(8, 0),
-  POKEMON_SPRITES["0012"],
-  POKEMON_SPRITES["0015"],
-];
+const INSECT_WORM = POKEMON_SPRITES["0013"];
+const INSECT_MOTH = POKEMON_SPRITES["0012"];
+const INSECT_WASP = POKEMON_SPRITES["0015"];
+const GENERIC_INSECT_SPRITES = [INSECT_WORM, INSECT_MOTH, INSECT_WASP];
+const WORM_DEX = new Set(["0010", "0011", "0013", "0014", "0204", "0205", "0213"]);
+const WASP_DEX = new Set(["0015", "0123", "0127", "0165", "0166", "0212", "0214"]);
 
-export function insectSpriteFor(seed, dexId, overworld = false) {
-  if (!overworld && dexId && POKEMON_SPRITES[dexId]) return POKEMON_SPRITES[dexId];
+export function insectSpriteFor(seed, dexId) {
+  if (dexId && WORM_DEX.has(dexId)) return INSECT_WORM;
+  if (dexId && WASP_DEX.has(dexId)) return INSECT_WASP;
+  if (dexId) return INSECT_MOTH;
   let hash = 2166136261;
   for (const character of String(seed ?? "")) {
     hash = Math.imul(hash ^ character.charCodeAt(0), 16777619);

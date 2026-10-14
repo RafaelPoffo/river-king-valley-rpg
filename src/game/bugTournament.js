@@ -42,7 +42,7 @@ export function competitorsForDay(season, day, mode = "normal") {
     persona,
     dialogue,
     avatar: ["🎩", "🧢", "👒", "🥷", "🤠", "🧙", "🪖", "👑"][index % 8],
-    team: createRivalTeam(catalog, random),
+    team: createRivalTeam(catalog, random, day === 15),
   }));
   return [
     {
@@ -51,19 +51,25 @@ export function competitorsForDay(season, day, mode = "normal") {
       persona: "Guardião da Clareira",
       dialogue: "Toda boa batalha começa com respeito pela floresta.",
       avatar: "🪲",
-      team: createRivalTeam(catalog, random),
+      team: createRivalTeam(catalog, random, false),
     },
     ...rivals,
   ];
 }
 
-function createRivalTeam(catalog, random) {
-  const budgetChoices = [[4, 5, 9], [2, 7, 9], [4, 7, 7], [5, 5, 8]];
+function createRivalTeam(catalog, random, tough = false) {
+  const budgetChoices = tough
+    ? [[3, 4, 5], [2, 4, 6], [3, 3, 5]]
+    : [[2, 3, 4], [2, 4, 5], [3, 3, 4], [2, 2, 5]];
   const budget = budgetChoices[Math.floor(random() * budgetChoices.length)];
   return budget.map((points) => {
     const options = catalog.filter((bug) => bug.points === points);
-    return options[Math.floor(random() * options.length)];
+    return options[Math.floor(random() * options.length)] || catalog[0];
   });
+}
+
+export function luckFightBonus(luck = 0) {
+  return 1 + Math.floor(Math.max(0, Math.min(10, luck)) / 2);
 }
 
 function rollTotal(fighter, opponent, turn, random, fortune = 0) {
@@ -87,7 +93,7 @@ export function resolveBugDuel(left, right, key, playerLuck = 0) {
   const frames = [];
 
   for (let turn = 1; turn <= 5; turn++) {
-    const leftTotal = rollTotal(left, right, turn, random, Math.min(1, playerLuck * 0.1));
+    const leftTotal = rollTotal(left, right, turn, random, luckFightBonus(playerLuck));
     const rightTotal = rollTotal(right, left, turn, random);
     leftScore += leftTotal;
     rightScore += rightTotal;
@@ -98,7 +104,7 @@ export function resolveBugDuel(left, right, key, playerLuck = 0) {
       const impact = (winner.archetypeId === "bruiser" ? 2 : 0)
         - (loser.archetypeId === "guardian" ? 2 : 0)
         - (loser.archetypeId === "anchor" && turn <= 2 ? 2 : 0);
-      const push = Math.max(1, Math.ceil(difference / 2) + 3 + impact);
+      const push = Math.max(1, Math.ceil(difference / 3) + 2 + impact);
       if (winner === left) {
         leftX = Math.min(60, leftX + 2);
         rightX = Math.min(118, rightX + push);

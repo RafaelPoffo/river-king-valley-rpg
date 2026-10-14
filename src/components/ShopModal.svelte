@@ -15,6 +15,7 @@
   } from "../game/stores.js";
   import { buyItem, sellFish, sellAll } from "../game/gameActions.js";
   import { gardenBonus } from "../game/garden.js";
+  import { TERRARIUMS, PET_FOOD } from "../game/pet.js";
 </script>
 
 <!-- Limita a altura do container principal e previne transbordo de tela -->
@@ -45,6 +46,14 @@
       on:click={() => shopTab.set("buy_bait")}
     >
       ISCAS
+    </button>
+    <button
+      class={`flex-1 py-4 retro-font text-[9px] ${
+        $shopTab === "buy_pet" ? "bg-black text-white" : "text-black"
+      }`}
+      on:click={() => shopTab.set("buy_pet")}
+    >
+      PET
     </button>
     <button
       class={`flex-1 py-4 retro-font text-[9px] ${
@@ -107,6 +116,19 @@
             </button>
           </div>
         {/each}
+      </div>
+    {:else if $shopTab === "buy_pet"}
+      <div class="space-y-4">
+        {#each TERRARIUMS as item}
+          <div class="border-2 border-black p-3 flex justify-between items-center bg-[#9ce6e6]">
+            <div class="retro-font text-[10px]">{item.name} — {item.desc}</div>
+            <button class="bg-black text-white retro-font text-[9px] px-4 py-2 disabled:bg-gray-400" disabled={item.price > $money} on:click={() => buyItem({ ...item, type: "terrarium" }, "terrarium")}>{item.price}¥</button>
+          </div>
+        {/each}
+        <div class="border-2 border-black p-3 flex justify-between items-center bg-[#9ce6e6]">
+          <div class="retro-font text-[10px]">{PET_FOOD.name} — alimento barato do terrário</div>
+          <button class="bg-black text-white retro-font text-[9px] px-4 py-2 disabled:bg-gray-400" disabled={PET_FOOD.price > $money} on:click={() => buyItem(PET_FOOD, "pet_food")}>{PET_FOOD.price}¥</button>
+        </div>
       </div>
     {:else}
       <div

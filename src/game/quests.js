@@ -110,6 +110,10 @@ export function goalProgress(goal, database = getActiveDatabase()) {
       const has = get(inventory).some((f) => (f.stars || 0) >= goal.stars);
       return { current: has ? 1 : 0, needed: 1 };
     }
+    case "inventory_weight": {
+      const has = get(inventory).some((f) => (f.weight || 0) >= goal.weight);
+      return { current: has ? 1 : 0, needed: 1 };
+    }
     case "museum": {
       const relics = database.filter((f) => f.type === "treasure");
       const needed = Math.min(goal.count, relics.length);

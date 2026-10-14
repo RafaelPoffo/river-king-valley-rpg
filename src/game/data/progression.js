@@ -75,17 +75,24 @@ export const INITIAL_CONSTRUCTIONS = {
   pier: {
     name: "Píer de Pesca",
     cost: 1500,
-    desc: "Passarela curta no estilo Crystal. Só do píer morde o Peixe-Estaca e o Qwilfish.",
+    desc: "Passarela mais comprida no mar. Aumenta a chance de raros e exclusivos do píer.",
     status: "none",
     orderDay: 0,
   },
   docks: {
     name: "Docas do Porto",
     cost: 3500,
-    desc: "Alarga e alonga o píer e cria o atracadouro do barco.",
+    desc: "Atracadouro separado do píer, entre a vila e o mar. O barco fica aqui.",
     status: "none",
     orderDay: 0,
-    required: "pier",
+  },
+  forest_bridge: {
+    name: "Ponte da Floresta",
+    cost: 1000,
+    desc: "Recompõe a ponte quebrada ao norte. Um dia de trabalho.",
+    status: "none",
+    orderDay: 0,
+    days: 1,
   },
   boat: {
     name: "Barco de Pesca",

@@ -34,6 +34,7 @@ export function validateDeck(ids, collection = get(cardCollection), original = n
     return !!cardById(id) && counts[id] <= (collection[id] || 0);
   });
   if (!ownedOk) return false;
+  if (Object.values(counts).some((count) => count > 4)) return false;
   if (original) return sameLocked(original, ids);
   return true;
 }
@@ -51,6 +52,9 @@ export function buyDeck(trade = false, themeId = null, random = Math.random) {
   if (!trade && get(money) < DECK_PRICE) return { ok: false, message: `Um deck custa ${DECK_PRICE}.` };
   const theme = themeById(themeId) || CARD_THEMES[Math.floor(random() * CARD_THEMES.length)];
   if (!theme) return { ok: false, message: "Deck indisponivel." };
+  if (theme.id.startsWith("lendas_")) {
+    return { ok: false, message: "Decks raros so saem de campeonatos e quests." };
+  }
   if (get(cardDecks).some((deck) => deck.themeId === theme.id)) {
     return { ok: false, message: `Voce ja tem o ${theme.name}.` };
   }
@@ -88,6 +92,35 @@ export function saveDeck(id, cards, name) {
   return { ok: true, message: "Deck salvo." };
 }
 
+export function revertDeck(id) {
+  const current = get(cardDecks).find((deck) => deck.id === id);
+  if (!current) return { ok: false, message: "Deck nao encontrado." };
+  const cards = themeDeck(current.themeId);
+  addCards(cards);
+  cardDecks.update((decks) => decks.map((deck) => deck.id === id
+    ? { ...deck, cards: [...cards], name: themeById(deck.themeId).name }
+    : deck));
+  return { ok: true, cards, message: "Deck revertido ao padrao." };
+}
+
+export function grantSurpriseCard(random = Math.random) {
+  if (random() >= 0.01) return null;
+  const pool = [...BASIC_SHOP_CARDS, ...RARE_CARDS];
+  const card = pool[Math.floor(random() * pool.length)];
+  if (!card) return null;
+  addCards([card.id]);
+  return card;
+}
+
+export function grantMatchCard(themeId, random = Math.random) {
+  const theme = themeById(themeId);
+  const extras = theme ? themeDeck(theme.id).filter((id) => !isBasicMonster(cardById(id))) : [];
+  const pool = extras.length ? extras : BASIC_SHOP_CARDS.map((card) => card.id);
+  const id = pool[Math.floor(random() * pool.length)];
+  addCards([id]);
+  return cardById(id);
+}
+
 export function grantRareCard(source, random = Math.random) {
   const choices = RARE_CARDS.filter((card) => card.source === source);
   const roll = random();
@@ -100,6 +133,10 @@ export function grantRareCard(source, random = Math.random) {
 }
 
 export function grantChampionshipPrize(random = Math.random) {
+  const owned = get(cardDecks).map((deck) => deck.themeId);
+  const prizeTheme = CARD_THEMES.find((theme) => theme.id.startsWith("lendas_") && !owned.includes(theme.id))
+    || CARD_THEMES.find((theme) => !owned.includes(theme.id));
+  if (prizeTheme) grantThemeDeck(prizeTheme.id);
   const basics = BASIC_SHOP_CARDS;
   const picks = [];
   for (let index = 0; index < 4; index++) {

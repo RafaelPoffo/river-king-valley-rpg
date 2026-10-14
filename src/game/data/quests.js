@@ -58,9 +58,16 @@ export const QUEST_DEFS = [
       {
         title: "A vara da aprendiz",
         task: "Entregue 5 peixes de rio à Nina.",
-        hint: "Encha a mochila no rio e volte a falar com ela. Ela troca os peixes por uma Vara de Fibra.",
+        hint: "Encha a mochila no rio e volte a falar com ela. Ela troca os peixes por uma Vara de Fibra. Nina também fala da luta: arranque solta, cansaço segura.",
         goal: { kind: "hand_over", biome: "river", count: 5 },
         reward: { money: 0, rod: "vara_fibra", baits: { isca_rio: 3 } },
+      },
+      {
+        title: "A primeira avaliação",
+        task: "Mostre à Nina um peixe de festival ou um de 2 kg.",
+        hint: "Nos dias 5, 10 e 15 há barraca na praça. O ancião avalia o melhor peixe. Fora do festival, um peixe pesado também serve.",
+        goal: { kind: "inventory_weight", weight: 2 },
+        reward: { money: 600, baits: { camarao_vivo: 5 } },
       },
     ],
   },

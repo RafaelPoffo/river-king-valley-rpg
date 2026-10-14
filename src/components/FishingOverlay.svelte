@@ -9,6 +9,8 @@
     catchTargetCenter,
     catchTargetWidth,
     activeFish,
+    fishFight,
+    netHaul,
   } from "../game/stores.js";
 
   const ZONES = [
@@ -72,26 +74,35 @@
   </div>
 {/if}
 
-<!-- Minigame Tug-of-war -->
-{#if $phase === PHASES.FISHING_MINIGAME}
-  <div
-    class="absolute inset-0 bg-white/80 z-40 flex flex-col items-center justify-center pb-10"
-  >
-    <h3 class="retro-font text-red-600 text-lg mb-6 animate-ping">
-      LUCTA! [SPACE]
-    </h3>
-    <div class="w-80 h-8 border-4 border-black bg-white relative">
-      <div
-        class="absolute top-0 bottom-0 bg-[#9ce6e6] border-x-2 border-black"
-        style={`left: ${
-          $catchTargetCenter - $catchTargetWidth / 2
-        }%; width: ${$catchTargetWidth}%;`}
-      ></div>
-      <div
-        class="absolute top-0 bottom-0 w-2 bg-black z-10"
-        style={`left: calc(${$minigameBar}% - 4px);`}
-      ></div>
+{#if $phase === PHASES.FISHING_MINIGAME && $fishFight}
+  <div class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#0b1c24]/70 pb-10">
+    <div class="w-[360px] border-4 border-black bg-[#f4f0df] p-4 pixel-shadow">
+      <h3 class="retro-font text-center text-[11px] text-red-700">
+        {$fishFight.mood === "dash" ? "ARRANQUE!" : $fishFight.mood === "exhaust" ? "CANSOU" : "RESISTINDO"}
+      </h3>
+      <p class="mt-2 text-center retro-font text-[8px]">{$fishFight.hint}</p>
+      <div class="mt-3 retro-font text-[7px]">DISTÂNCIA</div>
+      <div class="h-4 border-2 border-black bg-white">
+        <div class="h-full bg-[#4a9090]" style={`width:${100 - $fishFight.distance}%`}></div>
+      </div>
+      <div class="mt-2 retro-font text-[7px]">TENSÃO</div>
+      <div class="h-4 border-2 border-black bg-white">
+        <div class="h-full {$fishFight.tension > 80 ? 'bg-red-600' : 'bg-amber-400'}" style={`width:${Math.min(100, $fishFight.tension)}%`}></div>
+      </div>
+      <p class="mt-3 text-center retro-font text-[7px] text-gray-600">
+        Arranque: solte · Resistência: toques · Cansaço: segure
+      </p>
     </div>
+  </div>
+{/if}
+
+{#if $phase === PHASES.FISHING_NET_HAUL && $netHaul}
+  <div class="absolute bottom-[120px] left-1/2 -translate-x-1/2 z-40 w-[320px] border-4 border-black bg-white p-3 pixel-shadow">
+    <h3 class="retro-font text-center text-[10px]">PUXANDO A REDE</h3>
+    <div class="mt-2 h-4 border-2 border-black bg-gray-200">
+      <div class="h-full bg-[#4a9090]" style={`width:${Math.min(100, ($netHaul.pulls / $netHaul.needed) * 100)}%`}></div>
+    </div>
+    <p class="mt-2 text-center retro-font text-[7px]">Aperte Ação várias vezes. Não é instantâneo.</p>
   </div>
 {/if}
 

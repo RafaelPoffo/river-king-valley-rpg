@@ -60,7 +60,7 @@ describe("píer, docas e barco na vila", () => {
         for (let x = bounds.x1; x <= bounds.x2; x++) expect(rows[y][x]).toBe("X");
       }
     }
-    expect(PIER_BOUNDS.x1 >= DOCK_BOUNDS.x1 && PIER_BOUNDS.y2 <= DOCK_BOUNDS.y2).toBe(true);
+    expect(PIER_BOUNDS.x2 < DOCK_BOUNDS.x1 || DOCK_BOUNDS.x2 < PIER_BOUNDS.x1).toBe(true);
   });
 
   it("o píer libera só a passarela curta e as docas a estendem", () => {
@@ -170,14 +170,13 @@ describe("encomendas e viagem", () => {
     vi.unstubAllGlobals();
   });
 
-  it("as docas pedem o píer pronto antes da encomenda", () => {
+  it("píer e docas são encomendas independentes", () => {
     money.set(100000);
     orderConstruction("docks");
-    expect(get(constructions).docks.status).toBe("none");
-    expect(get(money)).toBe(100000);
-    constructions.update((c) => ({ ...c, pier: { ...c.pier, status: "built" } }));
-    orderConstruction("docks");
     expect(get(constructions).docks.status).toBe("ordered");
+    expect(get(money)).toBe(96500);
+    orderConstruction("pier");
+    expect(get(constructions).pier.status).toBe("ordered");
   });
 
   it("save antigo com docas ganha o píer e recebe as descrições novas", () => {
@@ -190,7 +189,7 @@ describe("encomendas e viagem", () => {
     };
     const migrated = migrateSave(old).constructions;
     expect(migrated.pier.status).toBe("built");
-    expect(migrated.docks).toMatchObject({ status: "built", orderDay: 3, required: "pier" });
+    expect(migrated.docks).toMatchObject({ status: "built", orderDay: 3 });
     expect(migrated.boat.desc).toBe(INITIAL_CONSTRUCTIONS.boat.desc);
   });
 

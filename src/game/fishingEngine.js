@@ -39,6 +39,8 @@ import {
   currentMap,
   worldCreatureEncounter,
   constructions,
+  fishFight,
+  netHaul,
 } from "./stores.js";
 import { checkDailyQuestProgress, isColdType } from "./quests.js";
 import { saveGame } from "./saveSystem.js";
@@ -46,7 +48,8 @@ import { recordTournamentCatch } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import { dishEffect } from "./dishes.js";
 import { gardenBonus } from "./garden.js";
-import { grantRareCard } from "./cards.js";
+import { grantRareCard, grantSurpriseCard } from "./cards.js";
+import { createFishFight, tickFishFight } from "./fishFight.js";
 import { canBreakLine, lineBreakChance } from "./fight.js";
 import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
 import { birdRarityMultiplier } from "./birdWatching.js";
@@ -207,7 +210,10 @@ export function throwLine() {
       elapsed: 0,
       duration: 3 + Math.random() * 2,
       radius: Math.max(0.15, Math.min(0.65, bPos.x - 0.5, map[0].length - 1.5 - bPos.x, bPos.y - waterTop + 0.5, waterBottom + 0.5 - bPos.y)),
-      chance: baitBiteChance(rolled, castBaitId),
+      chance: encounter && !(rolled.baitPreferences?.[castBaitId] > 0) &&
+        !["porigon", "tilapia_dourada"].includes(rolled.id)
+        ? 0
+        : baitBiteChance(rolled, castBaitId),
     };
     shadowActive.set(true);
     lastTime = performance.now();
@@ -270,8 +276,10 @@ function updateApproach(time) {
 export function baitBiteChance(fish, baitId) {
   if (["porigon", "tilapia_dourada"].includes(fish.id) && baitId === "megabit") return 1;
   if (isTrashSprite(fish) || fish.type === "treasure") return 1;
-  const preference = fish.baitPreferences?.[baitId] || 0;
-  return preference > 0 ? Math.min(1, preference + BAIT_BITE_BONUS) : 0;
+  if (baitId === "sem_isca") return 0.08;
+  const preference = fish.baitPreferences?.[baitId];
+  if (preference > 0) return Math.min(1, preference + BAIT_BITE_BONUS);
+  return 0.28;
 }
 
 function beginBite() {
@@ -521,7 +529,7 @@ export function rollFishByZone(zone) {
     if (baitInfo?.attract === "water" && isColdType(fish) && !isIceType(fish)) weight *= 5;
     if (baitInfo?.attract === "ice" && isIceType(fish)) weight *= 8;
     if (baitInfo?.attract === "ice" && isColdType(fish) && (winter || biomeTarget === "deep_sea")) weight *= 3;
-    return weight * birdRarityMultiplier(birdLuck, rarity);
+    return weight * birdRarityMultiplier(birdLuck, rarity) * Math.max(0.22, baitBiteChance(fish, bait));
   });
   let roll = Math.random() * weights.reduce((total, weight) => total + weight, 0);
   let fishBase = pool[pool.length - 1];
@@ -595,30 +603,13 @@ export function catchZoneWidth(diff, toolPower) {
 
 export function startMinigame() {
   clearTimeout(loopIds.escape);
-  const tool = get(currentToolData);
   const hooked = get(activeFish);
-  if (hooked && canBreakLine(hooked)) {
+  if (hooked) {
     const rolledWeight = rollCatchWeight(hooked);
     activeFish.set({ ...hooked, rolledWeight });
-    if (Math.random() < lineBreakChance({ ...tool, strength: (tool?.strength || 0) + gardenBonus("strength") }, hooked, rolledWeight)) {
-      resetAction("A linha arrebentou! O peixe era forte demais para a sua vara e fugiu com a isca.");
-      return;
-    }
   }
+  fishFight.set(createFishFight(get(activeFish)));
   phase.set(PHASES.FISHING_MINIGAME);
-
-  const curFish = get(activeFish);
-  const up = get(upgrades);
-
-  let baseWidth = catchZoneWidth(curFish?.diff || 10, tool?.power || 1);
-  if (up.widerBar.bought) baseWidth *= 1.2;
-  baseWidth *= dishEffect("catchBar", 1);
-  baseWidth = Math.min(90, baseWidth + gardenBonus("capture"));
-
-  catchTargetWidth.set(baseWidth);
-  catchTargetCenter.set(20 + Math.random() * 60);
-  minigameBar.set(0);
-  minigameDir = 1;
   lastTime = performance.now();
   if (loopIds.mini) cancelAnimationFrame(loopIds.mini);
   loopIds.mini = requestAnimationFrame(updateMinigame);
@@ -626,38 +617,38 @@ export function startMinigame() {
 
 function updateMinigame(time) {
   if (get(phase) !== PHASES.FISHING_MINIGAME) return;
-  const delta = (time - lastTime) / 1000;
+  const delta = Math.min(0.05, (time - lastTime) / 1000);
   lastTime = time;
-
-  const curFish = get(activeFish);
-  let bar = get(minigameBar) + minigameDir * (curFish?.spd || 1) * MINIGAME_SPEED * delta * (1 - gardenBonus("calm"));
-  if (bar > 100) {
-    bar = 100;
-    minigameDir = -1;
+  const fight = tickFishFight(delta);
+  if (fight?.snap) {
+    resetAction("A linha arrebentou no arranque! Solte o botão quando ele disparar.");
+    return;
   }
-  if (bar < 0) {
-    bar = 0;
-    minigameDir = 1;
+  if (fight?.caught) {
+    landHookedFish();
+    return;
   }
-  minigameBar.set(bar);
   loopIds.mini = requestAnimationFrame(updateMinigame);
+}
+
+export function landHookedFish() {
+  if (loopIds.mini) cancelAnimationFrame(loopIds.mini);
+  clearWorldEncounter();
+  consumeCastBait();
+  const finalFish = processCaughtFish(get(activeFish));
+  fishFight.set(null);
+  addFishToInventory(finalFish);
 }
 
 export function attemptCatch() {
   if (get(phase) !== PHASES.FISHING_MINIGAME) return;
-  if (loopIds.mini) cancelAnimationFrame(loopIds.mini);
-
-  const bar = get(minigameBar);
-  const center = get(catchTargetCenter);
-  const width = get(catchTargetWidth);
-
-  if (bar >= center - width / 2 && bar <= center + width / 2) {
-    clearWorldEncounter();
-    consumeCastBait();
-    const finalFish = processCaughtFish(get(activeFish));
-    addFishToInventory(finalFish);
-  } else {
+  const fight = get(fishFight);
+  if (fight?.snap) {
     resetAction("A linha arrebentou! O peixe escapou.");
+    return;
+  }
+  if (fight?.caught || !fight) {
+    landHookedFish();
   }
 }
 
@@ -698,6 +689,7 @@ export function finishCatchSequence(finalFish, questReward = null) {
   const isTreasure = finalFish.type === "treasure";
   const museumRewards = isTreasure ? claimCollectionRewards("museum") : [];
   const rareCard = !isTreasure && ["sea","deep_sea"].includes(finalFish.biome) ? grantRareCard("sea") : null;
+  const surpriseCard = !isTreasure && ["sea", "deep_sea"].includes(finalFish.biome) ? grantSurpriseCard() : null;
   saveGame();
   phase.set(PHASES.CAUGHT);
   activeFish.set(finalFish);
@@ -709,6 +701,7 @@ export function finishCatchSequence(finalFish, questReward = null) {
   currentMessage.set(
     caughtMsg + legendMsg + tournamentMsg + rewardMessage("museum", museumRewards)
       + (rareCard ? ` Carta encontrada: ${rareCard.name}!` : "")
+      + (surpriseCard ? ` Uma carta surpresa veio do mar: ${surpriseCard.name}!` : "")
       + (questReward ? ` Missao concluida! ${questReward}` : "")
   );
 }
@@ -717,29 +710,70 @@ export function isNetCreature(fish) {
   return fish.type === "net" || !!fish.netCatch;
 }
 
+function netLevel() {
+  const id = get(eqNetId);
+  if (id === "rede_3") return 3;
+  if (id === "rede_2") return 2;
+  return 1;
+}
+
+export function rollNetCatch(biome, level = netLevel(), random = Math.random) {
+  const junkChance = { 1: 0.75, 2: 0.5, 3: 0.15 }[level];
+  const treasureChance = { 1: 0.05, 2: 0.1, 3: 0.15 }[level];
+  const crustChance = { 1: 0.15, 2: 0.25, 3: 0.4 }[level];
+  const roll = random();
+  const database = availableDatabase();
+  if (roll < junkChance) {
+    const junk = database.filter((fish) => isTrashSprite(fish) || fish.type === "loot");
+    return junk[Math.floor(random() * Math.max(1, junk.length))] || { id: "pedra", name: "Pedra molhada", type: "loot", price: 0, sprite: SPRITES.trash, weight: 0.4, stars: 1 };
+  }
+  if (roll < junkChance + treasureChance) {
+    const relics = database.filter((fish) => fish.type === "treasure");
+    return relics[Math.floor(random() * Math.max(1, relics.length))] || null;
+  }
+  if (roll < junkChance + treasureChance + crustChance) {
+    const pool = database.filter((fish) => isNetCreature(fish) && matchesBiome(fish, biome));
+    return pool[Math.floor(random() * Math.max(1, pool.length))] || null;
+  }
+  return null;
+}
+
 export function useNetAtShore(biome) {
   if (!get(eqNetId)) return;
-  const isPokeMode = get(gameMode) === "pokemon";
-  const database = availableDatabase();
-  const curSeason = get(seasonIndex);
-  const night = get(isNight);
-  const atShore = database.filter(
-    (f) => isNetCreature(f) && matchesBiome(f, biome) && matchesDist(f, 1)
-  );
-  let pool = atShore.filter(
-    (f) => matchesTime(f, night) && (isPokeMode || matchesSeason(f, curSeason))
-  );
-  if (pool.length === 0) pool = atShore;
-  if (pool.length === 0) {
+  const pos = get(player);
+  if (get(currentMap) === "village" && inBounds(pos.x, pos.y, PIER_BOUNDS)) {
+    currentMessage.set("A rede não se usa na ponte de madeira.");
+    return;
+  }
+  const level = netLevel();
+  const result = rollNetCatch(biome, level);
+  netHaul.set({
+    pulls: 0,
+    needed: 5 + level * 2,
+    biome,
+    result,
+  });
+  phase.set(PHASES.FISHING_NET_HAUL);
+  currentMessage.set("Puxe a rede: aperte Ação várias vezes.");
+}
+
+export function haulNet() {
+  const haul = get(netHaul);
+  if (!haul) return;
+  const pulls = haul.pulls + 1;
+  netHaul.set({ ...haul, pulls });
+  if (pulls < haul.needed) {
+    currentMessage.set(`Puxando a rede... ${pulls}/${haul.needed}`);
+    return;
+  }
+  const result = haul.result;
+  netHaul.set(null);
+  if (!result) {
     resetAction("A rede voltou vazia.");
     return;
   }
-  phase.set(PHASES.CAUGHT);
-  const caughtBase = decorateCatch(
-    pool[Math.floor(Math.random() * pool.length)]
-  );
-  const fishObj = processCaughtFish(caughtBase);
-  addFishToInventory(fishObj);
+  const caught = processCaughtFish(decorateCatch(result));
+  addFishToInventory(caught);
 }
 
 export function resetAction(msg) {
@@ -753,6 +787,8 @@ export function resetAction(msg) {
   if (get(activeFish)) consumeCastBait();
   castBaitId = null;
   shadowMotion = null;
+  fishFight.set(null);
+  netHaul.set(null);
   shadowReaction.set(null);
   phase.set(PHASES.PLAYING);
   shadowActive.set(false);

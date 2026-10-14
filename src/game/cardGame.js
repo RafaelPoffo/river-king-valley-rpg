@@ -61,9 +61,11 @@ export function createCardDuel(playerCards, opponentCards, random = Math.random,
   return duel;
 }
 
-export function cardStats(card, player) {
+export function cardStats(card, player, duel = null) {
   if (!card) return { atk: 0, def: 0 };
-  const fieldBonus = player?.field && matchesBonusType(card, player.field.subtype) ? 1 : 0;
+  const other = duel && player === duel.p1 ? duel.p2 : duel && player === duel.p2 ? duel.p1 : null;
+  const field = player?.field || other?.field;
+  const fieldBonus = field && matchesBonusType(card, field.subtype) ? 1 : 0;
   const gearAtk = card.gear.includes("equip_atk") ? 1 : 0;
   const gearDef = card.gear.includes("equip_def") ? 1 : 0;
   return {
@@ -204,6 +206,10 @@ function applyEffect(duel, owner, card, action = {}) {
 
   if (effect === "field") {
     if (player.field) bury(player, player.field);
+    if (enemy.field) {
+      bury(enemy, enemy.field);
+      enemy.field = null;
+    }
     card.pos = "field";
     player.field = card;
     return { ok: true, consume: "keep" };
@@ -218,9 +224,17 @@ function applyEffect(duel, owner, card, action = {}) {
   if (effect === "heal") { player.hp += 1; return { ok: true }; }
   if (effect === "burn") { enemy.hp -= 1; return { ok: true }; }
   if (effect === "flip_pos") {
-    const { card: target } = action.side === "enemy" ? foe() : ally();
-    if (!target) return fail("Escolha um monstro.");
+    const { card: target } = action.side === "self" ? ally() : foe();
+    if (!target) return fail("Escolha um monstro inimigo.");
     target.pos = target.pos === "atk" ? "def" : "atk";
+    return { ok: true };
+  }
+  if (effect === "destroy_attacker") {
+    if (!action.fromTrapWindow) return fail("Esta armadilha so responde a um ataque.");
+    const { card: target, index, player: host } = foe();
+    if (!target) return fail("Nao ha atacante.");
+    bury(host, target);
+    host.monsters[index] = null;
     return { ok: true };
   }
   if (effect === "weaken") {
@@ -486,15 +500,21 @@ export function performCardAction(duel, owner, action, random = Math.random) {
     return note(duel, `${card.name} entrou em ${card.pos.toUpperCase()}.`);
   }
   if (action.type === "set") {
-    const index = player.spells.findIndex((item) => !item);
-    if (handIndex < 0 || card.type === "monster" || index < 0) return fail("Nao ha espaco para armar esta carta.");
+    if (handIndex < 0 || card.type === "monster") return fail("Nao ha espaco para armar esta carta.");
+    let index = player.spells.findIndex((item) => !item);
+    if (index < 0 && card.type === "trap" && player.spells[0]) {
+      bury(player, player.spells[0]);
+      player.spells[0] = null;
+      index = 0;
+    }
+    if (index < 0) return fail("Nao ha espaco para armar esta carta.");
     consume();
     card.pos = "set";
     player.spells[index] = card;
-    return note(duel, "Uma carta foi armada.");
+    return note(duel, card.type === "trap" ? "Armadilha armada. Ela so responde a um ataque." : "Uma carta foi armada.");
   }
   if (action.type !== "activate" || card.type === "monster") return fail("Selecione uma magia ou campo.");
-  if (card.type === "trap" && handIndex >= 0) return fail("Armadilhas precisam ser armadas e respondem a ataques.");
+  if (card.type === "trap") return fail("Armadilhas so podem ser ativadas quando voce e atacado.");
   const result = applyEffect(duel, owner, card, action);
   if (!result.ok) return result;
   consume();
@@ -529,8 +549,8 @@ export function nextCardAIAction(duel) {
         const target = firstTarget(player.monsters, (item) => item.pos === "atk");
         if (target >= 0) return { type: "activate", uid: card.uid, target };
       } else if (card.effect === "flip_pos") {
-        const target = firstTarget(player.monsters, (item) => item.pos === "def");
-        if (target >= 0) return { type: "activate", uid: card.uid, target };
+        const target = firstTarget(enemy.monsters, (item) => item.pos === "atk");
+        if (target >= 0) return { type: "activate", uid: card.uid, target, side: "enemy" };
       } else if (card.effect === "weaken") {
         const target = firstTarget(enemy.monsters);
         if (target >= 0) return { type: "activate", uid: card.uid, target, side: "enemy" };

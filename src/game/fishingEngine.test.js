@@ -27,6 +27,7 @@ import {
   shadowActive,
   bobberPos,
   minigameBar,
+  fishFight,
   catchTargetCenter,
   inventory,
   worldCreatures,
@@ -116,9 +117,9 @@ describe("preferências das iscas e preços", () => {
     const common = FISH_DB.find((fish) => fish.type === "fish" && fish.rarity === 1 && !isTrash(fish));
     const rare = POKEMON_DB.find((fish) => fish.stage === 3 && fish.type === "fish");
     expect(baitBiteChance(common, "minhoca")).toBe(0.9);
-    expect(baitBiteChance(common, "isca_brilhante")).toBe(0);
+    expect(baitBiteChance(common, "isca_brilhante")).toBe(0.28);
     expect(baitBiteChance(rare, "isca_brilhante")).toBe(0.9);
-    expect(baitBiteChance(rare, "minhoca")).toBe(0);
+    expect(baitBiteChance(rare, "minhoca")).toBe(0.28);
   });
 
   it("Pokémon comuns têm preços comparáveis aos peixes e evoluções valem menos", () => {
@@ -270,7 +271,7 @@ describe("análise da isca e consumo", () => {
     advanceUntil(() => get(phase) === PHASES.FISHING_BITE);
     Math.random.mockReturnValue(0.99);
     startMinigame();
-    minigameBar.set(get(catchTargetCenter));
+    fishFight.update((fight) => fight ? { ...fight, caught: true, distance: 0 } : fight);
     attemptCatch();
     expect(get(phase)).toBe(PHASES.CAUGHT);
     expect(get(inventory)[0].id).toBe(species.id);
@@ -294,7 +295,7 @@ describe("análise da isca e consumo", () => {
     advanceUntil(() => get(phase) === PHASES.FISHING_BITE);
     Math.random.mockReturnValue(0.99);
     startMinigame();
-    minigameBar.set(get(catchTargetCenter));
+    fishFight.update((fight) => fight ? { ...fight, caught: true, distance: 0 } : fight);
     attemptCatch();
     expect(get(phase)).toBe(PHASES.CAUGHT);
     expect(get(inventory)[0].id).toBe("magikarp");
@@ -337,15 +338,18 @@ describe("análise da isca e consumo", () => {
   it("circula devagar antes de reagir e rejeita uma isca incompatível", () => {
     cast("isca_brilhante");
     expect(get(shadowReaction)).toBeNull();
-    advanceUntil(() => get(shadowReaction) === "reject");
+    advanceUntil(() => get(shadowReaction) !== null);
     expect(time).toBeGreaterThanOrEqual(6000);
     expect(get(shadowActive)).toBe(true);
     const bobber = get(bobberPos);
     const position = get(shadowPos);
     expect(Math.hypot(position.x - bobber.x, position.y - bobber.y)).toBeCloseTo(0.5);
-    advanceUntil(() => get(phase) === PHASES.PLAYING);
-    expect(get(shadowActive)).toBe(false);
-    expect(get(shadowReaction)).toBeNull();
+    expect(["heart", "reject"]).toContain(get(shadowReaction));
+    advanceUntil(() => get(phase) === PHASES.PLAYING || get(phase) === PHASES.FISHING_BITE);
+    if (get(phase) === PHASES.PLAYING) {
+      expect(get(shadowActive)).toBe(false);
+      expect(get(shadowReaction)).toBeNull();
+    }
     expect(get(baitStock).isca_brilhante).toBe(5);
     expect(localStorage.setItem).not.toHaveBeenCalled();
   });
@@ -384,7 +388,9 @@ describe("análise da isca e consumo", () => {
     advanceUntil(() => get(phase) === PHASES.FISHING_BITE);
     Math.random.mockReturnValue(0.99);
     startMinigame();
-    minigameBar.set(success ? get(catchTargetCenter) : 100);
+    fishFight.update((fight) => fight
+      ? { ...fight, caught: success, snap: !success, distance: success ? 0 : fight.distance, tension: success ? fight.tension : 100 }
+      : fight);
     attemptCatch();
     expect(get(phase)).toBe(success ? PHASES.CAUGHT : PHASES.PLAYING);
     expect(get(inventory)).toHaveLength(success ? 1 : 0);

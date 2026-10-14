@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { get } from "svelte/store";
 import { fishStrength, lineBreakChance, strengthRange } from "./fight.js";
-import { isNetCreature, resetAction, useNetAtShore } from "./fishingEngine.js";
+import { haulNet, isNetCreature, resetAction, useNetAtShore } from "./fishingEngine.js";
 import { harvestWorms } from "./gameActions.js";
 import { TOOLS, FISH_DB } from "./constants.js";
 import { POKEMON_DB } from "./data/pokemon.js";
@@ -16,6 +16,7 @@ import {
   lastWormHarvestDay,
   seasonIndex,
   unlocks,
+  netHaul,
 } from "./stores.js";
 
 const rod = (id) => TOOLS.rod.find((r) => r.id === id);
@@ -79,16 +80,20 @@ describe("rede", () => {
     ["normal", "sea"],
     ["pokemon", "river"],
     ["pokemon", "sea"],
-  ])("no modo %s (%s) só pega crustáceos e criaturas de rede", (mode, biome) => {
+  ])("no modo %s (%s) a rede da margem puxa e pode trazer lixo, tesouro ou crustáceo", (mode, biome) => {
     gameMode.set(mode);
+    const kinds = new Set();
     for (let i = 0; i < 40; i++) {
       inventory.set([]);
       useNetAtShore(biome);
+      const haul = get(netHaul);
+      expect(haul?.needed).toBeGreaterThan(1);
+      for (let pull = 0; pull < haul.needed; pull++) haulNet();
       const caught = get(inventory)[0];
-      expect(caught).toBeDefined();
-      expect(isNetCreature(caught)).toBe(true);
+      if (caught) kinds.add(isNetCreature(caught) ? "net" : caught.type);
       resetAction();
     }
+    expect(kinds.size).toBeGreaterThan(0);
   });
 
   it("o modo Pokémon tem criaturas de rede no rio e no mar", () => {

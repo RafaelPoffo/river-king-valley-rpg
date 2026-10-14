@@ -30,6 +30,7 @@ import {
   constructions,
   currentFestival,
   garden,
+  currentMessage,
 } from "./stores.js";
 import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
 
@@ -225,6 +226,11 @@ function beginStep(dx, dy, dirStr) {
   if (HOUSE_DOORS[tile]) {
     afterMove = () => enterHouse(HOUSE_DOORS[tile], originX, originY);
   } else if (transition) {
+    if (transition.map === "bug_forest" && constr.forest_bridge?.status !== "built") {
+      player.set({ x: originX, y: originY, dir: dirStr });
+      currentMessage.set("A ponte da floresta está quebrada no meio. Peça ao carpinteiro para restaurá-la por ¥1000.");
+      return;
+    }
     afterMove = () => {
       currentMap.set(transition.map);
       player.set({ ...transition.spawn });

@@ -247,8 +247,9 @@ A mochila tem 10 espaços, ou 15 com a Mochila Expandida. Com ela cheia, você e
 
 | Construção | Preço | O que faz |
 |---|---|---|
-| Píer de Pesca | ¥1.500 | Passarela curta. Só dali saem o Peixe-Estaca e o Qwilfish. |
-| Docas do Porto | ¥3.500 | Precisa do píer. Alarga e alonga o cais e cria o atracadouro do barco. |
+| Píer de Pesca | ¥1.500 | Passarela longa e separada, com mais chance de raros. |
+| Docas do Porto | ¥3.500 | Atracadouro separado do píer, entre a vila e o mar. O barco fica aqui. |
+| Ponte da Floresta | ¥1.000 | Um dia de trabalho. Sem ela, a ponte quebrada ao norte não atravessa. |
 | Barco de Pesca | ¥9.000 | Precisa das docas. Aguenta as correntes de inverno e leva ao Norte. |
 | Aquário Municipal | ¥5.000 | Permite doar peixes para exposição. |
 

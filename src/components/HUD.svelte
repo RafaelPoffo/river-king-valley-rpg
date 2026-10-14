@@ -17,7 +17,7 @@
     eqRodId,
     eqNetId,
     currentToolType,
-    eqSeedId, seedStock, gardenBuffs,
+    eqSeedId, seedStock, gardenBuffs, petCompanion, terrarium, dungeonRun, currentMap,
   } from "../game/stores.js";
   import { todaysDish } from "../game/dishes.js";
   import { BAITS, SEASONS, TOOLS, WEATHER_NAMES } from "../game/constants.js";
@@ -124,6 +124,20 @@
   <div class="retro-font text-[8px] text-[#4a9090] mt-1 font-bold">
     ¥ {$money}
   </div>
+  {#if $petCompanion && $terrarium.inBall}
+    <div class="mt-1 flex justify-end">
+      <div class="h-8 w-8 rounded-full border-2 border-black bg-white flex items-center justify-center overflow-hidden" title={$petCompanion.name}>
+        {#if $petCompanion.dexId || $petCompanion.portrait}
+          <img alt={$petCompanion.name} src={$petCompanion.portrait || `/assets/portraits/${String($petCompanion.dexId).padStart(4, "0")}.png`} class="h-7 w-7 object-contain" />
+        {:else}
+          <span class="text-[10px]">{$petCompanion.emoji || "•"}</span>
+        {/if}
+      </div>
+    </div>
+  {/if}
+  {#if $currentMap === "dungeon" && $dungeonRun}
+    <div class="retro-font text-[8px] text-amber-800">Andar {$dungeonRun.floor}/100</div>
+  {/if}
 </div>
 
 <!-- Bottom Dialogue & Message Box -->

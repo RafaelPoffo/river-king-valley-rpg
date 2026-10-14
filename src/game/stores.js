@@ -159,6 +159,11 @@ export const shadowReaction = writable(null);
 export const minigameBar = writable(0);
 export const catchTargetCenter = writable(50);
 export const catchTargetWidth = writable(35);
+export const fishFight = writable(null);
+export const netHaul = writable(null);
+export const petCompanion = writable(null);
+export const terrarium = writable({ size: null, fed: 0, lastFedDay: 0, awayUntil: 0, inBall: false, roaming: false });
+export const dungeonRun = writable(null);
 
 // UI & Dialog
 export const currentMessage = writable("Setas para andar. ESPAÇO para interagir.");

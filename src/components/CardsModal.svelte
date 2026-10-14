@@ -6,7 +6,7 @@
     ALL_CARDS, CARD_THEMES, DECK_SIZE, DECK_PRICE, BASIC_SHOP_CARDS,
     cardName, kindLabel, themeDeck, themeById, isBasicMonster,
   } from "../game/cardCatalog.js";
-  import { buyDeck, buySingleCard, saveDeck, validateDeck, grantChampionshipPrize } from "../game/cards.js";
+  import { buyDeck, buySingleCard, saveDeck, validateDeck, grantChampionshipPrize, grantMatchCard, revertDeck } from "../game/cards.js";
   import { createCardDuel, cardStats, performCardAction, nextCardAIAction, resolveCardTrap, canAttack, effectNeedsTarget } from "../game/cardGame.js";
   import { saveGame } from "../game/saveSystem.js";
   import { setQuestFlag } from "../game/quests.js";
@@ -65,7 +65,7 @@
     const card = ALL_CARDS.find((item) => item.id === id);
     if (!isBasicMonster(card)) { message = "So pokemon basicos podem ser trocados no deck."; return; }
     if (delta > 0) {
-      if (draft.length >= DECK_SIZE || draft.filter((cardId) => cardId === id).length >= ($cardCollection[id] || 0)) return;
+      if (draft.length >= DECK_SIZE || draft.filter((cardId) => cardId === id).length >= Math.min(4, $cardCollection[id] || 0)) return;
       draft = [...draft, id];
     } else {
       const index = draft.lastIndexOf(id);
@@ -136,7 +136,10 @@
       if (theme === "lendas_mistico") setQuestFlag("beat_mystic_legend");
       rewardText = "Vitoria contra uma lenda. 600. As cartas lendarias dele nao saem do baralho.";
     } else {
-      rewardText = "Premio recebido: 600.";
+      const prizeCard = grantMatchCard(theme);
+      rewardText = prizeCard
+        ? `Premio recebido: 600 e a carta ${cardName(prizeCard, $gameMode)}.`
+        : "Premio recebido: 600.";
     }
     saveGame();
   }
@@ -179,6 +182,14 @@
   function chooseMonster(index) {
     if (duel.turn !== "p1") return;
     const card = duel.p1.monsters[index];
+    if (source === "hand" && selected?.evolvesFrom && card?.dexId === selected.evolvesFrom) {
+      act({ type: "evolve", uid: selected.uid });
+      return;
+    }
+    if (source === "hand" && selected?.type === "monster" && duel.state === "main") {
+      act({ type: "summon", uid: selected.uid, pos: summonPos, target: index });
+      return;
+    }
     if (targeting === "summon") { act({ type: "summon", uid: selected.uid, pos: summonPos, target: index }); return; }
     if (targeting === "ally" || targeting === "equip") { act({ type: "activate", uid: selected.uid, target: index, side: "self" }); return; }
     if (!card) return;
@@ -202,7 +213,7 @@
 
   function activate() {
     if (effectNeedsTarget(selected.effect)) {
-      targeting = selected.effect.startsWith("equip_") || ["boost_atk", "guard", "flip_pos"].includes(selected.effect) ? "ally" : "enemy";
+      targeting = selected.effect.startsWith("equip_") || ["boost_atk", "guard"].includes(selected.effect) ? "ally" : "enemy";
       message = "Escolha o alvo da carta.";
     } else act({ type: "activate", uid: selected.uid });
   }
@@ -257,8 +268,8 @@
           {#each $cardDecks as deck}<button class="command whitespace-nowrap" class:chosen={editingId === deck.id} on:click={() => startEditing(deck)}>{deck.name}</button>{/each}
           {#if !$cardDecks.length}<p class="px-2 text-sm">Nenhum deck adquirido.</p>{/if}
         </div>
-        {#if editingId}<div class="flex shrink-0 items-center gap-2 border-b border-[#9bb3a4] p-2"><input aria-label="Nome do deck" maxlength="30" class="min-w-0 flex-1 border-2 border-[#53756a] bg-white px-2 py-1 text-sm" bind:value={editingName} /><strong>{draft.length}/{DECK_SIZE}</strong><button class="command" disabled={!validateDeck(draft, $cardCollection, editingDeck?.cards)} on:click={() => finishAction(saveDeck(editingId, draft, editingName))}>Salvar</button></div>
-          <p class="shrink-0 px-3 py-1 text-[11px]">So pokemon basicos (sem evolucao e sem pre-evolucao) podem ser trocados.</p>
+        {#if editingId}<div class="flex shrink-0 items-center gap-2 border-b border-[#9bb3a4] p-2"><input aria-label="Nome do deck" maxlength="30" class="min-w-0 flex-1 border-2 border-[#53756a] bg-white px-2 py-1 text-sm" bind:value={editingName} /><strong>{draft.length}/{DECK_SIZE}</strong><button class="command" disabled={!validateDeck(draft, $cardCollection, editingDeck?.cards)} on:click={() => finishAction(saveDeck(editingId, draft, editingName))}>Salvar</button><button class="command" on:click={() => { const result = revertDeck(editingId); if (result.ok) draft = [...result.cards]; finishAction(result); }}>Reverter para o deck padrao</button></div>
+          <p class="shrink-0 px-3 py-1 text-[11px]">Cartas avulsas: so basicos, no maximo 4 iguais. Evolucoes ficam travadas no padrao do deck.</p>
         {/if}
       {/if}
       <div class="flex shrink-0 gap-2 border-b border-[#9bb3a4] p-2">
@@ -324,7 +335,7 @@
         <div class="min-h-0 flex-1 overflow-y-auto text-[10px] leading-relaxed" aria-live="polite">{#each duel.log as entry}<p class="border-b border-[#d8e3dc] py-1">{entry}</p>{/each}</div>
       </aside>
 
-      <div class="flex min-w-0 flex-1 flex-col bg-[#d7e7dc] p-2">
+      <div class="flex min-w-0 flex-1 flex-col p-2" style={`background:${(duel.p1.field || duel.p2.field) ? (themeById((duel.p1.field || duel.p2.field).themeId)?.color || "#d7e7dc") : "#d7e7dc"}`}>
         <div class="flex shrink-0 items-center justify-between text-xs font-bold"><span>{themeById(currentOpponentTheme())?.name || $cardOpponent?.name} · HP {duel.p2.hp}</span><span>{$cardOpponent?.championship ? `Campeonato ${$cardChampionship.wins + 1}/${$cardChampionship.opponents.length}` : $cardOpponent?.name}</span></div>
         <div class="mt-1 flex h-6 justify-center gap-1">{#each duel.p2.hand as _}<span class="h-5 w-4 border border-[#243c35] bg-[#53818b]" title="Carta na mao do rival"></span>{/each}<span class="ml-2 text-[10px]">Deck {duel.p2.deck.length} · Cemiterio {duel.p2.graveyard.length}</span></div>
         <div class="flex h-7 shrink-0 items-center justify-center gap-2">
@@ -357,7 +368,7 @@
               class:attacking={attackAnimation?.owner === "p1" && attackAnimation?.index === index}
               style={attackStyle("p1", index)}
               aria-label={card ? cardName(card, $gameMode) : "Zona vazia"}
-              disabled={duel.turn !== "p1" || (!card && !targeting)}
+              disabled={duel.turn !== "p1" || (!card && !targeting && !(source === "hand" && selected?.type === "monster"))}
               on:mouseenter={() => inspect(card, "p1")}
               on:click={() => chooseMonster(index)}
             >{#if card}<CardFace {card} mode={$gameMode} compact stats={cardStats(card, duel.p1)} />{/if}</button>

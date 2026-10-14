@@ -47,7 +47,7 @@ describe("campeonato de insetos", () => {
   it("usa sprites do atlas para insetos e mantém uma escolha estável no overworld", () => {
     expect(insectSpriteFor("wild:1")).toBe(insectSpriteFor("wild:1"));
     expect(insectSpriteFor("wild:1")).toBeDefined();
-    expect(insectSpriteFor("pokemon:1", "0010")).toBe(POKEMON_SPRITES["0010"]);
+    expect(insectSpriteFor("pokemon:1", "0010")).toBe(POKEMON_SPRITES["0013"]);
   });
 
   it("aplica a sorte de observação como vantagem pequena nas batalhas", () => {

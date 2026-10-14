@@ -94,8 +94,138 @@ export function cardVisitorsForDay(today = get(day), season = get(seasonIndex), 
   });
 }
 
+export function bugFansForDay(today = get(day), season = get(seasonIndex)) {
+  const random = dailyRandom(`bugfans:${season}:${today}`);
+  const fans = [
+    { name: "Tina das Antenas", sprite: "visitor_f", line: "Olhe o ritmo, não a força. Um inseto calmo vence um agressivo apressado." },
+    { name: "Guto da Mesa", sprite: "visitor_m", line: "Sorte de observação ajuda nas jogadas. Joe não admite, mas todo mundo sente." },
+    { name: "Bela do Pólen", sprite: "traveler_f", line: "Três insetos, duas vitórias. Se o primeiro cair, não entre em pânico." },
+    { name: "Nico do Tronco", sprite: "traveler_m", line: "Eu às vezes entro no campeonato. Meu time é fraco, mas eu ensino o ritmo." },
+  ];
+  const count = 2 + Math.floor(random() * 2);
+  const seats = [{ x: 27, y: 11 }, { x: 31, y: 11 }, { x: 28, y: 15 }, { x: 30, y: 15 }];
+  return Array.from({ length: count }, (_, index) => {
+    const fan = fans[(Math.floor(random() * fans.length) + index) % fans.length];
+    const seat = seats[index];
+    return {
+      id: `bug_fan_${index}`,
+      name: fan.name,
+      sprite: fan.sprite,
+      role: "bug_fan",
+      freq: "always",
+      homeMap: "bug_forest",
+      homeX: seat.x,
+      homeY: seat.y,
+      dialogNormal: fan.line,
+      dialogTavern: "Na taverna eu só falo de insetos.",
+      friendLines: [fan.line, "Amanhã eu talvez duelo."],
+    };
+  });
+}
+
+export function shopkeepersForDay() {
+  return [
+    {
+      id: "shopkeep_gear",
+      name: "Iara da Loja",
+      sprite: "visitor_f",
+      role: "shopkeep",
+      shop: "gear",
+      freq: "always",
+      homeMap: "shop_gear",
+      homeX: 3,
+      homeY: 2,
+      dialogNormal: "Varas, redes, iscas e terrários. Fale comigo ou com o balcão.",
+      dialogTavern: "Depois do expediente eu só quero sopa.",
+      friendLines: ["A ração do pet custa só 10.", "Rede só na beirada, nunca na ponte."],
+    },
+    {
+      id: "shopkeep_museum",
+      name: "Curador Eliseu",
+      sprite: "traveler_m",
+      role: "curator",
+      freq: "always",
+      homeMap: "shop_bait",
+      homeX: 6,
+      homeY: 4,
+      dialogNormal: "Doe fósseis e relíquias. Pokémon fóssil ganha baralho especial.",
+      dialogTavern: "Museu de dia, taverna de noite.",
+      friendLines: ["Olhe as vitrines. Cada peça tem uma história.", "A rede às vezes traz antiguidades."],
+    },
+    {
+      id: "shopkeep_carpenter",
+      name: "Mestre Gino",
+      sprite: "traveler_m",
+      role: "carpenter",
+      freq: "always",
+      homeMap: "carpenter_shop",
+      homeX: 3,
+      homeY: 3,
+      dialogNormal: "A ponte da floresta custa 1000 e um dia de trabalho.",
+      dialogTavern: "Madeira e cerveja, nessa ordem.",
+      friendLines: ["Píer e docas são obras diferentes.", "O barco só atraca nas docas."],
+    },
+  ];
+}
+
+export function festivalFishersForDay(today = get(day), season = get(seasonIndex)) {
+  const random = dailyRandom(`festfish:${season}:${today}`);
+  return [
+    { name: "Dona Lídia", sprite: "visitor_f", x: 10, y: 16 },
+    { name: "Seu Bento", sprite: "traveler_m", x: 16, y: 16 },
+    { name: "Nando da Praia", sprite: "visitor_m", x: 24, y: 16 },
+  ].map((npc, index) => ({
+    id: `fest_fisher_${index}`,
+    name: npc.name,
+    sprite: npc.sprite,
+    role: "festival_fisher",
+    freq: "always",
+    homeMap: "village",
+    homeX: npc.x,
+    homeY: npc.y,
+    dialogNormal: random() < 0.35
+      ? "Fisguei um agora! Vou levar à barraca do festival."
+      : "Hoje o mar está bonito. Quero o prêmio da avaliação.",
+    dialogTavern: "No festival até a taverna enfeita as mesas.",
+    friendLines: ["O ancião avalia o melhor peixe.", "Pesque e leve à barraca."],
+  }));
+}
+
+export function cardOrganizerForDay(today = get(day), season = get(seasonIndex)) {
+  if (!isCardEventDay(today)) return [];
+  const theme = today === 7 ? "eletrico" : today === 22 ? "fogo" : null;
+  const name = today === 7 ? "Festival Elétrico" : today === 22 ? "Festival de Fogo" : "Campeonato das Cartas";
+  return [{
+    id: "card_organizer",
+    name: "Árbitro Lino",
+    sprite: "traveler_m",
+    role: "card_organizer",
+    cardFestival: name,
+    cardTheme: theme,
+    freq: "always",
+    homeMap: "game_house",
+    homeX: 8,
+    homeY: 3,
+    dialogNormal: `Organizo o ${name}. Fale comigo para entrar no torneio.`,
+    dialogTavern: "Árbitro também come.",
+    friendLines: ["Decks raros só saem de campeonato.", "Hoje as mesas estão temáticas."],
+  }];
+}
+
 export function extrasForDay(today = get(day), season = get(seasonIndex), mode = get(gameMode)) {
-  return [...travelersForDay(today, season, mode), ...cardVisitorsForDay(today, season, mode)];
+  const festival = extrasFestival(today, season);
+  return [
+    ...travelersForDay(today, season, mode),
+    ...cardVisitorsForDay(today, season, mode),
+    ...bugFansForDay(today, season),
+    ...shopkeepersForDay(),
+    ...cardOrganizerForDay(today, season),
+    ...(festival ? festivalFishersForDay(today, season) : []),
+  ];
+}
+
+function extrasFestival(today, season) {
+  return [5, 10, 15].includes(today);
 }
 
 export function extraOccupantAt(mapName, x, y, mins, dayNum, season, mode) {

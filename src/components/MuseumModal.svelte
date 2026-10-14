@@ -5,6 +5,7 @@
   import CollectionMilestones from "./CollectionMilestones.svelte";
 
   $: relics = $currentDatabase.filter((entry) => entry.type === "treasure");
+  $: donations = Object.values($museum || {});
   $: found = relics.filter((entry) => $museum[entry.id]).length;
 </script>
 
@@ -20,8 +21,16 @@
       </button>
     </div>
     <p class="retro-font text-[7px] text-gray-600 leading-relaxed">
-      Tesouros fisgados no mar vão direto para o acervo.
+      Tesouros, fósseis e doações ficam em exposição. Pokémon fóssil rende um deck de pedra.
     </p>
+    {#if donations.length}
+      <div class="border-2 border-black p-2 max-h-24 overflow-y-auto">
+        <p class="retro-font text-[7px] mb-1">DOAÇÕES</p>
+        {#each donations as item}
+          <p class="retro-font text-[6px]">{item.name}</p>
+        {/each}
+      </div>
+    {/if}
     <CollectionMilestones kind="museum" />
     <div class="grid grid-cols-3 gap-2 max-h-80 overflow-y-auto">
       {#each relics as relic}

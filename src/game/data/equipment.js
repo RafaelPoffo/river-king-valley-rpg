@@ -207,13 +207,15 @@ export const BAITS = [
 ];
 
 export function withBaitPreferences(species) {
+  const regular = BAITS.filter((bait) => bait.tier > 0 && bait.id !== "megabit" && !bait.attract);
   const rare = species.rarity >= 5 || species.stage === 3;
-  const intermediate = species.rarity >= 3 || species.stage === 2;
-  const firstTier = rare ? 4 : intermediate ? 2 : 1;
-  const favoriteTier = rare ? 6 : intermediate ? 3 : 1;
+  const start = rare
+    ? regular.length - 3
+    : Math.min(Math.max(0, (species.rarity || 1) - 1), regular.length - 3);
+  const window = regular.slice(start, start + 3);
+  const favorite = rare ? 2 : 0;
   const baitPreferences = Object.fromEntries(
-    BAITS.filter((bait) => bait.tier >= firstTier && bait.tier < firstTier + 3 && !bait.attract && bait.id !== "megabit")
-      .map((bait) => [bait.id, bait.tier === favoriteTier ? 0.8 : 0.5]),
+    window.map((bait, index) => [bait.id, index === favorite ? 0.8 : 0.5]),
   );
   return { ...species, baitPreferences };
 }

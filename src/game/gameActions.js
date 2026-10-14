@@ -48,11 +48,14 @@ import {
   forestFeathers,
   maxInventorySize,
   cardOpponent, cardTradeUsed, cardDecks, cardChampionship,
+  petCompanion, terrarium, dungeonRun, museum, worldCreatures,
 } from "./stores.js";
 import {
   SEASONS,
   WEATHER_NAMES,
   FESTIVAL_STALL,
+  PIER_BOUNDS,
+  MAPS_DATA,
   BOAT_BOUNDS,
   BOAT_BOARDING,
   DEEP_SEA_CAPTAIN,
@@ -90,10 +93,13 @@ import {
   canWalkOn,
 } from "./movement.js";
 import { saveGame } from "./saveSystem.js";
-import { ensureWorldPopulation } from "./worldCreatures.js";
+import { ensureWorldPopulation, worldSpecies } from "./worldCreatures.js";
+import { pokemonCry } from "./pokemonCries.js";
+import { pickUpPet } from "./pet.js";
+import { onixHoleOpen, ONIX_ROCK, buildDungeonRows, generateDungeonFloor, resolveDungeonDuel, DUNGEON_STAIRS } from "./dungeon.js";
 import { generateDailyQuest, checkDailyQuestProgress, offerQuestOnTalk, setQuestFlag, describeQuestReward } from "./quests.js";
 import { actorAt, spokenLine, isBirthday, playerHasCard, playerHasFish } from "./npcLife.js";
-import { tradeBasicCard, addCards } from "./cards.js";
+import { tradeBasicCard, addCards, grantThemeDeck } from "./cards.js";
 import { catchInsect, ensureDailyInsects, insectSpecies } from "./insectHunt.js";
 import { BUG_ARCHETYPE_LINES, BUG_ARCHETYPES } from "./bugCatalog.js";
 import { BUG_COMPETITOR_SEATS, competitorsForDay } from "./bugTournament.js";
@@ -372,6 +378,10 @@ export function buyItem(item, type) {
     } else if (type === "net") {
       ownedNets.update((n) => [...n, item.id]);
       eqNetId.set(item.id);
+    } else if (type === "terrarium") {
+      terrarium.set({ size: item.size, id: item.id, lastFedDay: 0, fed: 0, inBall: false, roaming: false, awayUntil: 0 });
+    } else if (type === "pet_food") {
+      inventory.update((items) => [...items, { id: "racao_pet", name: "Ração para pet", type: "loot", price: 10 }]);
     } else if (type === "bait") {
       ownedBaits.update((b) => [...b, item.id]);
       baitStock.update((stock) => {
@@ -400,6 +410,75 @@ export function equipTool(id, type) {
 
 export function toggleTool() {
   currentToolType.update((t) => (t === "rod" ? "net" : "rod"));
+}
+
+const FOSSIL_IDS = new Set(["kabuto", "kabutops", "omanyte", "omastar", "aerodactyl", "fossil_helix", "fossil_dome", "fossil_ambar"]);
+
+function donateFossil() {
+  const items = get(inventory);
+  const index = items.findIndex((item) => FOSSIL_IDS.has(item.id) || item.fossil || item.types?.includes("rock") && item.stage >= 1 && ["kabuto", "omanyte", "aerodactyl"].includes(item.id));
+  if (index < 0) {
+    currentMessage.set("Eliseu: \"Traga um fóssil ou um Pokémon fóssil.\"");
+    dialogActions.set({ " ": closeDialog });
+    return;
+  }
+  const donated = items[index];
+  inventory.update((list) => list.filter((_, itemIndex) => itemIndex !== index));
+  museum.update((held) => ({ ...held, [donated.id]: { donated: true, name: donated.name, sprite: donated.sprite, desc: donated.desc || "Doação do vale." } }));
+  const prize = grantThemeDeck("pedra");
+  saveGame();
+  currentMessage.set(`Eliseu: "${donated.name} entra para o acervo. ${prize.message}"`);
+  dialogActions.set({ " ": closeDialog });
+}
+
+function enterDungeonFloor(floor) {
+  const pet = get(petCompanion);
+  if (!pet) {
+    showRPGMessage("Leve seu pet da mochila ou do terrário para a dungeon.");
+    return;
+  }
+  if (get(terrarium).tiredUntil === get(day)) {
+    showRPGMessage("Seu Pokémon está cansado. Só poderá batalhar amanhã.");
+    return;
+  }
+  const state = generateDungeonFloor(floor, `run:${get(day)}`);
+  MAPS_DATA.dungeon = buildDungeonRows(state.theme);
+  dungeonRun.set({ ...state, fight: null });
+  currentMap.set("dungeon");
+  player.set({ x: DUNGEON_STAIRS.up.x, y: DUNGEON_STAIRS.up.y + 1, dir: "down" });
+  updateCamera();
+  if (state.foe) {
+    phase.set(PHASES.DIALOG);
+    currentMessage.set(`O pokémon ${state.foe.name} não gostou da sua presença aqui e quer enfrenta-lo. [SPACE] Batalhar / [X] Fugir`);
+    dialogActions.set({
+      " ": () => startDungeonFight(state),
+      X: () => {
+        currentMap.set("bug_forest");
+        player.set({ x: ONIX_ROCK.x, y: ONIX_ROCK.y + 1, dir: "down" });
+        updateCamera();
+        closeDialog();
+      },
+    });
+    return;
+  }
+  showRPGMessage(`Andar ${floor}. Explore ou desça.`);
+}
+
+function startDungeonFight(state) {
+  const pet = get(petCompanion);
+  const result = resolveDungeonDuel(pet, state.foe, `duel:${get(day)}:${state.floor}`, get(birdwatchingLuck));
+  dungeonRun.update((run) => ({ ...run, fight: result }));
+  if (result.winner !== "pet") {
+    terrarium.update((home) => ({ ...home, tiredUntil: get(day) }));
+    currentMap.set("bug_forest");
+    player.set({ x: ONIX_ROCK.x, y: ONIX_ROCK.y + 1, dir: "down" });
+    updateCamera();
+    closeDialog();
+    showRPGMessage("Seu Pokémon perdeu duas rodadas e foi expulso à superfície. Ele está cansado.");
+    return;
+  }
+  closeDialog();
+  showRPGMessage(`Vitória no andar ${state.floor}. Pode explorar ou descer.`);
 }
 
 function closeDialog() {
@@ -492,6 +571,46 @@ function openNpcDialog(npc, atTavern) {
     actions.X = closeDialog;
   }
 
+  if (npc.role === "shopkeep") {
+    options.push("[L] Abrir loja");
+    actions.L = () => {
+      phase.set(PHASES.SHOP);
+      shopTab.set("buy_rod");
+    };
+  }
+  if (npc.role === "curator") {
+    options.push("[M] Ver museu");
+    actions.M = () => phase.set(PHASES.MUSEUM);
+    options.push("[F] Doar fóssil");
+    actions.F = () => donateFossil();
+  }
+  if (npc.role === "carpenter") {
+    options.push("[O] Encomendar obra");
+    actions.O = () => phase.set(PHASES.CARPENTER);
+  }
+  if (npc.role === "card_organizer") {
+    options.push("[T] Entrar no torneio");
+    actions.T = () => {
+      const theme = npc.cardTheme;
+      const opponents = theme
+        ? [theme, theme, theme]
+        : cardPlayersForDay(get(day), get(seasonIndex));
+      cardChampionship.update(() => ({
+        dayKey: `${get(seasonIndex)}:${get(day)}`,
+        wins: 0,
+        claimed: false,
+        opponents,
+      }));
+      cardOpponent.set({
+        id: "championship",
+        name: npc.cardFestival,
+        cardTheme: opponents[0],
+        championship: true,
+        opponents,
+      });
+      phase.set(PHASES.CARD_DUEL);
+    };
+  }
   if (npc.role === "shop_visitor") {
     options.push("[T] Trocar carta");
     actions.T = () => {
@@ -703,6 +822,49 @@ export function interact() {
     }
   }
 
+  const landCreature = get(worldCreatures).find((creature) =>
+    !creature.aquatic && Math.round(creature.x) === target.x && Math.round(creature.y) === target.y
+  );
+  if (landCreature) {
+    const species = worldSpecies(landCreature);
+    showRPGMessage(pokemonCry(species?.name || landCreature.speciesId, species?.dexId || species?.id, species?.rarity));
+    return;
+  }
+
+  const pet = get(petCompanion);
+  if (pet && !get(terrarium).inBall && Math.abs((pet.x ?? -99) - target.x) + Math.abs((pet.y ?? -99) - target.y) <= 1) {
+    pickUpPet();
+    saveGame();
+    showRPGMessage(`${pet.name} voltou para a mochila.`);
+    return;
+  }
+
+  if (cMap === "bug_forest" && target.x === ONIX_ROCK.x && target.y === ONIX_ROCK.y) {
+    if (!onixHoleOpen(curDay)) {
+      showRPGMessage("Um Onix empurra uma rocha enorme. Ele deve terminar em cerca de 10 dias.");
+      return;
+    }
+    enterDungeonFloor(1);
+    return;
+  }
+
+  if (cMap === "dungeon") {
+    if (target.x === DUNGEON_STAIRS.up.x && target.y === DUNGEON_STAIRS.up.y) {
+      if (get(dungeonRun)?.floor > 1) enterDungeonFloor(get(dungeonRun).floor - 1);
+      else {
+        currentMap.set("bug_forest");
+        player.set({ x: ONIX_ROCK.x, y: ONIX_ROCK.y + 1, dir: "down" });
+        updateCamera();
+        showRPGMessage("Você voltou à clareira.");
+      }
+      return;
+    }
+    if (target.x === DUNGEON_STAIRS.down.x && target.y === DUNGEON_STAIRS.down.y) {
+      enterDungeonFloor((get(dungeonRun)?.floor || 1) + 1);
+      return;
+    }
+  }
+
   if (clickedNpc) {
     const loc = getNpcLocation(clickedNpc, mins, curDay, get(seasonIndex));
     openNpcDialog(clickedNpc, loc.map === "tavern");
@@ -797,8 +959,7 @@ export function interact() {
       phase.set(PHASES.SHOP);
       shopTab.set("buy_rod");
     } else if (cMap === "shop_bait") {
-      phase.set(PHASES.SHOP);
-      shopTab.set("buy_bait");
+      phase.set(PHASES.MUSEUM);
     } else if (cMap === "carpenter_shop") {
       phase.set(PHASES.CARPENTER);
     } else if (cMap === "game_house") {
@@ -813,7 +974,8 @@ export function interact() {
   } else if (target.tile === "M") {
     harvestWorms();
   } else if (target.tile === "U") {
-    showRPGMessage("Tábuas e madeira de lei.");
+    if (cMap === "shop_bait") phase.set(PHASES.MUSEUM);
+    else showRPGMessage("Tábuas e madeira de lei.");
   } else if (target.tile === "N" && cMap === "bug_forest") {
     ensureDailyBirds();
     phase.set(PHASES.DIALOG);

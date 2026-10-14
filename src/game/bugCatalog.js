@@ -1,15 +1,26 @@
 const ARCHETYPES = {
-  bruiser: { name: "Impacto", icon: "💥" },
-  guardian: { name: "Casca", icon: "🛡️" },
-  agile: { name: "Ágil", icon: "⚡" },
-  tactician: { name: "Tático", icon: "🎯" },
-  balanced: { name: "Versátil", icon: "🔄" },
-  lucky: { name: "Sorte", icon: "🍀" },
-  momentum: { name: "Embalo", icon: "🏃" },
-  trickster: { name: "Trapaça", icon: "🃏" },
-  anchor: { name: "Âncora", icon: "🪨" },
-  underdog: { name: "Azarão", icon: "🌱" },
+  bruiser: { name: "Impacto", icon: "💥", personality: { m: "agressivo", f: "agressiva" } },
+  guardian: { name: "Casca", icon: "🛡️", personality: { m: "calmo", f: "calma" } },
+  agile: { name: "Ágil", icon: "⚡", personality: { m: "inquieto", f: "inquieta" } },
+  tactician: { name: "Tático", icon: "🎯", personality: { m: "esperto", f: "esperta" } },
+  balanced: { name: "Versátil", icon: "🔄", personality: { m: "dócil", f: "dócil" } },
+  lucky: { name: "Sorte", icon: "🍀", personality: { m: "sortudo", f: "sortuda" } },
+  momentum: { name: "Embalo", icon: "🏃", personality: { m: "teimoso", f: "teimosa" } },
+  trickster: { name: "Trapaça", icon: "🃏", personality: { m: "astuto", f: "astuta" } },
+  anchor: { name: "Âncora", icon: "🪨", personality: { m: "paciente", f: "paciente" } },
+  underdog: { name: "Azarão", icon: "🌱", personality: { m: "corajoso", f: "corajosa" } },
 };
+
+const FEMININE_NAME = /a$|Joaninha|Borboleta|Mariposa|Abelha|Vespa|Aranha|Libélula|Cigarra|Formiga|Saúva|Tesourinha|Lagarta|Traça|Barata|Cigarrinha|Beedrill|Butterfree|Ledyba|Ledian|Venomoth|Ariados/i;
+
+export function personalityFor(name, archetypeId) {
+  const pair = ARCHETYPES[archetypeId]?.personality || { m: "calmo", f: "calma" };
+  return FEMININE_NAME.test(name) ? pair.f : pair.m;
+}
+
+function namedBug(name, archetypeId) {
+  return `${name} ${personalityFor(name, archetypeId)}`;
+}
 
 export const BUG_ARCHETYPE_LINES = {
   bruiser: "ganha força nas investidas",
@@ -63,15 +74,19 @@ const commonRows = [
   [65, "🐛", "Milípede Azarão", 3, "underdog"],
 ];
 
-export const COMMON_BUGS = commonRows.map(([id, emoji, name, strength, archetypeId]) => ({
-  id: `bug_${id}`,
-  name,
-  emoji,
-  strength,
-  points: pointsFor(strength, id),
-  archetypeId: archetypeId || Object.keys(ARCHETYPES)[(id + strength) % 10],
-  portrait: null,
-}));
+export const COMMON_BUGS = commonRows.map(([id, emoji, name, strength, archetypeId]) => {
+  const trait = archetypeId || Object.keys(ARCHETYPES)[(id + strength) % 10];
+  return {
+    id: `bug_${id}`,
+    baseName: name,
+    name: namedBug(name, trait),
+    emoji,
+    strength,
+    points: pointsFor(strength, id),
+    archetypeId: trait,
+    portrait: null,
+  };
+});
 
 const pokemonRows = [
   ["0010", "Caterpie", 1], ["0011", "Metapod", 2], ["0012", "Butterfree", 3],
@@ -97,7 +112,7 @@ const pokemonProfiles = COMMON_BUGS.map((commonProfile, index) => {
   return {
     id: `pokemon_bug_${dexId}${index < pokemonRows.length ? '' : `_${index}`}`,
     dexId,
-    name: index < pokemonRows.length ? name : `${name} ${ARCHETYPES[originalProfile.archetypeId].name}`,
+    name: namedBug(name, originalProfile.archetypeId),
     emoji: "🐛",
     strength: originalProfile.strength,
     points: originalProfile.points,
@@ -109,7 +124,7 @@ const pokemonProfiles = COMMON_BUGS.map((commonProfile, index) => {
 const budgetProfiles = [...new Set(COMMON_BUGS.map((bug) => bug.points))].map((points) => COMMON_BUGS.find((bug) => bug.points === points));
 export const POKEMON_BUGS = [...pokemonProfiles, ...pokemonRows.flatMap(([dexId,name], speciesIndex) => budgetProfiles.map((profile,index) => {
   const archetypeId = Object.keys(ARCHETYPES)[(speciesIndex + index) % 10];
-  return { id:`pokemon_bug_${dexId}_budget_${profile.points}`, dexId, name:`${name} ${ARCHETYPES[archetypeId].name}`, emoji:"🐛", strength:profile.strength, points:profile.points, archetypeId, portrait:pmdPortrait(dexId) };
+  return { id:`pokemon_bug_${dexId}_budget_${profile.points}`, dexId, name: namedBug(name, archetypeId), emoji:"🐛", strength:profile.strength, points:profile.points, archetypeId, portrait:pmdPortrait(dexId) };
 }))];
 
 export const BUG_ARCHETYPES = ARCHETYPES;
