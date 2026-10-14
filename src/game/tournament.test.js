@@ -10,6 +10,9 @@ import {
   todaysTournament,
   recordTournamentCatch,
   submitTournament,
+  placeFestivalFish,
+  judgeFestival,
+  exhibitPortrait,
   dayKey,
 } from "./tournament.js";
 import { TOURNAMENTS, FESTIVALS, FISH_DB } from "./constants.js";
@@ -130,17 +133,37 @@ describe("dia de torneio", () => {
     expect(todaysTournament().entry.best).toBeNull();
   });
 
-  it("entregar paga a colocação uma vez só", () => {
+  it("o inspetor paga só o vencedor e só uma vez", () => {
     recordTournamentCatch(riverFish(999));
     const result = submitTournament();
     expect(result.place).toBe(1);
+    expect(result.winner).toBe("Você");
     expect(get(money)).toBe(500 + TOURNAMENTS["Derby de Primavera"].prizes[0]);
     expect(submitTournament()).toBeNull();
+    expect(judgeFestival().prize).toBe(TOURNAMENTS["Derby de Primavera"].prizes[0]);
     expect(get(money)).toBe(500 + TOURNAMENTS["Derby de Primavera"].prizes[0]);
     expect(recordTournamentCatch(riverFish(1000))).toBe(false);
   });
 
   it("sem peixe não dá para entregar", () => {
     expect(submitTournament()).toBeNull();
+  });
+
+  it("a mesa tem dois peixes rivais com portrait e o jogador coloca o terceiro", () => {
+    const today = todaysTournament();
+    expect(today.table).toHaveLength(3);
+    expect(today.table[2]).toBeNull();
+    expect(today.rivals).toHaveLength(2);
+    for (const slot of today.table.slice(0, 2)) {
+      expect(slot.name).toBeTruthy();
+      expect(slot.score).toBeGreaterThan(0);
+      expect(exhibitPortrait(slot) || slot.sprite).toBeTruthy();
+    }
+    expect(placeFestivalFish(riverFish(0.01))).toBe(true);
+    expect(todaysTournament().table[2].name).toBe("Carpa");
+    const lost = judgeFestival();
+    expect(lost.place).toBeGreaterThan(1);
+    expect(lost.prize).toBe(0);
+    expect(get(money)).toBe(500);
   });
 });

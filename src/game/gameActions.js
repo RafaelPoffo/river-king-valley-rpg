@@ -32,7 +32,6 @@ import {
   showCalendarModal,
   showKitchenModal,
   currentFestival,
-  lastFestivalClaim,
   ownedRods,
   ownedNets,
   ownedBaits,
@@ -64,12 +63,11 @@ import {
   INITIAL_CONSTRUCTIONS,
   inBounds,
   getNpcLocation,
-  TOURNAMENT_CLOSE_MINUTES,
   cardPlayersForDay,
   CARD_CHAMPIONSHIP_DAY,
   isCardEventDay,
 } from "./constants.js";
-import { todaysTournament, submitTournament, formatScore, dayKey } from "./tournament.js";
+import { todaysTournament, placeFestivalFish, judgeFestival, formatScore, qualifies, scoreOf, dayKey } from "./tournament.js";
 import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import {
   talkTo,
@@ -95,7 +93,7 @@ import {
 import { saveGame } from "./saveSystem.js";
 import { ensureWorldPopulation, worldSpecies } from "./worldCreatures.js";
 import { pokemonCry } from "./pokemonCries.js";
-import { pickUpPet } from "./pet.js";
+import { pickUpPet, placeInTerrarium, feedPet, canHousePet, HOUSE_TERRARIUM } from "./pet.js";
 import { onixHoleOpen, ONIX_ROCK, buildDungeonRows, generateDungeonFloor, resolveDungeonDuel, DUNGEON_STAIRS } from "./dungeon.js";
 import { generateDailyQuest, checkDailyQuestProgress, offerQuestOnTalk, setQuestFlag, describeQuestReward } from "./quests.js";
 import { actorAt, spokenLine, isBirthday, playerHasCard, playerHasFish } from "./npcLife.js";
@@ -117,6 +115,7 @@ export function showRPGMessage(msg) {
 }
 
 export function sleep() {
+  const verdict = judgeFestival();
   phase.set(PHASES.FADE);
   isFading.set(true);
   setTimeout(() => {
@@ -157,8 +156,13 @@ export function sleep() {
 
     const sIndex = get(seasonIndex);
     const dVal = get(day);
+    const verdictText = verdict?.winner
+      ? verdict.prize > 0
+        ? ` O inspetor declarou você vencedor e pagou ¥${verdict.prize}.`
+        : ` O inspetor entregou o prêmio a ${verdict.winner}.`
+      : "";
     showRPGMessage(
-      `Dia ${dVal} de ${SEASONS[sIndex]} - ${WEATHER_NAMES[newWeather]}.`
+      `Dia ${dVal} de ${SEASONS[sIndex]} - ${WEATHER_NAMES[newWeather]}.${verdictText}`
     );
     saveGame();
     updateCamera();
@@ -700,6 +704,71 @@ function openBugTournamentDialog() {
   });
 }
 
+function openHouseTerrarium() {
+  const home = get(terrarium);
+  phase.set(PHASES.DIALOG);
+  if (!home.size) {
+    currentMessage.set("Uma mesa vazia. Compre um terrário na loja para criar seu pet aqui.");
+    dialogActions.set({ " ": closeDialog });
+    return;
+  }
+  const pet = get(petCompanion);
+  if (!pet) {
+    const candidates = get(inventory).filter((item) => (item.stage || item.dexId || item.type === "insect") && canHousePet(item, home.size));
+    currentMessage.set(`Terrário ${home.size === "large" ? "grande" : "pequeno"} vazio. [SPACE] Colocar pet da mochila / [X] Sair`);
+    dialogActions.set({
+      " ": () => {
+        const item = candidates[0];
+        if (!item) {
+          currentMessage.set("Nenhum Pokémon da mochila cabe neste terrário.");
+          dialogActions.set({ " ": closeDialog });
+          return;
+        }
+        const result = placeInTerrarium(item);
+        if (result.ok) {
+          inventory.update((items) => items.filter((entry) => entry !== item));
+          saveGame();
+        }
+        currentMessage.set(result.message);
+        dialogActions.set({ " ": closeDialog });
+      },
+      X: closeDialog,
+    });
+    return;
+  }
+  currentMessage.set(`${pet.name} está no terrário. [SPACE] Alimentar / [Z] Recolher / [X] Acariciar`);
+  dialogActions.set({
+    " ": () => {
+      const food = get(inventory).find((item) => item.id === "racao_pet" || item.type === "seed" || item.type === "insect" || (item.type === "fish" && (item.rarity || 0) >= 4));
+      if (!food) {
+        currentMessage.set("Você não tem ração nem comida boa para o pet.");
+        dialogActions.set({ " ": closeDialog });
+        return;
+      }
+      const result = feedPet(food);
+      if (result.ok) {
+        inventory.update((items) => {
+          const index = items.indexOf(food);
+          return index < 0 ? items : items.filter((_, i) => i !== index);
+        });
+        saveGame();
+      }
+      currentMessage.set(result.message);
+      dialogActions.set({ " ": closeDialog });
+    },
+    Z: () => {
+      pickUpPet();
+      saveGame();
+      currentMessage.set(`${pet.name} foi recolhido.`);
+      dialogActions.set({ " ": closeDialog });
+    },
+    X: () => {
+      currentMessage.set(`${pet.name} parece feliz em casa.`);
+      dialogActions.set({ " ": closeDialog });
+    },
+  });
+}
+
 export function bugCompetitorAt(x, y) {
   if (get(currentMap) !== "bug_forest") return null;
   return competitorsForDay(get(seasonIndex), get(day), get(gameMode)).find((competitor, index) => {
@@ -708,44 +777,59 @@ export function bugCompetitorAt(x, y) {
   }) || null;
 }
 
+function describeTable(today) {
+  return today.table
+    .map((slot, index) => {
+      const label = index === 2 ? "Você" : slot?.owner || `Rival ${index + 1}`;
+      if (!slot) return `${index + 1}. ${label}: (vazio)`;
+      return `${index + 1}. ${label}: ${slot.name} (${formatScore(today.rule, slot.score)})`;
+    })
+    .join(" ");
+}
+
+function bestQualifyingFish(today) {
+  return get(inventory)
+    .filter((item) => qualifies(today.rule, item))
+    .sort((a, b) => scoreOf(today.rule, b) - scoreOf(today.rule, a))[0] || null;
+}
+
 function openTournamentStall() {
-  const { name, rule, entry, rivals } = todaysTournament();
+  const today = todaysTournament();
+  const { name, entry, table } = today;
   phase.set(PHASES.DIALOG);
 
-  if (entry.submitted) {
+  if (entry.judged) {
     const prizeText = entry.prize > 0 ? ` Prêmio: ¥${entry.prize}.` : "";
-    currentMessage.set(`${name} encerrado: você ficou em ${entry.place}º lugar.${prizeText}`);
+    currentMessage.set(`${name}: o inspetor entregou o prêmio a ${entry.winner}.${prizeText}`);
     dialogActions.set({ " ": closeDialog });
     return;
   }
 
-  const leader = [...rivals].sort((a, b) => b.score - a.score)[0];
-  const leaderText = `Líder: ${leader.name} (${formatScore(rule, leader.score)}).`;
-  const closed = get(inGameMinutes) >= TOURNAMENT_CLOSE_MINUTES;
-
-  if (!entry.best) {
-    currentMessage.set(
-      closed
-        ? `${name}: as capturas fecharam às 17h e você não trouxe nada. ${leaderText}`
-        : `${name}! Traga ${rule.goal} até as 17h. ${leaderText}`
-    );
-    dialogActions.set({ " ": closeDialog });
-    return;
+  const tableText = describeTable(today);
+  if (table[2]) {
+    currentMessage.set(`${name}. ${tableText} O inspetor julga ao fim do dia. [SPACE] Trocar peixe / [X] Deixar`);
+  } else {
+    currentMessage.set(`${name}. ${tableText} Coloque o terceiro peixe. O inspetor julga ao anoitecer. [SPACE] Colocar / [X] Sair`);
   }
-
-  const bestText = `Seu melhor: ${entry.best.name} (${formatScore(rule, entry.best.score)}).`;
-  currentMessage.set(
-    `${name}: ${bestText} ${leaderText} [SPACE] Entregar / [X] ${closed ? "Depois" : "Continuar pescando"}`
-  );
   dialogActions.set({
     " ": () => {
-      const result = submitTournament();
-      saveGame();
-      currentMessage.set(
-        result.prize > 0
-          ? `🏆 Você ficou em ${result.place}º lugar e ganhou ¥${result.prize}!${result.seed ? ` Presente: ${result.seed.seedName}.` : ""}`
-          : `Você ficou em ${result.place}º lugar. Fica para o próximo festival!`
-      );
+      const pick = bestQualifyingFish(today);
+      if (!pick) {
+        currentMessage.set("Você não tem um peixe válido na mochila para esta mesa.");
+        dialogActions.set({ " ": closeDialog });
+        return;
+      }
+      const previous = table[2]?.fish;
+      if (placeFestivalFish(pick)) {
+        inventory.update((items) => {
+          const next = items.filter((item) => item !== pick);
+          return previous ? [...next, previous] : next;
+        });
+        saveGame();
+        currentMessage.set(`${pick.name} foi colocado na mesa. O inspetor analisa os três peixes ao fim do dia.`);
+      } else {
+        currentMessage.set("Este peixe não serve para a mesa de hoje.");
+      }
       dialogActions.set({ " ": closeDialog });
     },
     X: closeDialog,
@@ -902,22 +986,9 @@ export function interact() {
       openTournamentStall();
       return;
     }
-    const claimKey = dayKey(get(seasonIndex), curDay);
     phase.set(PHASES.DIALOG);
-    if (get(lastFestivalClaim) !== claimKey) {
-      lastFestivalClaim.set(claimKey);
-      money.update((m) => m + 200);
-      saveGame();
-      currentMessage.set(`${festival}! A barraca entrega ¥200 de brinde.`);
-    } else {
-      currentMessage.set(`${festival}. A praça já te presenteou hoje.`);
-    }
-    dialogActions.set({
-      " ": () => {
-        phase.set(PHASES.PLAYING);
-        showRPGMessage("Setas para andar. [ENTER] para o Menu.");
-      },
-    });
+    currentMessage.set(`${festival}. A praça está enfeitada, mas o prêmio fica só para o vencedor da competição.`);
+    dialogActions.set({ " ": closeDialog });
     return;
   }
 
@@ -989,6 +1060,11 @@ export function interact() {
       },
       X: closeDialog,
     });
+  } else if (cMap === "player_house" && target.x === HOUSE_TERRARIUM.x && target.y === HOUSE_TERRARIUM.y) {
+    openHouseTerrarium();
+  } else if (target.tile === "+") {
+    if (cMap === "player_house") openHouseTerrarium();
+    else showRPGMessage("Uma mesa.");
   } else if (target.tile === "_") {
     if (cMap === "player_house") {
       phase.set(PHASES.DIALOG);

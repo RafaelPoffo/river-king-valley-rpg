@@ -12,8 +12,10 @@ export const BEDTIME_MINUTES = 22 * 60;
 
 function sunsetMessage() {
   const today = todaysTournament();
-  if (today && today.entry.best && !today.entry.submitted) {
-    return `O ${today.name} encerrou as capturas! Entregue seu peixe na barraca da praça.`;
+  if (today && !today.entry.judged) {
+    return today.table[2]
+      ? `O inspetor chega ao anoitecer para julgar a mesa do ${today.name}.`
+      : `O inspetor avalia a mesa ao anoitecer. Coloque seu peixe na barraca antes de dormir.`;
   }
   return "O sol está se pondo... Os moradores começam a ir para a taverna!";
 }

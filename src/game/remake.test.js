@@ -3,9 +3,9 @@ import { get } from "svelte/store";
 import { resetState } from "./saveSystem.js";
 import { luckFightBonus } from "./bugTournament.js";
 import { COMMON_BUGS, POKEMON_BUGS } from "./bugCatalog.js";
-import { createFishFight, startReel, stopReel, tickFishFight } from "./fishFight.js";
+import { createFishFight, startReel, stopReel, tickFishFight, hookedShadowPos, lineColorForFight } from "./fishFight.js";
 import { rollNetCatch } from "./fishingEngine.js";
-import { canHousePet, feedPet, placeInTerrarium } from "./pet.js";
+import { canHousePet, feedPet, placeInTerrarium, HOUSE_TERRARIUM } from "./pet.js";
 import { dungeonTheme, generateDungeonFloor, onixHoleOpen, resolveDungeonDuel } from "./dungeon.js";
 import { petCompanion, terrarium, inventory, day, fishFight, phase } from "./stores.js";
 import { PHASES } from "./phases.js";
@@ -64,6 +64,21 @@ describe("remake do vale", () => {
     const duel = resolveDungeonDuel({ strength: 8, types: ["water"] }, { strength: 1, type: "fire" }, "easy");
     expect(duel.frames).toHaveLength(3);
     expect(["pet", "foe"]).toContain(duel.winner);
+  });
+
+  it("a luta de pesca move a sombra e pinta a linha conforme o humor", () => {
+    const fight = { ...createFishFight({ rarity: 2 }), mood: "dash", moodTime: 0.4, tension: 80, distance: 90 };
+    const far = hookedShadowPos({ x: 10, y: 16 }, { x: 10, y: 12 }, fight);
+    const near = hookedShadowPos({ x: 10, y: 16 }, { x: 10, y: 12 }, { ...fight, mood: "exhaust", distance: 10 });
+    expect(far.y).toBeLessThan(16);
+    expect(near.y).toBeGreaterThan(far.y);
+    expect(lineColorForFight(fight, PHASES.FISHING_MINIGAME)).toBe("#dc2626");
+    expect(lineColorForFight({ ...fight, mood: "exhaust", tension: 10 }, PHASES.FISHING_MINIGAME)).toBe("#16a34a");
+  });
+
+  it("o terrário fica na mesa da casa do jogador", () => {
+    expect(HOUSE_TERRARIUM).toEqual({ x: 2, y: 3 });
+    expect(canHousePet({ stage: 1 }, "small")).toBe(true);
   });
 
   it("loja não vende deck lendário e o deck aceita no máximo 4 cópias", () => {

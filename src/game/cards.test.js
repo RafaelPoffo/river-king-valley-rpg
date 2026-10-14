@@ -229,6 +229,26 @@ describe("regras do duelo de cartas", () => {
     expect(performCardAction(duel, "p1", { type: "activate", uid: second.uid, target: 0 }).ok).toBe(false);
   });
 
+  it("cartas que reduzem ATK/DEF so acertam o oponente e armadilha so responde a ataque", () => {
+    const duel = createCardDuel(themeDeck("planta"), themeDeck("fogo"), () => 0.5);
+    const ally = putInHand(duel, "p1", "planta:0001");
+    const foe = putInHand(duel, "p2", "fogo:0004");
+    performCardAction(duel, "p1", { type: "summon", uid: ally.uid });
+    performCardAction(duel, "p1", { type: "end" });
+    performCardAction(duel, "p2", { type: "summon", uid: foe.uid });
+    performCardAction(duel, "p2", { type: "end" });
+    const weakenCard = putInHand(duel, "p1", "planta:s3");
+    expect(weakenCard.effect).toBe("weaken");
+    const allyAtk = cardStats(ally, duel.p1).atk;
+    const foeAtk = cardStats(foe, duel.p2).atk;
+    expect(performCardAction(duel, "p1", { type: "activate", uid: weakenCard.uid, target: 0, side: "self" }).ok).toBe(true);
+    expect(cardStats(ally, duel.p1).atk).toBe(allyAtk);
+    expect(cardStats(foe, duel.p2).atk).toBe(foeAtk - 1);
+    const trap = putInHand(duel, "p1", "planta:t0");
+    expect(performCardAction(duel, "p1", { type: "activate", uid: trap.uid }).ok).toBe(false);
+    expect(performCardAction(duel, "p1", { type: "activate", uid: trap.uid }).message).toMatch(/atacado/);
+  });
+
   it("IA conclui o turno e resolve a armadilha humana sem pular ataques", () => {
     const duel = createCardDuel(themeDeck("inseto"), themeDeck("voador"), () => 0.3);
     const trap = putInHand(duel, "p1", "inseto:t0");

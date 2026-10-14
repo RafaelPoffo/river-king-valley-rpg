@@ -355,10 +355,10 @@ describe("análise da isca e consumo", () => {
   });
 
   it.each([
-    ["minhoca", 0.89, true],
-    ["minhoca", 0.91, false],
-    ["massa_pao", 0.59, true],
-    ["massa_pao", 0.61, false],
+    ["minhoca", 0.96, true],
+    ["minhoca", 0.98, false],
+    ["massa_pao", 0.87, true],
+    ["massa_pao", 0.89, false],
   ])("%s respeita o sorteio %f de mordida", (bait, roll, bites) => {
     cast(bait);
     advanceUntil(() => get(shadowReaction) === "heart");

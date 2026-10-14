@@ -116,3 +116,27 @@ export function tickFishFight(delta, random = Math.random) {
   fishFight.set(next);
   return next;
 }
+
+export function hookedShadowPos(playerPos, bobber, fight) {
+  const t = Math.max(0, Math.min(1, (fight?.distance ?? 72) / 100));
+  const dash = fight?.mood === "dash" ? 0.08 : fight?.mood === "exhaust" ? -0.05 : 0;
+  const along = Math.max(0, Math.min(1, t + dash));
+  const dx = bobber.x - playerPos.x;
+  const dy = bobber.y - playerPos.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const swayAmp = fight?.mood === "resist" ? 0.48 : fight?.mood === "dash" ? 0.22 : 0.1;
+  const speed = fight?.mood === "dash" ? 14 : fight?.mood === "resist" ? 9 : 4;
+  const sway = Math.sin((fight?.moodTime || 0) * speed) * swayAmp;
+  return {
+    x: playerPos.x + dx * along + (-dy / len) * sway,
+    y: playerPos.y + dy * along + (dx / len) * sway,
+  };
+}
+
+export function lineColorForFight(fight, currentPhase) {
+  if (currentPhase === PHASES.FISHING_BITE) return "#ff0000";
+  if (!fight) return "#111827";
+  if (fight.snap || fight.mood === "dash" || fight.tension >= 75) return "#dc2626";
+  if (fight.mood === "resist" || fight.tension >= 40) return "#ca8a04";
+  return "#16a34a";
+}

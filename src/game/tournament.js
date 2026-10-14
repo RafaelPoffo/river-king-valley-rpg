@@ -51,6 +51,47 @@ function typicalStars(fish) {
   return 1;
 }
 
+export function exhibitPortrait(entry) {
+  if (!entry) return null;
+  if (entry.portrait) return entry.portrait;
+  if (entry.dexId) return `/assets/portraits/${String(entry.dexId).padStart(4, "0")}.png`;
+  if (typeof entry.sprite === "string") return entry.sprite;
+  return null;
+}
+
+export function toExhibit(owner, fish, score) {
+  return {
+    owner,
+    id: fish.id,
+    name: fish.name,
+    score,
+    dexId: fish.dexId || null,
+    portrait: fish.portrait || (fish.dexId ? `/assets/portraits/${String(fish.dexId).padStart(4, "0")}.png` : null),
+    sprite: fish.sprite || null,
+    isShiny: !!fish.isShiny,
+    fish: fish.fish || fish,
+  };
+}
+
+function exhibitForRival(rule, database, key, rival, index) {
+  const candidates = database.filter((fish) => qualifies(rule, fish) && !fish.weather && !fish.requires);
+  const random = seeded(key * 31 + index * 7919);
+  if (candidates.length === 0) {
+    return { owner: rival.name, id: null, name: "Peixe", score: rival.score, portrait: null, sprite: null };
+  }
+  let chosen = candidates[0];
+  let bestDiff = Infinity;
+  for (const fish of candidates) {
+    const typical = rule.metric === "value" ? fish.price * typicalStars(fish) : (fish.minW + fish.maxW) / 2;
+    const diff = Math.abs(typical - rival.score) + random() * 0.01;
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      chosen = fish;
+    }
+  }
+  return toExhibit(rival.name, chosen, rival.score);
+}
+
 export function rivalScores(rule, database, key) {
   const references = database
     .filter((fish) => qualifies(rule, fish) && !fish.weather && !fish.requires)
@@ -74,11 +115,19 @@ export function placeFor(playerScore, rivals) {
 }
 
 export function prizeFor(rule, place) {
-  return rule.prizes[place - 1] || 0;
+  return place === 1 ? rule.prizes[0] || 0 : 0;
 }
 
 function emptyEntry(key) {
-  return { key, best: null, submitted: false, place: null, prize: 0 };
+  return { key, best: null, table: null, submitted: false, judged: false, place: null, prize: 0, winner: null };
+}
+
+function tableOf(rule, database, key, entry, rivals) {
+  const saved = Array.isArray(entry.table) ? entry.table : [];
+  const npc = [0, 1].map((index) =>
+    saved[index]?.id ? saved[index] : exhibitForRival(rule, database, key, rivals[index], index)
+  );
+  return [npc[0], npc[1], saved[2] || null];
 }
 
 export function todaysTournament() {
@@ -88,13 +137,14 @@ export function todaysTournament() {
   const key = dayKey(get(seasonIndex), get(day));
   const saved = get(tournament);
   const entry = saved && saved.key === key ? saved : emptyEntry(key);
-  const rivals = rivalScores(rule, getActiveDatabase(), key);
-  return { name, rule, key, entry, rivals };
+  const rivals = rivalScores(rule, getActiveDatabase(), key).slice(0, 2);
+  const table = tableOf(rule, getActiveDatabase(), key, entry, rivals);
+  return { name, rule, key, entry: { ...entry, table }, rivals, table };
 }
 
 export function recordTournamentCatch(fish) {
   const today = todaysTournament();
-  if (!today || today.entry.submitted) return false;
+  if (!today || today.entry.submitted || today.entry.judged) return false;
   if (get(inGameMinutes) >= TOURNAMENT_CLOSE_MINUTES) return false;
   if (!qualifies(today.rule, fish)) return false;
 
@@ -104,19 +154,71 @@ export function recordTournamentCatch(fish) {
 
   tournament.set({
     ...today.entry,
-    best: { id: fish.id, name: fish.name, score, isShiny: !!fish.isShiny },
+    best: { id: fish.id, name: fish.name, score, isShiny: !!fish.isShiny, fish },
   });
   return true;
 }
 
+export function placeFestivalFish(fish) {
+  const today = todaysTournament();
+  if (!today || today.entry.judged) return false;
+  if (!qualifies(today.rule, fish)) return false;
+  const score = scoreOf(today.rule, fish);
+  const exhibit = toExhibit("Você", fish, score);
+  tournament.set({
+    ...today.entry,
+    best: { id: fish.id, name: fish.name, score, isShiny: !!fish.isShiny, fish },
+    table: [today.table[0], today.table[1], exhibit],
+    submitted: true,
+  });
+  return true;
+}
+
+export function judgeFestival() {
+  const today = todaysTournament();
+  if (!today) return null;
+  if (today.entry.judged) {
+    return { place: today.entry.place, prize: today.entry.prize, seed: null, winner: today.entry.winner };
+  }
+
+  const table = today.table;
+  const playerFish = table[2];
+  const playerScore = playerFish?.score || 0;
+  const place = playerFish ? placeFor(playerScore, table.slice(0, 2)) : 3;
+  const ranked = [...table.filter(Boolean)].sort((a, b) => b.score - a.score);
+  const winner = ranked[0] || null;
+  const playerWon = !!(playerFish && place === 1);
+  const prize = playerWon ? prizeFor(today.rule, 1) : 0;
+  if (prize > 0) money.update((m) => m + prize);
+  const seed = playerWon ? grantSeed() : null;
+  tournament.set({
+    ...today.entry,
+    table,
+    submitted: !!playerFish,
+    judged: true,
+    place,
+    prize,
+    winner: winner?.owner || null,
+  });
+  return { place, prize, seed, winner: winner?.owner || null };
+}
+
 export function submitTournament() {
   const today = todaysTournament();
-  if (!today || today.entry.submitted || !today.entry.best) return null;
-
-  const place = placeFor(today.entry.best.score, today.rivals);
-  const prize = prizeFor(today.rule, place);
-  if (prize > 0) money.update((m) => m + prize);
-  const seed = place <= 3 ? grantSeed() : null;
-  tournament.set({ ...today.entry, submitted: true, place, prize });
-  return { place, prize, seed };
+  if (!today || today.entry.judged) return null;
+  if (!today.table[2] && today.entry.best) {
+    const fish = today.entry.best.fish || {
+      id: today.entry.best.id,
+      name: today.entry.best.name,
+      type: "fish",
+      biome: today.rule.biome || "river",
+      sprite: [],
+      weight: today.entry.best.score,
+      priceFinal: today.entry.best.score,
+      isShiny: today.entry.best.isShiny,
+    };
+    placeFestivalFish(fish);
+  }
+  if (!todaysTournament()?.table[2]) return null;
+  return judgeFestival();
 }

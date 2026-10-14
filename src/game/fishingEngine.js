@@ -49,7 +49,7 @@ import { claimCollectionRewards, rewardMessage } from "./collections.js";
 import { dishEffect } from "./dishes.js";
 import { gardenBonus } from "./garden.js";
 import { grantRareCard, grantSurpriseCard } from "./cards.js";
-import { createFishFight, tickFishFight } from "./fishFight.js";
+import { createFishFight, tickFishFight, hookedShadowPos } from "./fishFight.js";
 import { canBreakLine, lineBreakChance } from "./fight.js";
 import { nearbyAquaticCreature, engageWorldCreature, removeWorldCreature, worldSpecies } from "./worldCreatures.js";
 import { birdRarityMultiplier } from "./birdWatching.js";
@@ -243,7 +243,7 @@ function updateApproach(time) {
       motion.elapsed = 0;
       shadowReaction.set(motion.chance > 0 ? "heart" : "reject");
     } else if (motion.stage === "react" && motion.elapsed >= 1.2) {
-      if (Math.random() < motion.chance) {
+      if (Math.random() < committedBiteChance(motion.chance)) {
         beginBite();
         return;
       }
@@ -282,9 +282,15 @@ export function baitBiteChance(fish, baitId) {
   return 0.28;
 }
 
+export function committedBiteChance(chance) {
+  if (!(chance > 0)) return 0;
+  return Math.min(0.97, chance + (1 - chance) * 0.7);
+}
+
 function beginBite() {
   castBaitBitten = true;
-  shadowActive.set(false);
+  shadowActive.set(true);
+  shadowPos.set({ ...get(bobberPos) });
   shadowReaction.set(null);
   phase.set(PHASES.FISHING_BITE);
   const currentFish = get(activeFish);
@@ -609,6 +615,9 @@ export function startMinigame() {
     activeFish.set({ ...hooked, rolledWeight });
   }
   fishFight.set(createFishFight(get(activeFish)));
+  shadowActive.set(true);
+  shadowPos.set(hookedShadowPos(get(player), get(bobberPos), get(fishFight)));
+  currentMessage.set("");
   phase.set(PHASES.FISHING_MINIGAME);
   lastTime = performance.now();
   if (loopIds.mini) cancelAnimationFrame(loopIds.mini);
@@ -620,8 +629,10 @@ function updateMinigame(time) {
   const delta = Math.min(0.05, (time - lastTime) / 1000);
   lastTime = time;
   const fight = tickFishFight(delta);
+  if (fight) shadowPos.set(hookedShadowPos(get(player), get(bobberPos), fight));
+  shadowActive.set(true);
   if (fight?.snap) {
-    resetAction("A linha arrebentou no arranque! Solte o botão quando ele disparar.");
+    resetAction("A linha arrebentou!");
     return;
   }
   if (fight?.caught) {

@@ -5,6 +5,7 @@
   import { TILE_SIZE, MAPS_DATA } from "../game/constants.js";
   import { castTarget } from "../game/fishingEngine.js";
   import { nearbyAquaticCreature } from "../game/worldCreatures.js";
+  import { lineColorForFight } from "../game/fishFight.js";
   import {
     player,
     phase,
@@ -19,12 +20,22 @@
     currentMap,
     fishingBiome,
     deepSeaFishingActive,
+    fishFight,
   } from "../game/stores.js";
   import CreatureSprite from "./CreatureSprite.svelte";
   import OverworldSprite from "./OverworldSprite.svelte";
 
   $: moving = $phase === PHASES.PLAYING && (!Number.isInteger($player.x) || !Number.isInteger($player.y));
-  $: showBobber = LINE_IN_WATER.has($phase);
+  $: fighting = $phase === PHASES.FISHING_MINIGAME && !!$fishFight;
+  $: showBobber = LINE_IN_WATER.has($phase) && !fighting;
+  $: showLine = LINE_IN_WATER.has($phase);
+  $: lineEnd = fighting || ($shadowActive && $phase === PHASES.FISHING_MINIGAME)
+    ? $shadowPos
+    : $bobberPos;
+  $: lineColor = lineColorForFight($fishFight, $phase);
+  $: lineWidth = fighting
+    ? ($fishFight.mood === "dash" || $fishFight.tension >= 75 ? 4 : $fishFight.mood === "resist" ? 3 : 2)
+    : $phase === PHASES.FISHING_BITE ? 3 : 2;
   $: aimZone = Math.floor($aimPower);
   $: aimBiome = $deepSeaFishingActive ? "deep_sea" : $fishingBiome;
   $: aimTarget = $phase === PHASES.FISHING_AIM
@@ -62,19 +73,22 @@
   >
     <div class={`bobber ${$phase === PHASES.FISHING_BITE ? "bobber-bite" : "bobber-float"}`}></div>
   </div>
+{/if}
+
+{#if showLine}
   <svg class="absolute inset-0 w-full h-full pointer-events-none overflow-visible" style="z-index: 10;">
     <line
       x1={$player.x * TILE_SIZE + 20}
       y1={$player.y * TILE_SIZE + 20}
-      x2={$bobberPos.x * TILE_SIZE + 20}
-      y2={$bobberPos.y * TILE_SIZE + 20}
-      stroke={$phase === PHASES.FISHING_BITE ? "#ff0000" : "#000"}
-      stroke-width={$phase === PHASES.FISHING_BITE ? "3" : "2"}
+      x2={lineEnd.x * TILE_SIZE + 20}
+      y2={lineEnd.y * TILE_SIZE + 20}
+      stroke={lineColor}
+      stroke-width={lineWidth}
     />
   </svg>
 {/if}
 
-{#if $shadowActive && $activeFish}
+{#if ($shadowActive || fighting) && $activeFish}
   <div
     class="absolute pointer-events-none {encounter ? '' : $activeFish.rarity >= 5
       ? 'shadow-large'

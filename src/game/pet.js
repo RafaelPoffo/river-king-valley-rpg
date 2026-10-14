@@ -7,6 +7,7 @@ export const TERRARIUMS = [
 ];
 
 export const PET_FOOD = { id: "racao_pet", name: "Ração para pet", price: 10, type: "loot" };
+export const HOUSE_TERRARIUM = { x: 2, y: 3 };
 
 export function canHousePet(creature, size) {
   const stage = creature.stage || 1;

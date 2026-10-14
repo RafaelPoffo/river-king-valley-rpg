@@ -239,8 +239,8 @@ function applyEffect(duel, owner, card, action = {}) {
     return { ok: true };
   }
   if (effect === "weaken") {
-    const chosen = Number.isInteger(action.target) ? (action.side === "self" ? ally() : foe()) : foe();
-    if (!chosen.card) return fail("Escolha um monstro.");
+    const chosen = foe();
+    if (!chosen.card) return fail("Escolha um monstro inimigo.");
     chosen.card.modAtk -= 1;
     chosen.card.modDef -= 1;
     return { ok: true };

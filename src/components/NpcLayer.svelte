@@ -16,12 +16,15 @@
     seasonIndex,
     currentFestival,
     gameMode,
+    tournament,
   } from "../game/stores.js";
   import { extrasForDay, isBirthday } from "../game/npcLife.js";
+  import { todaysTournament, exhibitPortrait } from "../game/tournament.js";
 
   $: extras = extrasForDay($day, $seasonIndex, $gameMode);
   $: hour = Math.floor($inGameMinutes / 60);
   $: extrasVisible = hour >= 6 && hour < 18 ? extras : [];
+  $: festivalTable = $currentFestival && $currentMap === "village" && ($tournament, todaysTournament()?.table);
 </script>
 
 {#each $villagers as npc}
@@ -79,4 +82,26 @@
   >
     {@html draw(SPRITES.stall)}
   </div>
+  {#if festivalTable}
+    {#each [{ slot: festivalTable[0], x: FESTIVAL_STALL.x - 1, y: FESTIVAL_STALL.y }, { slot: festivalTable[1], x: FESTIVAL_STALL.x + 1, y: FESTIVAL_STALL.y }, { slot: festivalTable[2], x: FESTIVAL_STALL.x, y: FESTIVAL_STALL.y - 1 }] as seat}
+      <div
+        class="absolute flex items-center justify-center border-2 border-black bg-[#f4f0df]"
+        style="left: {seat.x * TILE_SIZE + 4}px; top: {seat.y * TILE_SIZE + 4}px; width: {TILE_SIZE - 8}px; height: {TILE_SIZE - 8}px; z-index: 16;"
+        title={seat.slot ? `${seat.slot.owner}: ${seat.slot.name}` : "Slot vazio"}
+      >
+        {#if seat.slot}
+          {@const art = exhibitPortrait(seat.slot)}
+          {#if art}
+            <img src={art} alt={seat.slot.name} class="h-full w-full object-contain" style="image-rendering: pixelated;" />
+          {:else if seat.slot.sprite}
+            {@html draw(seat.slot.sprite, seat.slot.name)}
+          {:else}
+            <span class="retro-font text-[6px] text-center">{seat.slot.name}</span>
+          {/if}
+        {:else}
+          <span class="retro-font text-[6px] text-gray-500">?</span>
+        {/if}
+      </div>
+    {/each}
+  {/if}
 {/if}
