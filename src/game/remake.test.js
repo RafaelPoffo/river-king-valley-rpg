@@ -10,7 +10,7 @@ import { dungeonTheme, generateDungeonFloor, onixHoleOpen, resolveDungeonDuel } 
 import { petCompanion, terrarium, inventory, day, fishFight, phase } from "./stores.js";
 import { PHASES } from "./phases.js";
 import { validateDeck, revertDeck, buyDeck } from "./cards.js";
-import { themeDeck } from "./cardCatalog.js";
+import { themeDeck, dailyDeckThemes } from "./cardCatalog.js";
 import { cardDecks, cardCollection, money } from "./stores.js";
 
 describe("remake do vale", () => {
@@ -69,9 +69,10 @@ describe("remake do vale", () => {
   it("loja não vende deck lendário e o deck aceita no máximo 4 cópias", () => {
     money.set(20000);
     expect(buyDeck(false, "lendas_fogo").ok).toBe(false);
-    expect(buyDeck(false, "agua").ok).toBe(true);
+    const shopTheme = dailyDeckThemes(1, 0, "pokemon")[0];
+    expect(buyDeck(false, shopTheme.id).ok).toBe(true);
     const deck = get(cardDecks)[0];
-    const stuffed = Array(24).fill(themeDeck("agua")[0]);
+    const stuffed = Array(24).fill(themeDeck(shopTheme.id)[0]);
     cardCollection.set({ [stuffed[0]]: 24 });
     expect(validateDeck(stuffed, get(cardCollection), deck.cards)).toBe(false);
     expect(revertDeck(deck.id).ok).toBe(true);

@@ -1,4 +1,5 @@
 import pokemonNames from "./data/pokemonNames.json";
+import { POKEMON_DECK_DATA } from "./data/pokemonCardDecks.js";
 
 const TYPE_LABELS = {
   agua: "água",
@@ -26,6 +27,7 @@ const EFFECT_TEXT = {
   equip_atk: "Equipa um monstro deste tipo com +1 ATK. Só um equipamento por monstro.",
   equip_def: "Equipa um monstro deste tipo com +1 DEF. Só um equipamento por monstro.",
   heal: "Recupera 1 HP.",
+  heal_2: "Recupera 2 HP.",
   burn: "Causa 1 de dano ao HP do rival.",
   flip_pos: "Vira a postura de um monstro inimigo entre ATK e DEF.",
   destroy_attacker: "Destroi o monstro que acabou de atacar.",
@@ -36,6 +38,8 @@ const EFFECT_TEXT = {
   strip_trap: "Remove uma armadilha do campo inimigo.",
   remove_traps: "Remove todas as armadilhas do rival.",
   destroy_11: "Destroi um monstro 1/1 do rival.",
+  destroy_low_atk: "Destroi um monstro com menos de 2 ATK.",
+  destroy_basic: "Destroi os monstros basicos do rival.",
   doom: "O monstro inimigo e destruido apos 2 rodadas.",
   destroy_monster: "Destroi um monstro do rival.",
   all_defense: "Vira todos os monstros do rival para defesa.",
@@ -263,6 +267,8 @@ const rawSpecies = [
   [225, "Pinguim Mensageiro", ["gelo", "voador"], 2, 2],
   [226, "Arraia", ["água", "voador"], 2, 3],
   [227, "Ave de Aco", ["aço", "voador"], 3, 3],
+  [228, "Houndour", ["fogo", "sombrio"], 1, 1, 229],
+  [229, "Houndoom", ["fogo", "sombrio"], 3, 2],
   [230, "Rei dos Mares", ["água", "dragão"], 4, 3],
   [231, "Elefante Jovem", ["terra"], 1, 1, 232],
   [232, "Elefante Blindado", ["terra"], 3, 3],
@@ -543,8 +549,76 @@ const builtCatalog = CARD_THEMES.flatMap((theme) => {
   return [...monsters, ...spells, ...traps];
 });
 
+const pokemonThemeTypes = { water:"água", fire:"fogo", grass:"planta", bug:"inseto", flying:"voador", poison:"veneno", electric:"elétrico", psychic:"psíquico", fighting:"lutador", dragon:"dragão", rock:"pedra", normal:"normal", fairy:"fada", steel:"aço", ice:"gelo", ghost:"fantasma", ground:"terra" };
+const pokemonEffectMap = { equip_atk:"equip_atk", equip_def:"equip_def", clear_traps:"remove_traps", remove_trap:"strip_trap", swap:"flip_pos", diminish:"weaken", remove_gear:"strip_equip", heal_1:"heal", heal_2:"heal_2", buff_atk:"boost_atk", burn:"burn", delay_destroy:"doom", destroy_low_atk:"destroy_low_atk", destroy_ones:"destroy_all_11", destroy_basic:"destroy_basic", destroy_equipped:"destroy_equipped", destroy_high_atk:"destroy_5atk", destroy_monster:"destroy_monster", destroy_defenders:"destroy_def", force_def:"all_defense", defend_2:"guard", lock_2:"silence", remove_field:"strip_field" };
+const pokemonEffectNames = { equip_atk:"Equipamento +1 ATK", equip_def:"Equipamento +1 DEF", clear_traps:"Limpar Armadilhas", remove_trap:"Remover Armadilha", swap:"Trocar Postura", diminish:"Reduzir ATK e DEF", remove_gear:"Remover Equipamento", heal_1:"Recuperar 1 HP", heal_2:"Recuperar 2 HP", buff_atk:"Impulso de Ataque", burn:"Dano Direto", delay_destroy:"Destruicao Atrasada", destroy_low_atk:"Caçar Monstro Fraco", destroy_ones:"Eliminar Monstros 1/1", destroy_basic:"Eliminar Basicos", destroy_equipped:"Destruir Equipado", destroy_high_atk:"Caçar Monstro Forte", destroy_monster:"Destruir Monstro", destroy_defenders:"Limpar Defensores", force_def:"Forcar Defesa", defend_2:"Defesa +2", lock_2:"Impedir Ataque", remove_field:"Remover Campo" };
+
+export const POKEMON_THEMES = POKEMON_DECK_DATA.map(([deckId, name, type, rawMonsters, rawMagics, rawTraps]) => {
+  const magicEffects = rawMagics.split(",");
+  return {
+    id:`pokemon:${deckId}`,
+    name,
+    type:pokemonThemeTypes[type] || type,
+    color:"#b8d5c9",
+    fieldName:`Campo ${pokemonThemeTypes[type] || type}`,
+    monsters:rawMonsters.split(";").map((row) => {
+      const [dexId, copies, atk, def] = row.trim().split(/\s+/);
+      return [String(Number(dexId)).padStart(4,"0"), Number(copies), Number(atk), Number(def)];
+    }),
+    magics:["field", ...magicEffects.map((effect) => pokemonEffectMap[effect] || effect)],
+    traps:rawTraps.split(",").map((effect) => pokemonEffectMap[effect] || effect),
+    magicNames:[`Campo ${pokemonThemeTypes[type] || type}`,...magicEffects.map((effect) => pokemonEffectNames[effect] || effect)],
+    trapNames:rawTraps.split(",").map((effect) => `Armadilha: ${pokemonEffectNames[effect] || effect}`),
+    pokemonDeck:true,
+  };
+});
+
+const pokemonDeckCatalog = POKEMON_THEMES.flatMap((theme) => {
+  const monsters = theme.monsters.map(([dexId, copies, atk, def]) => {
+    const species = SPECIES[dexId];
+    return {
+      ...monsterCard(theme,dexId),
+      id:`${theme.id}:${dexId}`,
+      name:pokemonNames[dexId] || species.normalName,
+      atk,
+      def,
+      stage:species.stage,
+      kind:species.evolvesFrom ? species.kind : "básico",
+      isBoss:false,
+      evolvesFrom:species.evolvesFrom,
+      evolvesTo:species.evolvesTo,
+      pokemonDeck:true,
+      copies,
+      desc:species.evolvesFrom ? `Evolui de ${pokemonNames[species.evolvesFrom]}.` : "Pokemon basico.",
+    };
+  });
+  const spells = theme.magics.map((effect,index) => ({
+    id:effect === "field" ? `${theme.id}:field` : `${theme.id}:s${index}`,
+    themeId:theme.id,
+    type:effect === "field" ? "field" : "spell",
+    name:theme.magicNames[index],
+    subtype:theme.type,
+    effect,
+    copies:1,
+    pokemonDeck:true,
+    desc:EFFECT_TEXT[effect] || effect,
+  }));
+  const traps = theme.traps.map((effect,index) => ({
+    id:`${theme.id}:t${index}`,
+    themeId:theme.id,
+    type:"trap",
+    name:theme.trapNames[index],
+    subtype:theme.type,
+    effect,
+    copies:1,
+    pokemonDeck:true,
+    desc:EFFECT_TEXT[effect] || effect,
+  }));
+  return [...monsters,...spells,...traps];
+});
+
 export const RARE_CARDS = [
-  ["sea_guardian", "Guardiao das Mares", "0249", "água", "sea", 0.008, 14000],
+  ["sea_guardian", "Guardiao das Mares", "0249", "água", "quest", 0.008, 14000],
   ["sea_song", "Cancao do Oceano", "0131", "água", "sea", 0.045, 6000],
   ["forest_guardian", "Guardiao do Bosque", "0251", "planta", "bugs", 0.1, 12000],
   ["steel_champion", "Campeao de Aco", "0212", "inseto", "bugs", 0.4, 8000],
@@ -561,15 +635,38 @@ export const RARE_CARDS = [
   };
 });
 
-export const ALL_CARDS = [...builtCatalog, ...RARE_CARDS];
+export const ALL_CARDS = [...builtCatalog, ...pokemonDeckCatalog, ...RARE_CARDS];
 export const DECK_SIZE = 24;
-export const TRAP_SLOTS = 2;
+export const TRAP_SLOTS = 1;
 export const DECK_PRICE = 4000;
 export const BASIC_CARD_PRICE = 500;
 export const TYPE_LABELS_MAP = TYPE_LABELS;
 
-export const cardById = (id) => ALL_CARDS.find((card) => card.id === id);
-export const themeById = (id) => CARD_THEMES.find((theme) => theme.id === id);
+export const cardById = (id) => ALL_CARDS.find((card) => card.id === id) || BASIC_SHOP_CARDS.find((card) => card.id === id);
+export const themeById = (id) => CARD_THEMES.find((theme) => theme.id === id) || POKEMON_THEMES.find((theme) => theme.id === id);
+export const themesForMode = (mode) => mode === "pokemon" ? POKEMON_THEMES : CARD_THEMES;
+export const cardsForMode = (mode) => {
+  const cards = mode === "pokemon" ? pokemonDeckCatalog : builtCatalog;
+  return [...cards,...RARE_CARDS,...BASIC_SHOP_CARDS];
+};
+const legendaryPokemonDecks = new Set(["articuno", "zapdos", "moltres", "raikou", "entei", "suicune", "lugia", "ho-oh", "mew", "celebi"]);
+export const isLegendaryDeck = (themeId) => {
+  const theme = themeById(themeId);
+  if (!theme) return false;
+  if (theme.id.startsWith("lendas_")) return true;
+  return theme.pokemonDeck && legendaryPokemonDecks.has(theme.id.slice("pokemon:".length));
+};
+export function dailyDeckThemes(today, season, mode) {
+  const themes = themesForMode(mode).filter((theme) => !isLegendaryDeck(theme.id));
+  if (themes.length <= 5) return themes;
+  const start = (((season * 31 + today - 1) * 5) % themes.length + themes.length) % themes.length;
+  return Array.from({ length:5 }, (_, index) => themes[(start + index) % themes.length]);
+}
+export const deckSize = (id) => themeDeck(id).length;
+export const pokemonThemeForNpc = (themeId) => {
+  const normalIndex = CARD_THEMES.findIndex((theme) => theme.id === themeId);
+  return POKEMON_THEMES[Math.max(0,normalIndex) % POKEMON_THEMES.length];
+};
 
 export function themeDeck(id) {
   const theme = themeById(id);
@@ -606,7 +703,7 @@ ALL_CARDS.push(...BASIC_SHOP_CARDS);
 
 export function cardName(card, mode) {
   if (mode === "pokemon" && card.type === "monster") {
-    return `${pokemonNames[card.dexId] || card.name}${card.isBoss ? " Chefe" : ""}`;
+    return pokemonNames[card.dexId] || card.name;
   }
   return card.name;
 }

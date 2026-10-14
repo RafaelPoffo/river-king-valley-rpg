@@ -521,7 +521,7 @@ function openNpcDialog(npc, atTavern) {
   const options = ["[SPACE] Tchau"];
 
   const quest = offerQuestOnTalk(npc.id);
-  if (quest?.met) {
+  if (quest?.met && npc.id !== "card_seller") {
     line = `${quest.stage.title}: "Era isso que eu precisava!" Você recebeu ${describeQuestReward(quest.stage.reward)}.${quest.next ? ` Agora: ${quest.next.hint}` : " Missão concluída."}`;
     currentMessage.set(`${npc.name} ${heartsText(npc.id)}: "${line}" [SPACE] Tchau`);
     dialogActions.set({ " ": closeDialog });

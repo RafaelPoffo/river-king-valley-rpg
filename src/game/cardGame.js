@@ -1,6 +1,7 @@
 import { cardById, matchesBonusType, canNormalSummon, TRAP_SLOTS } from "./cardCatalog.js";
 
 const HAND_LIMIT = 3;
+export const CARD_DUEL_ROUNDS = 10;
 const enemyOf = (owner) => owner === "p1" ? "p2" : "p1";
 const note = (duel, message) => { duel.log = [message, ...duel.log].slice(0, 50); return { ok: true, message }; };
 const fail = (message) => ({ ok: false, message });
@@ -31,7 +32,7 @@ function prepareCard(card, owner, index) {
 }
 
 const playerState = (ids, owner, random) => ({
-  hp: 10,
+  hp: 5,
   deck: shuffle(ids.map((id, index) => prepareCard(cardById(id), owner, index)), random),
   hand: [],
   monsters: [null, null, null],
@@ -221,7 +222,7 @@ function applyEffect(duel, owner, card, action = {}) {
     target.gear = [effect];
     return { ok: true };
   }
-  if (effect === "heal") { player.hp += 1; return { ok: true }; }
+  if (effect === "heal") { player.hp = Math.min(5,player.hp + 1); return { ok: true }; }
   if (effect === "burn") { enemy.hp -= 1; return { ok: true }; }
   if (effect === "flip_pos") {
     const { card: target } = action.side === "self" ? ally() : foe();
@@ -393,14 +394,15 @@ export function performCardAction(duel, owner, action, random = Math.random) {
   }
   if (duel.state === "dice") return fail("Role os dados para desempatar.");
   if (action.type === "end") {
-    if (owner === "p2" && ++duel.round > 15) {
+    if (owner === "p2" && duel.round >= CARD_DUEL_ROUNDS) {
       if (duel.p1.hp === duel.p2.hp) duel.state = "dice";
       else {
         duel.winner = duel.p1.hp > duel.p2.hp ? "p1" : "p2";
         duel.state = "finished";
       }
-      return note(duel, "Quinze rodadas encerradas: vence quem tem mais HP.");
+      return note(duel, "Dez rodadas encerradas: vence quem tem mais HP.");
     }
+    if (owner === "p2") duel.round++;
     beginTurn(duel, enemyOf(owner));
     return { ok: true, message: "Turno encerrado." };
   }
@@ -543,7 +545,7 @@ export function nextCardAIAction(duel) {
       if (card.effect.startsWith("equip_")) {
         const target = player.monsters.findIndex((item) => item && matchesBonusType(item, card.subtype) && !item.gear.length);
         if (target >= 0) return { type: "activate", uid: card.uid, target };
-      } else if (card.effect === "heal" && player.hp < 10) return { type: "activate", uid: card.uid };
+      } else if (card.effect === "heal" && player.hp < 5) return { type: "activate", uid: card.uid };
       else if (card.effect === "burn") return { type: "activate", uid: card.uid };
       else if (card.effect === "boost_atk") {
         const target = firstTarget(player.monsters, (item) => item.pos === "atk");
